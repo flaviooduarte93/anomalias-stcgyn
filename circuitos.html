@@ -557,7 +557,6 @@
     const progressBar  = document.getElementById('uploadProgressBar');
     progressWrap.style.display = 'block';
 
-    // simula progresso de leitura
     let prog = 0;
     const interval = setInterval(() => {
       prog += 15; if (prog > 85) clearInterval(interval);
@@ -567,32 +566,46 @@
     try {
       const htmlContent = await file.text();
 
-      // extrai nome do transformador do HTML
+      // extrai nome do título do HTML
       const nomeMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
       const nomeCircuito = nomeMatch ? nomeMatch[1].trim() : file.name.replace('.html', '');
 
-      // extrai dados básicos para stats
-      const mPostes = htmlContent.match(/var postes\s*=\s*\[([\s\S]*?)\];/);
-      let qtdPostes = 0, qtdClientes = 0, potencia = null;
-      if (mPostes) {
-        const posStr = mPostes[0];
-        qtdPostes = (posStr.match(/lat:/g) || []).length;
-        const clientesMatch = posStr.match(/clientes:\s*(\d+)/);
-        if (clientesMatch) qtdClientes = parseInt(clientesMatch[1]);
-        const potMatch = posStr.match(/[Pp]otencia:\s*(\d+)/);
-        if (potMatch) potencia = parseInt(potMatch[1]);
+      // ── validação: só aceitar arquivos GN ──
+      if (!nomeCircuito.toUpperCase().startsWith('GN')) {
+        clearInterval(interval);
+        progressWrap.style.display = 'none';
+        document.getElementById('fileInput').value = '';
+        return showToast('Apenas arquivos GN (transformadores) são aceitos.', true);
       }
+
+      // verifica duplicata
+      const existSnap = await getDocs(query(collection(db, 'circuitos'), where('nome', '==', nomeCircuito)));
+      if (!existSnap.empty) {
+        clearInterval(interval);
+        progressWrap.style.display = 'none';
+        document.getElementById('fileInput').value = '';
+        return showToast(`Circuito "${nomeCircuito}" já está cadastrado.`, true);
+      }
+
+      // conta postes
+      const qtdPostes = (htmlContent.match(/lat\s*:/g) || []).length;
+
+      // extrai clientes e potência do popup do transformador
+      const mCli = htmlContent.match(/[Cc]lientes\s*:\s*(\d+)/);
+      const mPot = htmlContent.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
+      const qtdClientes = mCli ? parseInt(mCli[1]) : 0;
+      const potencia    = mPot ? parseInt(mPot[1]) : null;
 
       // salva no Firestore
       await addDoc(collection(db, 'circuitos'), {
         nome: nomeCircuito,
         htmlContent,
-        postes: qtdPostes,
+        postes:   qtdPostes,
         clientes: qtdClientes,
         potencia,
-        ativo: true,
+        ativo:    true,
         criadoEm: serverTimestamp(),
-        adminId: currentUser.uid
+        adminId:  currentUser.uid
       });
 
       clearInterval(interval);
