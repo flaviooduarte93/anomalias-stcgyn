@@ -415,13 +415,19 @@
 
 <!-- BOTTOM NAV -->
 <script>
-  // aplica nav imediatamente via sessionStorage — sem esperar Firebase
+  // Aplica nav ANTES do render — começa tudo visível, esconde conforme perfil
   (function(){
-    var p = sessionStorage.getItem('userPerfil');
-    if (!p) return;
-    var show = function(id){ var el = document.getElementById(id); if(el) el.classList.remove('hidden'); };
-    if (p === 'fiscal' || p === 'admin') { show('nav-anomalias'); show('nav-pendencias'); }
-    if (p === 'admin') { show('nav-dashboard'); show('nav-circuitos'); }
+    var p = sessionStorage.getItem('userPerfil') || '';
+    // equipe: só vê mapa e pendências
+    // fiscal: vê mapa, anomalias, pendências
+    // admin: vê tudo
+    // Se não tem perfil ainda (primeiro load antes do Firebase), esconde tudo exceto mapa
+    document.write('<style id="navInitStyle">'
+      + (p === 'admin' ? '' :
+         p === 'fiscal' ? '#nav-dashboard,#nav-circuitos{display:none}' :
+         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos{display:none}' :
+         '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos{display:none}')
+      + '</style>');
   })();
 </script>
 <nav class="bottom-nav">
@@ -429,20 +435,20 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
     <span class="nav-label">Mapa</span>
   </button>
-  <button class="nav-item hidden" id="nav-anomalias" onclick="navTo('anomalias.html', this)">
+  <button class="nav-item" id="nav-anomalias" onclick="navTo('anomalias.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <span class="nav-label">Anomalias</span>
   </button>
-  <button class="nav-item hidden" id="nav-pendencias" onclick="navTo('pendencias.html', this)">
+  <button class="nav-item" id="nav-pendencias" onclick="navTo('pendencias.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     <span class="nav-label">Pendências</span>
     <span class="badge" id="badgePendencias" style="display:none"></span>
   </button>
-  <button class="nav-item hidden" id="nav-dashboard" onclick="navTo('dashboard.html', this)">
+  <button class="nav-item" id="nav-dashboard" onclick="navTo('dashboard.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span class="nav-label">Dashboard</span>
   </button>
-  <button class="nav-item hidden" id="nav-circuitos" onclick="navTo('circuitos.html', this)">
+  <button class="nav-item" id="nav-circuitos" onclick="navTo('circuitos.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     <span class="nav-label">Circuitos</span>
   </button>
@@ -712,21 +718,23 @@
         const icon = p.temTransformador ? iconTrafo : iconPoste;
         const m = L.marker([p.lat, p.lng], { icon }).addTo(map);
 
-        let html = `<div class="popup-title">${p.temTransformador ? '⚡ Transformador' : '📍 Poste'}: ${p.id}</div>
-          <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>`;
-
+        let html;
         if (p.temTransformador) {
           const potencia = trafoInfo.potencia || p.potencia || '—';
           const clientes = trafoInfo.clientes || p.clientes || p.ucs?.length || '—';
           const gnNome   = circuitoNome || circuitoId;
-          html += `
-            <div class="popup-row">Circuito: <span>${gnNome}</span></div>
+          html = `<div class="popup-title">⚡ ${gnNome}</div>
+            <div class="popup-row">Poste: <span>${p.id}</span></div>
+            <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>
             <div class="popup-row">Potência: <span>${potencia} kVA</span></div>
             <div class="popup-row">Clientes: <span>${clientes}</span></div>`;
           trafoData = { ...p, potencia, clientes: String(clientes), gnNome };
-        }
-        if (p.ucs && p.ucs.length > 0) {
-          html += `<div class="popup-row">UCs: <span>${p.ucs.length}</span></div>`;
+        } else {
+          html = `<div class="popup-title">📍 Poste: ${p.id}</div>
+            <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>`;
+          if (p.ucs && p.ucs.length > 0) {
+            html += `<div class="popup-row">UCs: <span>${p.ucs.length}</span></div>`;
+          }
         }
         m.bindPopup(html);
       });

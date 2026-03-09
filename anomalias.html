@@ -427,10 +427,10 @@
 <!-- BOTTOM NAV -->
 <script>
   (function(){
-    var p = sessionStorage.getItem('userPerfil');
-    if (!p) return;
-    var show = function(id){ var el = document.getElementById(id); if(el) el.classList.remove('hidden'); };
-    if (p === 'admin') { show('nav-dashboard'); show('nav-circuitos'); }
+    var p = sessionStorage.getItem('userPerfil') || '';
+    document.write('<style>'
+      + (p === 'admin' ? '' : '#nav-dashboard,#nav-circuitos{display:none}')
+      + '</style>');
   })();
 </script>
 <nav class="bottom-nav">
@@ -447,11 +447,11 @@
     <span class="nav-label">Pendências</span>
     <span class="badge" id="badgePendencias" style="display:none"></span>
   </button>
-  <button class="nav-item hidden" id="nav-dashboard" onclick="window.location.href='dashboard.html'">
+  <button class="nav-item" id="nav-dashboard" onclick="window.location.href='dashboard.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span class="nav-label">Dashboard</span>
   </button>
-  <button class="nav-item hidden" id="nav-circuitos" onclick="window.location.href='circuitos.html'">
+  <button class="nav-item" id="nav-circuitos" onclick="window.location.href='circuitos.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     <span class="nav-label">Circuitos</span>
   </button>
