@@ -624,46 +624,55 @@
       opt.textContent = d.data().nome || d.id;
       sel.appendChild(opt);
     });
+
+    // se veio de outra tela via sessionStorage, seleciona e carrega automaticamente
+    const presel = sessionStorage.getItem('circuitoSelecionado');
+    if (presel) {
+      sessionStorage.removeItem('circuitoSelecionado');
+      const sel = document.getElementById('circuitSelect');
+      sel.value = presel;
+      if (sel.value === presel) await loadCircuitById(presel);
+    }
   }
 
-  // ── carregar circuito selecionado ──
+  // ── carregar circuito selecionado (pelo select) ──
   window.loadCircuit = async function() {
     const id = document.getElementById('circuitSelect').value;
-    currentCircuitoId = id || null;
+    if (id) await loadCircuitById(id);
+    else {
+      currentCircuitoId = null;
+      map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+      anomaliaMarkers = [];
+      document.getElementById('trafoCard').classList.add('hidden');
+    }
+  };
 
+  async function loadCircuitById(id) {
+    currentCircuitoId = id;
     // limpa mapa
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
     document.getElementById('trafoCard').classList.add('hidden');
 
-    if (!id) return;
-
     const snap = await getDoc(doc(db, 'circuitos', id));
     if (!snap.exists()) return showToast('Circuito não encontrado.', true);
     const data = snap.data();
 
-    // parse do HTML armazenado
-    renderCircuito(data.htmlContent, id);
+    renderCircuito(data.htmlContent, id, data.nome);
     await loadAnomaliasNoMapa(id);
-  };
+  }
 
   // ── renderizar postes/cabos do HTML ──
-  function renderCircuito(htmlContent, circuitoId) {
+  function renderCircuito(htmlContent, circuitoId, circuitoNome) {
     try {
-      const parser = new DOMParser();
-      const parsed = parser.parseFromString(htmlContent, 'text/html');
-      const scripts = parsed.querySelectorAll('script');
-      let postesData = [], conexoesData = [];
+      // extrai dados via regex — mais robusto que eval
+      const postesData   = extrairPostes(htmlContent);
+      const conexoesData = extrairConexoes(htmlContent);
 
-      scripts.forEach(s => {
-        const txt = s.textContent;
-        const mP = txt.match(/var postes\s*=\s*(\[[\s\S]*?\]);/);
-        const mC = txt.match(/var conexoes\s*=\s*(\[[\s\S]*?\]);/);
-        if (mP) { try { postesData = eval(mP[1]); } catch(e){} }
-        if (mC) { try { conexoesData = eval(mC[1]); } catch(e){} }
-      });
-
-      if (!postesData.length) return showToast('Nenhum dado encontrado no circuito.', true);
+      if (!postesData.length) {
+        showToast('Nenhum poste encontrado no circuito.', true);
+        return;
+      }
 
       // cores de fase
       const faseCores = { 'ABCN':'#2e86de','AN':'#ff6b6b','BN':'#ffd93d','CN':'#6bcb77','N':'#aaa','ABC':'#2e86de' };
@@ -683,6 +692,9 @@
           .addTo(map);
       });
 
+      // extrai dados do transformador direto do HTML (popup do trafo)
+      const trafoInfo = extrairInfoTrafo(htmlContent);
+
       // desenha postes/trafo
       let trafoData = null;
       postesData.forEach(p => {
@@ -691,10 +703,16 @@
 
         let html = `<div class="popup-title">${p.temTransformador ? '⚡ Transformador' : '📍 Poste'}: ${p.id}</div>
           <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>`;
+
         if (p.temTransformador) {
-          html += `<div class="popup-row">Potência: <span>${p.potencia || '—'} kVA</span></div>
-            <div class="popup-row">Clientes: <span>${p.clientes || '—'}</span></div>`;
-          trafoData = p;
+          const potencia = trafoInfo.potencia || p.potencia || '—';
+          const clientes = trafoInfo.clientes || p.clientes || p.ucs?.length || '—';
+          const gnNome   = circuitoNome || circuitoId;
+          html += `
+            <div class="popup-row">Circuito: <span>${gnNome}</span></div>
+            <div class="popup-row">Potência: <span>${potencia} kVA</span></div>
+            <div class="popup-row">Clientes: <span>${clientes}</span></div>`;
+          trafoData = { ...p, potencia, clientes: String(clientes), gnNome };
         }
         if (p.ucs && p.ucs.length > 0) {
           html += `<div class="popup-row">UCs: <span>${p.ucs.length}</span></div>`;
@@ -704,16 +722,16 @@
 
       // card transformador
       if (trafoData) {
-        document.getElementById('trafoId').textContent       = trafoData.id;
-        document.getElementById('trafoCircuito').textContent = snap?.data?.()?.nome || circuitoId;
-        document.getElementById('trafoPotencia').textContent = trafoData.potencia || '—';
-        document.getElementById('trafoClientes').textContent = trafoData.clientes || '—';
+        document.getElementById('trafoId').textContent       = circuitoNome || circuitoId;
+        document.getElementById('trafoCircuito').textContent = `Poste trafo: ${trafoData.id}`;
+        document.getElementById('trafoPotencia').textContent = trafoData.potencia;
+        document.getElementById('trafoClientes').textContent = trafoData.clientes;
         document.getElementById('trafoCard').classList.remove('hidden');
       }
 
-      // fit bounds
+      // zoom no circuito
       const bounds = L.latLngBounds(postesData.map(p => [p.lat, p.lng]));
-      map.fitBounds(bounds, { padding: [40, 40] });
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 19 });
 
       // armazena para uso na anomalia
       window._postesAtivos = postesData;
@@ -991,6 +1009,88 @@
       badge.textContent = snap.size;
       badge.classList.remove('hidden');
     }
+  }
+
+  // ── extração robusta de postes via regex ──
+  function extrairPostes(html) {
+    const postes = [];
+    // extrai cada objeto poste individualmente
+    const blocoMatch = html.match(/var postes\s*=\s*\[([\s\S]*?)\];/);
+    if (!blocoMatch) return postes;
+
+    const bloco = blocoMatch[1];
+    // divide por objetos { ... }
+    const objetos = bloco.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)?\}/g) || [];
+
+    objetos.forEach(obj => {
+      try {
+        const get = (key) => {
+          const m = obj.match(new RegExp(key + '\\s*:\\s*([^,}\\n]+)'));
+          return m ? m[1].trim().replace(/^['"]|['"]$/g, '') : null;
+        };
+        const getNum = (key) => {
+          const m = obj.match(new RegExp(key + '\\s*:\\s*(-?[\\d.]+)'));
+          return m ? parseFloat(m[1]) : null;
+        };
+        const lat = getNum('lat');
+        const lng = getNum('lng');
+        if (!lat || !lng) return;
+
+        const temTransformador = /temTransformador\s*:\s*true/.test(obj);
+        postes.push({
+          id:              get('id') || '',
+          lat, lng,
+          esforco:         get('esforco') || '',
+          temTransformador,
+          potencia:        getNum('potencia'),
+          clientes:        getNum('clientes'),
+          ucs:             []
+        });
+      } catch(e) {}
+    });
+    return postes;
+  }
+
+  // ── extração robusta de conexões via regex ──
+  function extrairConexoes(html) {
+    const conexoes = [];
+    const blocoMatch = html.match(/var conexoes\s*=\s*\[([\s\S]*?)\];/);
+    if (!blocoMatch) return conexoes;
+
+    const objetos = blocoMatch[1].match(/\{[^{}]+\}/g) || [];
+    objetos.forEach(obj => {
+      try {
+        const get = (key) => {
+          const m = obj.match(new RegExp(key + "\\s*:\\s*['\"]?([^,'\"{}\\n]+)['\"]?"));
+          return m ? m[1].trim().replace(/^['"]|['"]$/g, '') : '';
+        };
+        const getNum = (key) => {
+          const m = obj.match(new RegExp(key + '\\s*:\\s*([\\d.]+)'));
+          return m ? parseFloat(m[1]) : 0;
+        };
+        conexoes.push({
+          de:          get('de'),
+          para:        get('para'),
+          fase:        get('fase'),
+          condutor:    get('condutor'),
+          trecho:      get('trecho'),
+          comprimento: getNum('comprimento'),
+          tipo:        get('tipo')
+        });
+      } catch(e) {}
+    });
+    return conexoes;
+  }
+
+  // ── extração de info do transformador (potencia/clientes do popup) ──
+  function extrairInfoTrafo(html) {
+    const info = { potencia: null, clientes: null };
+    // busca no conteúdo do popup do transformador ex: Potencia: 150Kva
+    const mPot = html.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
+    if (mPot) info.potencia = mPot[1];
+    const mCli = html.match(/[Cc]lientes\D{0,5}(\d+)/);
+    if (mCli) info.clientes = mCli[1];
+    return info;
   }
 
   // ── toast ──
