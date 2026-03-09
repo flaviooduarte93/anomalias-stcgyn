@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <title>Anomalias STCGYN — Anomalias</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --eq-blue-dark:  #0a1628;
+      --eq-blue-mid:   #1a56c4;
+      --eq-cyan:       #00aaff;
+      --eq-purple-mid: #7c3fc0;
+      --eq-white:      #f0f4ff;
+      --eq-gray:       #8a9bbf;
+      --eq-error:      #ff4d6d;
+      --eq-success:    #00e5a0;
+      --eq-warning:    #ffb300;
+      --nav-h:         64px;
+      --top-h:         56px;
+    }
+
+    html, body {
+      height: 100%; font-family: 'Barlow', sans-serif;
+      background: var(--eq-blue-dark); color: var(--eq-white);
+      overflow-x: hidden;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--top-h);
+      background: rgba(10,22,40,0.97);
+      border-bottom: 1px solid rgba(0,170,255,0.15);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; gap: 10px;
+    }
+    .topbar-logo { display: flex; align-items: center; gap: 8px; }
+    .topbar-logo .icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-logo .icon svg { width: 16px; height: 16px; }
+    .topbar-logo span {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 1px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    }
+    .btn-logout {
+      background: none; border: 1px solid rgba(255,77,109,0.3);
+      border-radius: 7px; padding: 6px 8px; color: var(--eq-error);
+      cursor: pointer; font-size: 11px; font-weight: 600;
+    }
+    .btn-logout:hover { background: rgba(255,77,109,0.1); }
+
+    /* ── CONTEÚDO ── */
+    .content {
+      margin-top: var(--top-h);
+      margin-bottom: var(--nav-h);
+      padding: 20px 16px;
+    }
+
+    .page-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px; font-weight: 700;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .page-sub { font-size: 13px; color: var(--eq-gray); margin-top: 2px; margin-bottom: 16px; }
+
+    /* ── BUSCA ── */
+    .search-wrap {
+      position: relative; margin-bottom: 14px;
+    }
+    .search-input {
+      width: 100%; padding: 11px 16px 11px 40px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; color: var(--eq-white);
+      font-family: 'Barlow', sans-serif; font-size: 14px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--eq-cyan); }
+    .search-input::placeholder { color: rgba(138,155,191,0.5); }
+    .search-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: var(--eq-gray); pointer-events: none;
+    }
+
+    /* ── FILTROS ── */
+    .filtros {
+      display: flex; gap: 8px; margin-bottom: 16px;
+      overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
+    }
+    .filtros::-webkit-scrollbar { display: none; }
+    .filtro-btn {
+      padding: 7px 14px; border-radius: 20px; white-space: nowrap;
+      font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05); color: var(--eq-gray);
+      transition: all .2s; display: flex; align-items: center; gap: 6px;
+    }
+    .filtro-btn.active {
+      background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35); color: var(--eq-cyan);
+    }
+    .filtro-btn.poda.active    { background: rgba(255,179,0,0.12); border-color: rgba(255,179,0,0.35); color: var(--eq-warning); }
+    .filtro-btn.espacador.active { background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35); color: var(--eq-cyan); }
+    .filtro-btn.pendente.active  { background: rgba(255,179,0,0.12); border-color: rgba(255,179,0,0.35); color: var(--eq-warning); }
+    .filtro-btn.programado.active{ background: rgba(124,63,192,0.12); border-color: rgba(124,63,192,0.35); color: #bf7fff; }
+    .filtro-btn.concluido.active { background: rgba(0,229,160,0.12); border-color: rgba(0,229,160,0.35); color: var(--eq-success); }
+
+    /* ── SUMÁRIO ── */
+    .summary-row { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+    .summary-row::-webkit-scrollbar { display: none; }
+    .sum-card {
+      flex-shrink: 0; min-width: 80px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 12px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .sum-val { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; }
+    .sum-label { font-size: 10px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .5px; text-align: center; }
+    .sum-card.total    .sum-val { color: var(--eq-cyan); }
+    .sum-card.pendente .sum-val { color: var(--eq-warning); }
+    .sum-card.programado .sum-val { color: #bf7fff; }
+    .sum-card.concluido  .sum-val { color: var(--eq-success); }
+    .sum-card.poda       .sum-val { color: var(--eq-warning); }
+    .sum-card.espacador  .sum-val { color: var(--eq-cyan); }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px; font-weight: 700; letter-spacing: .8px;
+      color: var(--eq-gray); text-transform: uppercase;
+    }
+    .count-pill {
+      background: rgba(0,170,255,0.1); border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 20px; padding: 2px 10px;
+      font-size: 12px; font-weight: 700; color: var(--eq-cyan);
+    }
+
+    /* ── CARD ANOMALIA ── */
+    .anomalia-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; overflow: hidden;
+      margin-bottom: 12px; transition: all .2s;
+    }
+    .anomalia-card:hover { border-color: rgba(0,170,255,0.2); }
+
+    .card-foto-wrap { position: relative; }
+    .card-foto {
+      width: 100%; height: 160px; object-fit: cover;
+      display: block; background: rgba(255,255,255,0.04);
+    }
+    .card-foto-placeholder {
+      width: 100%; height: 120px;
+      background: rgba(255,255,255,0.04);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--eq-gray);
+    }
+    .card-tipo-badge {
+      position: absolute; top: 10px; left: 10px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+      backdrop-filter: blur(8px);
+    }
+    .card-tipo-badge.poda      { background: rgba(255,179,0,0.85); color: #000; }
+    .card-tipo-badge.espacador { background: rgba(0,170,255,0.85); color: #fff; }
+
+    .card-status-badge {
+      position: absolute; top: 10px; right: 10px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+      backdrop-filter: blur(8px);
+    }
+    .card-status-badge.pendente   { background: rgba(255,179,0,0.85); color: #000; }
+    .card-status-badge.programado { background: rgba(124,63,192,0.85); color: #fff; }
+    .card-status-badge.concluido  { background: rgba(0,229,160,0.85); color: #000; }
+
+    .card-body { padding: 14px 16px; }
+    .card-circuito {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px; font-weight: 700; margin-bottom: 8px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .card-meta { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .meta-row { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--eq-gray); }
+    .meta-row svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+    .meta-row span { color: var(--eq-white); }
+
+    /* foto conclusão */
+    .foto-conclusao-wrap { margin-bottom: 12px; }
+    .foto-conclusao-label {
+      font-size: 11px; color: var(--eq-success); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .foto-conclusao { width: 100%; border-radius: 8px; max-height: 140px; object-fit: cover; }
+
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm {
+      padding: 8px 14px; border-radius: 8px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+      cursor: pointer; border: none; transition: opacity .2s, transform .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-sm:active { transform: scale(.97); }
+    .btn-primary-sm { background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid)); color: #fff; }
+    .btn-outline-sm { background: transparent; border: 1px solid rgba(0,170,255,0.3); color: var(--eq-cyan); }
+    .btn-danger-sm  { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--eq-error); }
+    .btn-sm:hover { opacity: .85; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--nav-h);
+      background: rgba(10,22,40,0.97);
+      border-top: 1px solid rgba(0,170,255,0.15);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 4px; padding: 8px 4px;
+      cursor: pointer; border: none; background: none; color: var(--eq-gray);
+      transition: color .2s; position: relative;
+    }
+    .nav-item.active { color: var(--eq-cyan); }
+    .nav-item svg { width: 22px; height: 22px; }
+    .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .nav-item.active::after {
+      content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px;
+      background: var(--eq-cyan); border-radius: 0 0 4px 4px;
+    }
+    .nav-item.hidden { display: none; }
+    .badge {
+      position: absolute; top: 6px; right: calc(50% - 18px);
+      background: var(--eq-error); color: #fff;
+      font-size: 9px; font-weight: 700; min-width: 16px; height: 16px;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    }
+
+    /* ── MODAL PROGRAMAR (admin) ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      width: 100%; max-width: 520px;
+      background: #0d1f3c; border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 20px 20px 0 0; padding: 24px 20px 32px;
+      transform: translateY(100%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+      max-height: 85vh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 6px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .modal-sub { font-size: 13px; color: var(--eq-gray); margin-bottom: 20px; }
+    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; color: var(--eq-gray); text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .modal-select {
+      width: 100%; padding: 12px 14px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: var(--eq-white);
+      font-family: 'Barlow', sans-serif; font-size: 14px;
+      outline: none; appearance: none; cursor: pointer;
+    }
+    .modal-select:focus { border-color: var(--eq-cyan); }
+    .modal-select option { background: #0d1f3c; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-cancel {
+      flex: 1; padding: 13px; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--eq-gray);
+      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+    }
+    .btn-save {
+      flex: 2; padding: 13px;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border: none; border-radius: 10px; color: #fff;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+    }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* skeleton / empty */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 14px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .empty { text-align: center; padding: 60px 20px; color: var(--eq-gray); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty p { font-size: 14px; line-height: 1.6; }
+
+    /* toast */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%;
+      transform: translateX(-50%) translateY(20px); z-index: 3000;
+      background: rgba(10,22,40,0.97); border-radius: 10px;
+      padding: 12px 20px; font-size: 14px; font-weight: 500;
+      border: 1px solid rgba(0,229,160,0.3); color: var(--eq-success);
+      opacity: 0; transition: all .3s; white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
+
+    .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+    <span>STCGYN</span>
+  </div>
+  <div class="topbar-right">
+    <div class="avatar" id="avatarEl">?</div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<!-- CONTEÚDO -->
+<div class="content">
+  <div class="page-title">Anomalias</div>
+  <div class="page-sub" id="pageSub">Carregando...</div>
+
+  <!-- busca -->
+  <div class="search-wrap">
+    <div class="search-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <input class="search-input" id="searchInput" type="text" placeholder="Buscar por endereço, circuito ou postes..." oninput="renderLista()"/>
+  </div>
+
+  <!-- filtros tipo -->
+  <div class="filtros" id="filtrosTipo">
+    <button class="filtro-btn active" onclick="setFiltroTipo('todos', this)">Todos</button>
+    <button class="filtro-btn poda" onclick="setFiltroTipo('poda', this)">✂ Poda</button>
+    <button class="filtro-btn espacador" onclick="setFiltroTipo('espacador', this)">⊕ Espaçador</button>
+  </div>
+
+  <!-- filtros status -->
+  <div class="filtros" id="filtrosStatus">
+    <button class="filtro-btn active" onclick="setFiltroStatus('todos', this)">Todos status</button>
+    <button class="filtro-btn pendente" onclick="setFiltroStatus('pendente', this)">⏳ Pendente</button>
+    <button class="filtro-btn programado" onclick="setFiltroStatus('programado', this)">📋 Programado</button>
+    <button class="filtro-btn concluido" onclick="setFiltroStatus('concluido', this)">✓ Concluído</button>
+  </div>
+
+  <!-- sumário -->
+  <div class="summary-row">
+    <div class="sum-card total">
+      <div class="sum-val" id="sumTotal">—</div>
+      <div class="sum-label">Total</div>
+    </div>
+    <div class="sum-card pendente">
+      <div class="sum-val" id="sumPendente">—</div>
+      <div class="sum-label">Pendentes</div>
+    </div>
+    <div class="sum-card programado">
+      <div class="sum-val" id="sumProgramado">—</div>
+      <div class="sum-label">Programados</div>
+    </div>
+    <div class="sum-card concluido">
+      <div class="sum-val" id="sumConcluido">—</div>
+      <div class="sum-label">Concluídos</div>
+    </div>
+    <div class="sum-card poda">
+      <div class="sum-val" id="sumPoda">—</div>
+      <div class="sum-label">Podas</div>
+    </div>
+    <div class="sum-card espacador">
+      <div class="sum-val" id="sumEspacador">—</div>
+      <div class="sum-label">Espaçadores</div>
+    </div>
+  </div>
+
+  <!-- lista -->
+  <div class="section-header">
+    <div class="section-title" id="sectionTitle">Registros</div>
+    <div class="count-pill" id="countPill">0</div>
+  </div>
+
+  <div id="listaAnomalias">
+    <div class="skeleton" style="height:280px;margin-bottom:12px;"></div>
+    <div class="skeleton" style="height:280px;margin-bottom:12px;"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item" onclick="window.location.href='mapa.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+    <span class="nav-label">Mapa</span>
+  </button>
+  <button class="nav-item active" onclick="window.location.href='anomalias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="nav-label">Anomalias</span>
+  </button>
+  <button class="nav-item" onclick="window.location.href='pendencias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span class="nav-label">Pendências</span>
+    <span class="badge" id="badgePendencias" style="display:none">0</span>
+  </button>
+  <button class="nav-item hidden" id="nav-dashboard" onclick="window.location.href='dashboard.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span class="nav-label">Dashboard</span>
+  </button>
+  <button class="nav-item hidden" id="nav-circuitos" onclick="window.location.href='circuitos.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-label">Circuitos</span>
+  </button>
+</nav>
+
+<!-- MODAL: programar para equipe (admin) -->
+<div class="modal-overlay" id="modalProgramar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Programar Serviço</div>
+    <div class="modal-sub" id="modalProgramarSub">Selecione a equipe responsável pelo serviço.</div>
+    <label class="modal-label">Equipe responsável</label>
+    <select class="modal-select" id="selectEquipe">
+      <option value="">Carregando equipes...</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalProgramar()">Cancelar</button>
+      <button class="btn-save" id="btnProgramarConfirmar" onclick="confirmarProgramar()">Programar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, getDocs, deleteDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
+    authDomain: "anomalias-stcgyn.firebaseapp.com",
+    projectId: "anomalias-stcgyn",
+    storageBucket: "anomalias-stcgyn.firebasestorage.app",
+    messagingSenderId: "247707729519",
+    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  let currentUser    = null;
+  let currentPerfil  = null;
+  let todasAnomalias = [];
+  let filtroTipo     = 'todos';
+  let filtroStatus   = 'todos';
+  let programarId    = null;
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (!snap.exists()) { await signOut(auth); window.location.href = 'index.html'; return; }
+    const data = snap.data();
+    if (data.perfil === 'equipe') { window.location.href = 'mapa.html'; return; }
+
+    currentUser   = { uid: user.uid, ...data };
+    currentPerfil = data.perfil;
+    document.getElementById('avatarEl').textContent = data.nome.charAt(0).toUpperCase();
+
+    if (currentPerfil === 'admin') {
+      document.getElementById('nav-dashboard').classList.remove('hidden');
+      document.getElementById('nav-circuitos').classList.remove('hidden');
+      document.getElementById('pageSub').textContent = 'Todas as anomalias registradas';
+    } else {
+      document.getElementById('pageSub').textContent = 'Anomalias que você registrou';
+    }
+
+    await carregarAnomalias();
+    await carregarBadgePendencias();
+  });
+
+  window.logout = async () => { await signOut(auth); window.location.href = 'index.html'; };
+
+  async function carregarAnomalias() {
+    let q;
+    if (currentPerfil === 'admin') {
+      q = collection(db, 'anomalias');
+    } else {
+      q = query(collection(db, 'anomalias'), where('fiscalId', '==', currentUser.uid));
+    }
+
+    const snap = await getDocs(q);
+
+    // busca nomes dos circuitos
+    const circuitosCache = {};
+    const promises = snap.docs.map(async d => {
+      const data = d.data();
+      if (!circuitosCache[data.circuitoId]) {
+        try {
+          const cs = await getDoc(doc(db, 'circuitos', data.circuitoId));
+          circuitosCache[data.circuitoId] = cs.data()?.nome || data.circuitoId;
+        } catch { circuitosCache[data.circuitoId] = data.circuitoId; }
+      }
+      return { id: d.id, ...data, circuitoNome: circuitosCache[data.circuitoId] };
+    });
+
+    todasAnomalias = await Promise.all(promises);
+    // ordena mais recentes primeiro
+    todasAnomalias.sort((a, b) => {
+      const ta = a.criadoEm?.toDate ? a.criadoEm.toDate().getTime() : 0;
+      const tb = b.criadoEm?.toDate ? b.criadoEm.toDate().getTime() : 0;
+      return tb - ta;
+    });
+
+    atualizarSumario();
+    renderLista();
+  }
+
+  function atualizarSumario() {
+    document.getElementById('sumTotal').textContent     = todasAnomalias.length;
+    document.getElementById('sumPendente').textContent  = todasAnomalias.filter(a => a.status === 'pendente').length;
+    document.getElementById('sumProgramado').textContent= todasAnomalias.filter(a => a.status === 'programado').length;
+    document.getElementById('sumConcluido').textContent = todasAnomalias.filter(a => a.status === 'concluido').length;
+    document.getElementById('sumPoda').textContent      = todasAnomalias.filter(a => a.tipo === 'poda').length;
+    document.getElementById('sumEspacador').textContent = todasAnomalias.filter(a => a.tipo === 'espacador').length;
+  }
+
+  window.renderLista = function() {
+    const busca = document.getElementById('searchInput').value.toLowerCase().trim();
+    let itens = todasAnomalias;
+
+    if (filtroTipo !== 'todos')   itens = itens.filter(a => a.tipo === filtroTipo);
+    if (filtroStatus !== 'todos') itens = itens.filter(a => a.status === filtroStatus);
+    if (busca) {
+      itens = itens.filter(a =>
+        (a.endereco || '').toLowerCase().includes(busca) ||
+        (a.circuitoNome || '').toLowerCase().includes(busca) ||
+        (a.postes || '').toLowerCase().includes(busca) ||
+        (a.fiscalNome || '').toLowerCase().includes(busca)
+      );
+    }
+
+    document.getElementById('countPill').textContent = itens.length;
+    document.getElementById('sectionTitle').textContent =
+      filtroTipo !== 'todos' ? `${filtroTipo === 'poda' ? '✂ Podas' : '⊕ Espaçadores'}` : 'Todos os registros';
+
+    const lista = document.getElementById('listaAnomalias');
+    if (itens.length === 0) {
+      lista.innerHTML = `<div class="empty">
+        <div class="empty-icon">🔍</div>
+        <p>Nenhuma anomalia encontrada<br/>para os filtros aplicados.</p>
+      </div>`;
+      return;
+    }
+
+    lista.innerHTML = '';
+    itens.forEach(a => {
+      const dataStr = a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+      const tipoLabel = a.tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador';
+      const statusLabel = { pendente: '⏳ Pendente', programado: '📋 Programado', concluido: '✓ Concluído' }[a.status] || a.status;
+
+      const fotoHtml = a.fotoUrl
+        ? `<img class="card-foto" src="${a.fotoUrl}" alt="Foto anomalia" loading="lazy"/>`
+        : `<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
+
+      const fotoConclusaoHtml = a.fotoConcluidoUrl
+        ? `<div class="foto-conclusao-wrap">
+            <div class="foto-conclusao-label">✓ Foto de conclusão</div>
+            <img class="foto-conclusao" src="${a.fotoConcluidoUrl}" alt="Foto conclusão" loading="lazy"/>
+          </div>` : '';
+
+      const equipeHtml = a.equipeId
+        ? `<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span id="equipe-${a.id}">carregando...</span></div>` : '';
+
+      // botões por perfil e status
+      let botoesHtml = `<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuitoId}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
+        Ver no mapa
+      </button>`;
+
+      if (currentPerfil === 'admin' && a.status === 'pendente') {
+        botoesHtml += `<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${a.id}', '${a.tipo}', '${(a.postes||'').replace(/'/g,"\\'")}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Programar
+        </button>`;
+      }
+      if (currentPerfil === 'admin') {
+        botoesHtml += `<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${a.id}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Excluir
+        </button>`;
+      }
+
+      lista.innerHTML += `
+        <div class="anomalia-card">
+          <div class="card-foto-wrap">
+            ${fotoHtml}
+            <span class="card-tipo-badge ${a.tipo}">${tipoLabel}</span>
+            <span class="card-status-badge ${a.status}">${statusLabel}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-circuito">${a.circuitoNome || a.circuitoId}</div>
+            <div class="card-meta">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+                <span>${a.endereco || '—'}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>
+                Entre postes: <span>${a.postes || '—'}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Registrado em <span>${dataStr}</span>
+              </div>
+              ${currentPerfil === 'admin' ? `<div class="meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Fiscal: <span>${a.fiscalNome || '—'}</span>
+              </div>` : ''}
+              ${equipeHtml}
+            </div>
+            ${fotoConclusaoHtml}
+            <div class="card-actions">${botoesHtml}</div>
+          </div>
+        </div>`;
+
+      // carrega nome da equipe se houver
+      if (a.equipeId) {
+        getDoc(doc(db, 'usuarios', a.equipeId)).then(s => {
+          const el = document.getElementById(`equipe-${a.id}`);
+          if (el) el.textContent = s.data()?.nome || '—';
+        });
+      }
+    });
+  };
+
+  // ── filtros ──
+  window.setFiltroTipo = function(tipo, btn) {
+    filtroTipo = tipo;
+    document.querySelectorAll('#filtrosTipo .filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLista();
+  };
+  window.setFiltroStatus = function(status, btn) {
+    filtroStatus = status;
+    document.querySelectorAll('#filtrosStatus .filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLista();
+  };
+
+  // ── ver no mapa ──
+  window.verNoMapa = function(circuitoId) {
+    sessionStorage.setItem('circuitoSelecionado', circuitoId);
+    window.location.href = 'mapa.html';
+  };
+
+  // ── excluir anomalia ──
+  window.excluirAnomalia = async function(id) {
+    if (!confirm('Excluir este registro de anomalia?')) return;
+    try {
+      await deleteDoc(doc(db, 'anomalias', id));
+      todasAnomalias = todasAnomalias.filter(a => a.id !== id);
+      atualizarSumario();
+      renderLista();
+      showToast('Anomalia excluída.');
+    } catch {
+      showToast('Erro ao excluir.', true);
+    }
+  };
+
+  // ── modal programar ──
+  window.openModalProgramar = async function(anomaliaId, tipo, postes) {
+    programarId = anomaliaId;
+    document.getElementById('modalProgramarSub').textContent =
+      `Tipo: ${tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador'} | Postes: ${postes || '—'}`;
+
+    const sel = document.getElementById('selectEquipe');
+    sel.innerHTML = '<option value="">Carregando...</option>';
+    document.getElementById('modalProgramar').classList.add('open');
+
+    const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil', '==', 'equipe')));
+    sel.innerHTML = snap.empty ? '<option value="">Nenhuma equipe cadastrada</option>' : '';
+    snap.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id; opt.textContent = d.data().nome;
+      sel.appendChild(opt);
+    });
+  };
+
+  window.closeModalProgramar = function() {
+    document.getElementById('modalProgramar').classList.remove('open');
+  };
+
+  window.confirmarProgramar = async function() {
+    const equipeId = document.getElementById('selectEquipe').value;
+    if (!equipeId) return showToast('Selecione uma equipe.', true);
+    const btn = document.getElementById('btnProgramarConfirmar');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try {
+      await updateDoc(doc(db, 'anomalias', programarId), {
+        status: 'programado', equipeId, programadoEm: serverTimestamp()
+      });
+      closeModalProgramar();
+      showToast('Serviço programado!');
+      await carregarAnomalias();
+    } catch {
+      showToast('Erro ao programar.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Programar';
+    }
+  };
+
+  // badge pendências
+  async function carregarBadgePendencias() {
+    let q = currentPerfil === 'admin'
+      ? query(collection(db, 'inspecoes'), where('status', '==', 'pendente'))
+      : query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid), where('status', '==', 'pendente'));
+    const snap = await getDocs(q);
+    if (snap.size > 0) {
+      const b = document.getElementById('badgePendencias');
+      b.textContent = snap.size; b.style.display = 'flex';
+    }
+  }
+
+  window.showToast = function(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  };
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+</script>
+
+</body>
+</html>
