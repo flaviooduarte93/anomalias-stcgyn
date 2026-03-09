@@ -393,12 +393,13 @@
       : (btnId === 'btnLogin' ? 'Entrar' : 'Criar conta');
   }
 
-  // Redireciona conforme perfil
+  // Redireciona conforme perfil e salva perfil no sessionStorage para nav instantânea
   function redirect(perfil) {
+    sessionStorage.setItem('userPerfil', perfil);
     const routes = {
-      admin:  'admin-dashboard.html',
-      fiscal: 'fiscal-mapa.html',
-      equipe: 'equipe-mapa.html'
+      admin:  'dashboard.html',
+      fiscal: 'pendencias.html',
+      equipe: 'pendencias.html'
     };
     window.location.href = routes[perfil] || 'index.html';
   }

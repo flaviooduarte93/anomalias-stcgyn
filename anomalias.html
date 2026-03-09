@@ -425,6 +425,14 @@
 </div>
 
 <!-- BOTTOM NAV -->
+<script>
+  (function(){
+    var p = sessionStorage.getItem('userPerfil');
+    if (!p) return;
+    var show = function(id){ var el = document.getElementById(id); if(el) el.classList.remove('hidden'); };
+    if (p === 'admin') { show('nav-dashboard'); show('nav-circuitos'); }
+  })();
+</script>
 <nav class="bottom-nav">
   <button class="nav-item" onclick="window.location.href='mapa.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
@@ -437,7 +445,7 @@
   <button class="nav-item" onclick="window.location.href='pendencias.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     <span class="nav-label">Pendências</span>
-    <span class="badge" id="badgePendencias" style="display:none">0</span>
+    <span class="badge" id="badgePendencias" style="display:none"></span>
   </button>
   <button class="nav-item hidden" id="nav-dashboard" onclick="window.location.href='dashboard.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -497,12 +505,13 @@
   onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href = 'index.html'; return; }
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!snap.exists()) { await signOut(auth); window.location.href = 'index.html'; return; }
+    if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
     const data = snap.data();
     if (data.perfil === 'equipe') { window.location.href = 'mapa.html'; return; }
 
     currentUser   = { uid: user.uid, ...data };
     currentPerfil = data.perfil;
+    sessionStorage.setItem('userPerfil', data.perfil);
     document.getElementById('avatarEl').textContent = data.nome.charAt(0).toUpperCase();
 
     if (currentPerfil === 'admin') {
@@ -517,7 +526,7 @@
     await carregarBadgePendencias();
   });
 
-  window.logout = async () => { await signOut(auth); window.location.href = 'index.html'; };
+  window.logout = async () => { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; };
 
   async function carregarAnomalias() {
     let q;
@@ -748,15 +757,22 @@
     }
   };
 
-  // badge pendências
+  // badge pendências — filtrado por perfil, só mostra se > 0
   async function carregarBadgePendencias() {
-    let q = currentPerfil === 'admin'
-      ? query(collection(db, 'inspecoes'), where('status', '==', 'pendente'))
-      : query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid), where('status', '==', 'pendente'));
+    const badge = document.getElementById('badgePendencias');
+    badge.style.display = 'none';
+    let q;
+    if (currentPerfil === 'admin') {
+      q = query(collection(db, 'inspecoes'), where('status', '==', 'pendente'));
+    } else if (currentPerfil === 'fiscal') {
+      q = query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid), where('status', '==', 'pendente'));
+    } else {
+      q = query(collection(db, 'anomalias'), where('equipeId', '==', currentUser.uid), where('status', '==', 'programado'));
+    }
     const snap = await getDocs(q);
     if (snap.size > 0) {
-      const b = document.getElementById('badgePendencias');
-      b.textContent = snap.size; b.style.display = 'flex';
+      badge.textContent = snap.size;
+      badge.style.display = 'flex';
     }
   }
 
