@@ -1013,82 +1013,51 @@
 
   // ── extração robusta de postes via regex ──
   function extrairPostes(html) {
+    // extrai offset se existir
+    const offsetLat = parseFloat((html.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
+    const offsetLng = parseFloat((html.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
+
     const postes = [];
-    // extrai cada objeto poste individualmente
-    const blocoMatch = html.match(/var postes\s*=\s*\[([\s\S]*?)\];/);
-    if (!blocoMatch) return postes;
-
-    const bloco = blocoMatch[1];
-    // divide por objetos { ... }
-    const objetos = bloco.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)?\}/g) || [];
-
-    objetos.forEach(obj => {
-      try {
-        const get = (key) => {
-          const m = obj.match(new RegExp(key + '\\s*:\\s*([^,}\\n]+)'));
-          return m ? m[1].trim().replace(/^['"]|['"]$/g, '') : null;
-        };
-        const getNum = (key) => {
-          const m = obj.match(new RegExp(key + '\\s*:\\s*(-?[\\d.]+)'));
-          return m ? parseFloat(m[1]) : null;
-        };
-        const lat = getNum('lat');
-        const lng = getNum('lng');
-        if (!lat || !lng) return;
-
-        const temTransformador = /temTransformador\s*:\s*true/.test(obj);
-        postes.push({
-          id:              get('id') || '',
-          lat, lng,
-          esforco:         get('esforco') || '',
-          temTransformador,
-          potencia:        getNum('potencia'),
-          clientes:        getNum('clientes'),
-          ucs:             []
-        });
-      } catch(e) {}
-    });
+    // regex preciso: captura id, lat, lng, esforco, temTransformador de cada poste
+    const re = /\{\s*id:\s*'([^']+)',\s*lat:\s*(-?[\d.]+),\s*lng:\s*(-?[\d.]+),\s*esforco:\s*'([^']*)',\s*temTransformador:\s*(\d)/g;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      postes.push({
+        id:               m[1],
+        lat:              parseFloat(m[2]) + offsetLat,
+        lng:              parseFloat(m[3]) + offsetLng,
+        esforco:          m[4],
+        temTransformador: parseInt(m[5]) === 1
+      });
+    }
     return postes;
   }
 
-  // ── extração robusta de conexões via regex ──
+  // ── extração de conexões via regex preciso ──
   function extrairConexoes(html) {
     const conexoes = [];
-    const blocoMatch = html.match(/var conexoes\s*=\s*\[([\s\S]*?)\];/);
-    if (!blocoMatch) return conexoes;
-
-    const objetos = blocoMatch[1].match(/\{[^{}]+\}/g) || [];
-    objetos.forEach(obj => {
-      try {
-        const get = (key) => {
-          const m = obj.match(new RegExp(key + "\\s*:\\s*['\"]?([^,'\"{}\\n]+)['\"]?"));
-          return m ? m[1].trim().replace(/^['"]|['"]$/g, '') : '';
-        };
-        const getNum = (key) => {
-          const m = obj.match(new RegExp(key + '\\s*:\\s*([\\d.]+)'));
-          return m ? parseFloat(m[1]) : 0;
-        };
-        conexoes.push({
-          de:          get('de'),
-          para:        get('para'),
-          fase:        get('fase'),
-          condutor:    get('condutor'),
-          trecho:      get('trecho'),
-          comprimento: getNum('comprimento'),
-          tipo:        get('tipo')
-        });
-      } catch(e) {}
-    });
+    const re = /\{\s*de:\s*'([^']+)',\s*para:\s*'([^']+)',\s*fase:\s*'([^']+)',\s*condutor:\s*'([^']+)',\s*trecho:\s*'([^']+)',\s*comprimento:\s*([\d.]+),\s*tipo:\s*'([^']+)'/g;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      conexoes.push({
+        de:          m[1],
+        para:        m[2],
+        fase:        m[3],
+        condutor:    m[4],
+        trecho:      m[5],
+        comprimento: parseFloat(m[6]),
+        tipo:        m[7]
+      });
+    }
     return conexoes;
   }
 
-  // ── extração de info do transformador (potencia/clientes do popup) ──
+  // ── extração de potencia e clientes do popup inline do trafo ──
   function extrairInfoTrafo(html) {
     const info = { potencia: null, clientes: null };
-    // busca no conteúdo do popup do transformador ex: Potencia: 150Kva
-    const mPot = html.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
+    const mPot = html.match(/[Pp]otenci[ae]\s*:\s*(\d+)/);
+    const mCli = html.match(/[Cc]lientes\s*:\s*(\d+)/);
     if (mPot) info.potencia = mPot[1];
-    const mCli = html.match(/[Cc]lientes\D{0,5}(\d+)/);
     if (mCli) info.clientes = mCli[1];
     return info;
   }
