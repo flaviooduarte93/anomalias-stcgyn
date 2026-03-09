@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <title>Anomalias STCGYN — Mapa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --eq-blue-dark:  #0a1628;
+      --eq-blue:       #0d3b8e;
+      --eq-blue-mid:   #1a56c4;
+      --eq-cyan:       #00aaff;
+      --eq-purple:     #5b2d8e;
+      --eq-purple-mid: #7c3fc0;
+      --eq-white:      #f0f4ff;
+      --eq-gray:       #8a9bbf;
+      --eq-error:      #ff4d6d;
+      --eq-success:    #00e5a0;
+      --eq-warning:    #ffb300;
+      --nav-h:         64px;
+      --top-h:         56px;
+    }
+
+    html, body { height: 100%; font-family: 'Barlow', sans-serif; background: var(--eq-blue-dark); color: var(--eq-white); overflow: hidden; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--top-h);
+      background: rgba(10,22,40,0.95);
+      border-bottom: 1px solid rgba(0,170,255,0.15);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; gap: 10px;
+    }
+    .topbar-logo {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .topbar-logo .icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-logo .icon svg { width: 16px; height: 16px; }
+    .topbar-logo span {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 1px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* circuito selector */
+    .circuit-select-wrap {
+      flex: 1; max-width: 260px; position: relative;
+    }
+    .circuit-select-wrap select {
+      width: 100%; padding: 8px 32px 8px 12px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 8px; color: var(--eq-white);
+      font-family: 'Barlow', sans-serif; font-size: 13px;
+      outline: none; appearance: none; cursor: pointer;
+    }
+    .circuit-select-wrap select option { background: #0d1f3c; }
+    .circuit-select-wrap .arr {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      pointer-events: none; color: var(--eq-cyan);
+    }
+
+    .topbar-user {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer;
+    }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    }
+    .user-info { display: none; }
+    @media(min-width: 480px) {
+      .user-info { display: flex; flex-direction: column; }
+      .user-info .uname { font-size: 12px; font-weight: 600; }
+      .user-info .uperfil { font-size: 10px; color: var(--eq-cyan); text-transform: uppercase; letter-spacing: .8px; }
+    }
+
+    /* logout btn */
+    .btn-logout {
+      background: none; border: 1px solid rgba(255,77,109,0.3);
+      border-radius: 7px; padding: 6px 8px; color: var(--eq-error);
+      cursor: pointer; font-size: 11px; font-weight: 600;
+      transition: background .2s;
+    }
+    .btn-logout:hover { background: rgba(255,77,109,0.1); }
+
+    /* ── MAP ── */
+    #map {
+      position: fixed;
+      top: var(--top-h); left: 0; right: 0;
+      bottom: var(--nav-h);
+    }
+
+    /* ── TRANSFORMER CARD ── */
+    .trafo-card {
+      position: fixed; bottom: calc(var(--nav-h) + 12px); left: 12px; right: 12px;
+      z-index: 900;
+      background: rgba(10,22,40,0.92);
+      border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 14px; padding: 14px 16px;
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform .3s, opacity .3s;
+    }
+    .trafo-card.hidden { transform: translateY(20px); opacity: 0; pointer-events: none; }
+
+    .trafo-info { display: flex; flex-direction: column; gap: 2px; }
+    .trafo-id {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px; font-weight: 700;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .trafo-label { font-size: 11px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .8px; }
+
+    .trafo-stats { display: flex; gap: 16px; }
+    .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--eq-cyan); }
+    .stat-label { font-size: 10px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .6px; }
+
+    .trafo-actions { display: flex; flex-direction: column; gap: 6px; }
+
+    /* ── FAB — botão apontar anomalia (fiscal) ── */
+    .fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 80px);
+      right: 16px; z-index: 950;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border: none; cursor: pointer; color: #fff;
+      box-shadow: 0 6px 20px rgba(0,170,255,0.35);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .fab:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(0,170,255,0.5); }
+    .fab:active { transform: scale(.95); }
+    .fab.hidden { display: none; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--nav-h);
+      background: rgba(10,22,40,0.97);
+      border-top: 1px solid rgba(0,170,255,0.15);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 4px; padding: 8px 4px;
+      cursor: pointer; border: none; background: none;
+      color: var(--eq-gray); text-decoration: none;
+      transition: color .2s; position: relative;
+    }
+    .nav-item.active { color: var(--eq-cyan); }
+    .nav-item svg { width: 22px; height: 22px; }
+    .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .nav-item.active::after {
+      content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px;
+      background: var(--eq-cyan); border-radius: 0 0 4px 4px;
+    }
+    .nav-item.hidden { display: none; }
+
+    /* badge pendências */
+    .badge {
+      position: absolute; top: 6px; right: calc(50% - 18px);
+      background: var(--eq-error); color: #fff;
+      font-size: 9px; font-weight: 700; min-width: 16px; height: 16px;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+    }
+
+    /* ── MODAL ANOMALIA ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      width: 100%; max-width: 520px;
+      background: #0d1f3c;
+      border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px;
+      transform: translateY(100%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-handle {
+      width: 40px; height: 4px; background: rgba(255,255,255,0.15);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px; font-weight: 700; margin-bottom: 20px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; color: var(--eq-gray); text-transform: uppercase; }
+    .modal-value {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 11px 14px; font-size: 14px; color: var(--eq-white);
+    }
+    .modal-value.loading { color: var(--eq-gray); font-style: italic; }
+
+    /* tipo serviço */
+    .tipo-options { display: flex; gap: 10px; }
+    .tipo-btn {
+      flex: 1; padding: 14px 8px;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: var(--eq-gray); font-family: 'Barlow', sans-serif;
+      font-size: 13px; font-weight: 600; transition: all .2s;
+    }
+    .tipo-btn:hover { border-color: rgba(0,170,255,0.4); color: var(--eq-white); }
+    .tipo-btn.selected {
+      border-color: var(--eq-cyan);
+      background: rgba(0,170,255,0.1);
+      color: var(--eq-cyan);
+    }
+    .tipo-btn svg { width: 28px; height: 28px; }
+
+    /* foto */
+    .foto-area {
+      border: 2px dashed rgba(0,170,255,0.3);
+      border-radius: 10px; padding: 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      cursor: pointer; transition: border-color .2s; position: relative; overflow: hidden;
+    }
+    .foto-area:hover { border-color: var(--eq-cyan); }
+    .foto-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .foto-area svg { color: var(--eq-gray); }
+    .foto-area span { font-size: 13px; color: var(--eq-gray); }
+    .foto-preview { width: 100%; border-radius: 8px; display: none; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .btn-cancel {
+      flex: 1; padding: 13px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; color: var(--eq-gray);
+      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+    .btn-save {
+      flex: 2; padding: 13px;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border: none; border-radius: 10px; color: #fff;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,170,255,0.2);
+      transition: opacity .2s;
+    }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── POPUP customizado no mapa ── */
+    .leaflet-popup-content-wrapper {
+      background: rgba(10,22,40,0.97) !important;
+      border: 1px solid rgba(0,170,255,0.25) !important;
+      border-radius: 12px !important; color: var(--eq-white) !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip { background: rgba(10,22,40,0.97) !important; }
+    .leaflet-popup-content { margin: 14px 16px !important; font-family: 'Barlow', sans-serif !important; }
+
+    .popup-title {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
+      color: var(--eq-cyan); margin-bottom: 8px;
+    }
+    .popup-row { font-size: 13px; margin-bottom: 4px; color: var(--eq-gray); }
+    .popup-row span { color: var(--eq-white); font-weight: 500; }
+    .popup-foto { width: 100%; border-radius: 8px; margin: 10px 0; max-height: 180px; object-fit: cover; }
+    .popup-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .popup-badge.poda { background: rgba(255,179,0,0.15); color: var(--eq-warning); border: 1px solid rgba(255,179,0,0.3); }
+    .popup-badge.espacador { background: rgba(0,170,255,0.15); color: var(--eq-cyan); border: 1px solid rgba(0,170,255,0.3); }
+    .popup-btn {
+      width: 100%; padding: 9px; border-radius: 8px; border: none;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer; margin-top: 6px;
+      transition: opacity .2s;
+    }
+    .popup-btn:hover { opacity: .85; }
+    .popup-btn-nav {
+      background: linear-gradient(135deg, #1a8c4e, #0d6e3b);
+      color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .popup-btn-prog {
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      color: #fff;
+    }
+    .popup-btn-conc {
+      background: linear-gradient(135deg, #1a8c4e, #0d6e3b);
+      color: #fff;
+    }
+
+    /* ── MODAL PROGRAMAR (admin) ── */
+    .modal-select {
+      width: 100%; padding: 12px 14px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: var(--eq-white);
+      font-family: 'Barlow', sans-serif; font-size: 14px;
+      outline: none; appearance: none; cursor: pointer;
+    }
+    .modal-select:focus { border-color: var(--eq-cyan); }
+    .modal-select option { background: #0d1f3c; }
+
+    /* spinner */
+    .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* toast */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
+      z-index: 3000; background: rgba(10,22,40,0.97); border-radius: 10px;
+      padding: 12px 20px; font-size: 14px; font-weight: 500;
+      border: 1px solid rgba(0,229,160,0.3); color: var(--eq-success);
+      opacity: 0; transition: all .3s; white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+    <span>STCGYN</span>
+  </div>
+
+  <div class="circuit-select-wrap">
+    <select id="circuitSelect" onchange="loadCircuit()">
+      <option value="">Selecione um transformador</option>
+    </select>
+    <span class="arr">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </span>
+  </div>
+
+  <div class="topbar-user">
+    <div class="avatar" id="avatarEl">?</div>
+    <div class="user-info">
+      <span class="uname" id="unameEl">—</span>
+      <span class="uperfil" id="uperfilEl">—</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<!-- MAPA -->
+<div id="map"></div>
+
+<!-- CARD TRANSFORMADOR -->
+<div class="trafo-card hidden" id="trafoCard">
+  <div class="trafo-info">
+    <div class="trafo-label">Transformador</div>
+    <div class="trafo-id" id="trafoId">—</div>
+    <div class="trafo-label" id="trafoCircuito">—</div>
+  </div>
+  <div class="trafo-stats">
+    <div class="stat">
+      <div class="stat-val" id="trafoPotencia">—</div>
+      <div class="stat-label">kVA</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="trafoClientes">—</div>
+      <div class="stat-label">Clientes</div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB: apontar anomalia (fiscal) -->
+<button class="fab hidden" id="fabAnomalias" onclick="openModalAnomalia()" title="Apontar anomalia">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-mapa" onclick="navTo('mapa.html', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+    <span class="nav-label">Mapa</span>
+  </button>
+  <button class="nav-item hidden" id="nav-anomalias" onclick="navTo('anomalias.html', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="nav-label">Anomalias</span>
+  </button>
+  <button class="nav-item hidden" id="nav-pendencias" onclick="navTo('pendencias.html', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span class="nav-label">Pendências</span>
+    <span class="badge hidden" id="badgePendencias">0</span>
+  </button>
+  <button class="nav-item hidden" id="nav-dashboard" onclick="navTo('dashboard.html', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span class="nav-label">Dashboard</span>
+  </button>
+  <button class="nav-item hidden" id="nav-circuitos" onclick="navTo('circuitos.html', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-label">Circuitos</span>
+  </button>
+</nav>
+
+<!-- MODAL: apontar anomalia -->
+<div class="modal-overlay" id="modalAnomalia">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nova Anomalia</div>
+
+    <div class="modal-field">
+      <div class="modal-label">Localização (automática)</div>
+      <div class="modal-value loading" id="modalEndereco">Obtendo localização...</div>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">Coordenadas</div>
+      <div class="modal-value" id="modalCoords">—</div>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">Entre os postes</div>
+      <div class="modal-value" id="modalPostes">—</div>
+    </div>
+
+    <div class="modal-field">
+      <div class="modal-label">Tipo de serviço</div>
+      <div class="tipo-options">
+        <button class="tipo-btn" id="tipoPoda" onclick="selectTipo('poda')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22l10-10"/><path d="M16 8l-4 4"/><path d="M12 4v4"/><path d="M8 8h4"/><circle cx="17" cy="17" r="5"/></svg>
+          Poda
+        </button>
+        <button class="tipo-btn" id="tipoEspacador" onclick="selectTipo('espacador')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+          Espaçador
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <div class="modal-label">Foto da anomalia</div>
+      <div class="foto-area" id="fotoArea">
+        <input type="file" accept="image/*" capture="environment" id="fotoInput" onchange="previewFoto(event)"/>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span id="fotoLabel">Toque para tirar foto</span>
+        <img class="foto-preview" id="fotoPreview" src="" alt="Preview"/>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalAnomalia()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarAnomalia" onclick="salvarAnomalia()" disabled>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: programar serviço (admin) -->
+<div class="modal-overlay" id="modalProgramar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Programar Serviço</div>
+    <div id="programarInfo" style="margin-bottom:16px; font-size:14px; color:var(--eq-gray);"></div>
+    <div class="modal-field">
+      <div class="modal-label">Equipe responsável</div>
+      <div style="position:relative;">
+        <select class="modal-select" id="selectEquipe"></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalProgramar()">Cancelar</button>
+      <button class="btn-save" onclick="confirmarProgramar()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
+    authDomain: "anomalias-stcgyn.firebaseapp.com",
+    projectId: "anomalias-stcgyn",
+    storageBucket: "anomalias-stcgyn.firebasestorage.app",
+    messagingSenderId: "247707729519",
+    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
+  };
+
+  const app   = initializeApp(firebaseConfig);
+  const auth  = getAuth(app);
+  const db    = getFirestore(app);
+
+  // ── estado global ──
+  let currentUser = null;
+  let currentPerfil = null;
+  let currentCircuitoId = null;
+  let anomaliaMarkers = [];
+  let currentAnomaliaPos = null;
+  let currentAnomaliaPostes = null;
+  let selectedTipo = null;
+  let fotoFile = null;
+  let programarAnomaliaId = null;
+
+  // ── mapa ──
+  const map = L.map('map', { zoomControl: false }).setView([-16.68, -49.25], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 22
+  }).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  // ── ícones ──
+  const iconPoste = L.divIcon({
+    className: '', iconSize: [14,14], iconAnchor: [7,7],
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:#1a56c4;border:2px solid #00aaff;box-shadow:0 0 6px rgba(0,170,255,0.5)"></div>`
+  });
+  const iconTrafo = L.divIcon({
+    className: '', iconSize: [18,18], iconAnchor: [9,9],
+    html: `<div style="width:18px;height:18px;border-radius:50%;background:#7c3fc0;border:2px solid #bf7fff;box-shadow:0 0 8px rgba(124,63,192,0.6)"></div>`
+  });
+  const iconPoda = L.divIcon({
+    className: '', iconSize: [28,28], iconAnchor: [14,14],
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:#ffb300;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.4)">✂</div>`
+  });
+  const iconEspacador = L.divIcon({
+    className: '', iconSize: [28,28], iconAnchor: [14,14],
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:#00aaff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.4)">⊕</div>`
+  });
+
+  // ── auth ──
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (!snap.exists()) { await signOut(auth); window.location.href = 'index.html'; return; }
+    const data = snap.data();
+    currentUser   = { uid: user.uid, ...data };
+    currentPerfil = data.perfil;
+
+    // UI
+    document.getElementById('avatarEl').textContent  = data.nome.charAt(0).toUpperCase();
+    document.getElementById('unameEl').textContent   = data.nome.split(' ')[0];
+    document.getElementById('uperfilEl').textContent = data.perfil;
+
+    setupNav(data.perfil);
+    await loadCircuitos();
+    await loadPendenciasBadge();
+  });
+
+  // ── nav ──
+  function setupNav(perfil) {
+    if (perfil === 'fiscal' || perfil === 'admin') {
+      document.getElementById('nav-anomalias').classList.remove('hidden');
+      document.getElementById('nav-pendencias').classList.remove('hidden');
+    }
+    if (perfil === 'admin') {
+      document.getElementById('nav-dashboard').classList.remove('hidden');
+      document.getElementById('nav-circuitos').classList.remove('hidden');
+    }
+    if (perfil === 'fiscal') {
+      document.getElementById('fabAnomalias').classList.remove('hidden');
+    }
+  }
+
+  window.navTo = function(page, el) {
+    window.location.href = page;
+  };
+
+  window.logout = async function() {
+    await signOut(auth);
+    window.location.href = 'index.html';
+  };
+
+  // ── carregar circuitos do Firestore ──
+  async function loadCircuitos() {
+    const sel = document.getElementById('circuitSelect');
+    let q;
+    if (currentPerfil === 'equipe') {
+      q = query(collection(db, 'circuitos'), where('ativo', '==', true));
+    } else {
+      q = collection(db, 'circuitos');
+    }
+    const snap = await getDocs(q);
+    snap.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.data().nome || d.id;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ── carregar circuito selecionado ──
+  window.loadCircuit = async function() {
+    const id = document.getElementById('circuitSelect').value;
+    currentCircuitoId = id || null;
+
+    // limpa mapa
+    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+    anomaliaMarkers = [];
+    document.getElementById('trafoCard').classList.add('hidden');
+
+    if (!id) return;
+
+    const snap = await getDoc(doc(db, 'circuitos', id));
+    if (!snap.exists()) return showToast('Circuito não encontrado.', true);
+    const data = snap.data();
+
+    // parse do HTML armazenado
+    renderCircuito(data.htmlContent, id);
+    await loadAnomaliasNoMapa(id);
+  };
+
+  // ── renderizar postes/cabos do HTML ──
+  function renderCircuito(htmlContent, circuitoId) {
+    try {
+      const parser = new DOMParser();
+      const parsed = parser.parseFromString(htmlContent, 'text/html');
+      const scripts = parsed.querySelectorAll('script');
+      let postesData = [], conexoesData = [];
+
+      scripts.forEach(s => {
+        const txt = s.textContent;
+        const mP = txt.match(/var postes\s*=\s*(\[[\s\S]*?\]);/);
+        const mC = txt.match(/var conexoes\s*=\s*(\[[\s\S]*?\]);/);
+        if (mP) { try { postesData = eval(mP[1]); } catch(e){} }
+        if (mC) { try { conexoesData = eval(mC[1]); } catch(e){} }
+      });
+
+      if (!postesData.length) return showToast('Nenhum dado encontrado no circuito.', true);
+
+      // cores de fase
+      const faseCores = { 'ABCN':'#2e86de','AN':'#ff6b6b','BN':'#ffd93d','CN':'#6bcb77','N':'#aaa','ABC':'#2e86de' };
+
+      // desenha conexões
+      conexoesData.forEach(c => {
+        const o = postesData.find(p => p.id === c.de);
+        const d = postesData.find(p => p.id === c.para);
+        if (!o || !d) return;
+        const cor = faseCores[c.fase] || '#666';
+        L.polyline([[o.lat,o.lng],[d.lat,d.lng]], { color: cor, weight: 3, opacity: .85 })
+          .bindPopup(`<div class="popup-title">Trecho</div>
+            <div class="popup-row">Fase: <span>${c.fase}</span></div>
+            <div class="popup-row">Condutor: <span>${c.condutor}</span></div>
+            <div class="popup-row">Comprimento: <span>${c.comprimento}m</span></div>
+            <div class="popup-row">Tipo: <span>${c.tipo}</span></div>`)
+          .addTo(map);
+      });
+
+      // desenha postes/trafo
+      let trafoData = null;
+      postesData.forEach(p => {
+        const icon = p.temTransformador ? iconTrafo : iconPoste;
+        const m = L.marker([p.lat, p.lng], { icon }).addTo(map);
+
+        let html = `<div class="popup-title">${p.temTransformador ? '⚡ Transformador' : '📍 Poste'}: ${p.id}</div>
+          <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>`;
+        if (p.temTransformador) {
+          html += `<div class="popup-row">Potência: <span>${p.potencia || '—'} kVA</span></div>
+            <div class="popup-row">Clientes: <span>${p.clientes || '—'}</span></div>`;
+          trafoData = p;
+        }
+        if (p.ucs && p.ucs.length > 0) {
+          html += `<div class="popup-row">UCs: <span>${p.ucs.length}</span></div>`;
+        }
+        m.bindPopup(html);
+      });
+
+      // card transformador
+      if (trafoData) {
+        document.getElementById('trafoId').textContent       = trafoData.id;
+        document.getElementById('trafoCircuito').textContent = snap?.data?.()?.nome || circuitoId;
+        document.getElementById('trafoPotencia').textContent = trafoData.potencia || '—';
+        document.getElementById('trafoClientes').textContent = trafoData.clientes || '—';
+        document.getElementById('trafoCard').classList.remove('hidden');
+      }
+
+      // fit bounds
+      const bounds = L.latLngBounds(postesData.map(p => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [40, 40] });
+
+      // armazena para uso na anomalia
+      window._postesAtivos = postesData;
+      window._conexoesAtivas = conexoesData;
+
+    } catch(err) {
+      showToast('Erro ao renderizar circuito.', true);
+      console.error(err);
+    }
+  }
+
+  // ── anomalias no mapa ──
+  async function loadAnomaliasNoMapa(circuitoId) {
+    let q;
+    if (currentPerfil === 'equipe') {
+      q = query(collection(db, 'anomalias'),
+        where('circuitoId', '==', circuitoId),
+        where('equipeId', '==', currentUser.uid),
+        where('status', '==', 'programado'));
+    } else {
+      q = query(collection(db, 'anomalias'), where('circuitoId', '==', circuitoId));
+    }
+
+    const snap = await getDocs(q);
+    snap.forEach(d => plotarAnomalia(d.id, d.data()));
+  }
+
+  function plotarAnomalia(id, data) {
+    const icon = data.tipo === 'poda' ? iconPoda : iconEspacador;
+    const m = L.marker([data.lat, data.lng], { icon }).addTo(map);
+    anomaliaMarkers.push(m);
+
+    let html = `<div class="popup-title">Anomalia</div>
+      <span class="popup-badge ${data.tipo}">${data.tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador'}</span><br>
+      <div class="popup-row">Endereço: <span>${data.endereco || '—'}</span></div>
+      <div class="popup-row">Entre postes: <span>${data.postes || '—'}</span></div>
+      <div class="popup-row">Status: <span>${data.status || 'pendente'}</span></div>
+      <div class="popup-row">Por: <span>${data.fiscalNome || '—'}</span></div>`;
+
+    if (data.fotoUrl) {
+      html += `<img class="popup-foto" src="${data.fotoUrl}" alt="Foto"/>`;
+    }
+    if (data.fotoConcluidoUrl) {
+      html += `<div class="popup-row" style="margin-top:6px;color:var(--eq-success)">✓ Foto de conclusão:</div>
+        <img class="popup-foto" src="${data.fotoConcluidoUrl}" alt="Foto conclusão"/>`;
+    }
+
+    // botões por perfil
+    if (currentPerfil === 'admin' && data.status === 'pendente') {
+      html += `<button class="popup-btn popup-btn-prog" onclick="openModalProgramar('${id}', '${data.tipo}', '${data.postes || ''}')">Programar para Equipe</button>`;
+    }
+    if (currentPerfil === 'equipe' && data.status === 'programado') {
+      html += `<div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="popup-btn popup-btn-nav" style="flex:1" onclick="abrirNavegacao(${data.lat}, ${data.lng}, 'maps')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Maps
+        </button>
+        <button class="popup-btn popup-btn-nav" style="flex:1;background:linear-gradient(135deg,#1a3a8c,#0d2e6e)" onclick="abrirNavegacao(${data.lat}, ${data.lng}, 'waze')">
+          🗺 Waze
+        </button>
+      </div>
+      <button class="popup-btn popup-btn-conc" onclick="concluirServico('${id}')">Concluir Serviço</button>`;
+    }
+
+    m.bindPopup(html, { maxWidth: 300 });
+  }
+
+  // ── abrir modal anomalia ──
+  window.openModalAnomalia = function() {
+    if (!currentCircuitoId) return showToast('Selecione um transformador primeiro.', true);
+    document.getElementById('modalAnomalia').classList.add('open');
+    selectedTipo = null;
+    fotoFile = null;
+    document.getElementById('fotoPreview').style.display = 'none';
+    document.getElementById('fotoLabel').style.display = 'block';
+    document.getElementById('btnSalvarAnomalia').disabled = true;
+    document.getElementById('tipoPoda').classList.remove('selected');
+    document.getElementById('tipoEspacador').classList.remove('selected');
+    document.getElementById('modalEndereco').textContent = 'Obtendo localização...';
+    document.getElementById('modalEndereco').classList.add('loading');
+    document.getElementById('modalCoords').textContent = '—';
+    document.getElementById('modalPostes').textContent = '—';
+
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      currentAnomaliaPos = { lat, lng };
+      document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      // postes mais próximos
+      if (window._postesAtivos) {
+        const sorted = [...window._postesAtivos].sort((a,b) => {
+          const da = Math.hypot(a.lat-lat, a.lng-lng);
+          const db2 = Math.hypot(b.lat-lat, b.lng-lng);
+          return da - db2;
+        });
+        currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
+        document.getElementById('modalPostes').textContent = currentAnomaliaPostes;
+      }
+
+      // geocode reverso
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const j = await r.json();
+        const end = j.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        document.getElementById('modalEndereco').textContent = end;
+        document.getElementById('modalEndereco').classList.remove('loading');
+        currentAnomaliaPos.endereco = end;
+      } catch {
+        document.getElementById('modalEndereco').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        document.getElementById('modalEndereco').classList.remove('loading');
+      }
+    }, () => {
+      document.getElementById('modalEndereco').textContent = 'Localização não disponível';
+      document.getElementById('modalEndereco').classList.remove('loading');
+    }, { enableHighAccuracy: true });
+  };
+
+  window.closeModalAnomalia = function() {
+    document.getElementById('modalAnomalia').classList.remove('open');
+  };
+
+  window.selectTipo = function(tipo) {
+    selectedTipo = tipo;
+    document.getElementById('tipoPoda').classList.toggle('selected', tipo === 'poda');
+    document.getElementById('tipoEspacador').classList.toggle('selected', tipo === 'espacador');
+    checkSalvarEnabled();
+  };
+
+  window.previewFoto = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    fotoFile = file;
+    const url = URL.createObjectURL(file);
+    const prev = document.getElementById('fotoPreview');
+    prev.src = url; prev.style.display = 'block';
+    document.getElementById('fotoLabel').style.display = 'none';
+    checkSalvarEnabled();
+  };
+
+  function checkSalvarEnabled() {
+    document.getElementById('btnSalvarAnomalia').disabled = !(selectedTipo && fotoFile);
+  }
+
+  // ── salvar anomalia ──
+  window.salvarAnomalia = async function() {
+    if (!selectedTipo || !fotoFile || !currentAnomaliaPos) return;
+    const btn = document.getElementById('btnSalvarAnomalia');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      // upload Cloudinary
+      const formData = new FormData();
+      formData.append('file', fotoFile);
+      formData.append('upload_preset', 'anomalias-stcgyn');
+      const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
+      const json = await res.json();
+      const fotoUrl = json.secure_url;
+
+      // salvar Firestore
+      await addDoc(collection(db, 'anomalias'), {
+        circuitoId:  currentCircuitoId,
+        tipo:        selectedTipo,
+        lat:         currentAnomaliaPos.lat,
+        lng:         currentAnomaliaPos.lng,
+        endereco:    currentAnomaliaPos.endereco || '',
+        postes:      currentAnomaliaPostes || '',
+        fotoUrl,
+        fiscalId:    currentUser.uid,
+        fiscalNome:  currentUser.nome,
+        status:      'pendente',
+        criadoEm:    serverTimestamp()
+      });
+
+      closeModalAnomalia();
+      showToast('Anomalia registrada com sucesso!');
+      await loadAnomaliasNoMapa(currentCircuitoId);
+    } catch(err) {
+      showToast('Erro ao salvar. Tente novamente.', true);
+      btn.disabled = false;
+      btn.textContent = 'Salvar';
+    }
+  };
+
+  // ── modal programar (admin) ──
+  window.openModalProgramar = async function(anomaliaId, tipo, postes) {
+    programarAnomaliaId = anomaliaId;
+    document.getElementById('programarInfo').innerHTML =
+      `Tipo: <strong>${tipo}</strong> | Postes: <strong>${postes}</strong>`;
+
+    // carrega equipes
+    const sel = document.getElementById('selectEquipe');
+    sel.innerHTML = '<option value="">Carregando...</option>';
+    const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil','==','equipe')));
+    sel.innerHTML = '';
+    snap.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.data().nome;
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('modalProgramar').classList.add('open');
+  };
+
+  window.closeModalProgramar = function() {
+    document.getElementById('modalProgramar').classList.remove('open');
+  };
+
+  window.confirmarProgramar = async function() {
+    const equipeId = document.getElementById('selectEquipe').value;
+    if (!equipeId) return showToast('Selecione uma equipe.', true);
+    try {
+      await updateDoc(doc(db, 'anomalias', programarAnomaliaId), {
+        status: 'programado', equipeId, programadoEm: serverTimestamp()
+      });
+      closeModalProgramar();
+      showToast('Serviço programado!');
+      await loadAnomaliasNoMapa(currentCircuitoId);
+    } catch {
+      showToast('Erro ao programar.', true);
+    }
+  };
+
+  // ── concluir serviço (equipe) ──
+  window.concluirServico = function(anomaliaId) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
+    input.onchange = async e => {
+      const file = e.target.files[0];
+      if (!file) return showToast('É obrigatório tirar uma foto para concluir.', true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'anomalias-stcgyn');
+      try {
+        const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
+        const json = await res.json();
+        await updateDoc(doc(db, 'anomalias', anomaliaId), {
+          status: 'concluido',
+          fotoConcluidoUrl: json.secure_url,
+          concluidoEm: serverTimestamp(),
+          equipeConcluidoId: currentUser.uid
+        });
+        showToast('Serviço concluído!');
+        map.closePopup();
+        await loadAnomaliasNoMapa(currentCircuitoId);
+      } catch {
+        showToast('Erro ao concluir.', true);
+      }
+    };
+    input.click();
+  };
+
+  // ── navegação (Google Maps / Waze) ──
+  window.abrirNavegacao = function(lat, lng, app) {
+    const url = app === 'waze'
+      ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
+      : `https://maps.google.com/?q=${lat},${lng}&navigate=yes`;
+    window.open(url, '_blank');
+  };
+
+  // ── badge pendências ──
+  async function loadPendenciasBadge() {
+    if (currentPerfil === 'equipe') return;
+    let q;
+    if (currentPerfil === 'fiscal') {
+      q = query(collection(db, 'inspecoes'), where('fiscalId','==',currentUser.uid), where('status','==','pendente'));
+    } else {
+      q = query(collection(db, 'inspecoes'), where('status','==','pendente'));
+    }
+    const snap = await getDocs(q);
+    const badge = document.getElementById('badgePendencias');
+    if (snap.size > 0) {
+      badge.textContent = snap.size;
+      badge.classList.remove('hidden');
+    }
+  }
+
+  // ── toast ──
+  window.showToast = function(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  };
+
+  // service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+</script>
+
+</body>
+</html>
