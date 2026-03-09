@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <title>Anomalias STCGYN — Circuitos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --eq-blue-dark:  #0a1628;
+      --eq-blue:       #0d3b8e;
+      --eq-blue-mid:   #1a56c4;
+      --eq-cyan:       #00aaff;
+      --eq-purple:     #5b2d8e;
+      --eq-purple-mid: #7c3fc0;
+      --eq-white:      #f0f4ff;
+      --eq-gray:       #8a9bbf;
+      --eq-error:      #ff4d6d;
+      --eq-success:    #00e5a0;
+      --eq-warning:    #ffb300;
+      --nav-h:         64px;
+      --top-h:         56px;
+    }
+
+    html, body {
+      height: 100%; font-family: 'Barlow', sans-serif;
+      background: var(--eq-blue-dark); color: var(--eq-white);
+      overflow-x: hidden;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--top-h);
+      background: rgba(10,22,40,0.97);
+      border-bottom: 1px solid rgba(0,170,255,0.15);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; gap: 10px;
+    }
+    .topbar-logo { display: flex; align-items: center; gap: 8px; }
+    .topbar-logo .icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-logo .icon svg { width: 16px; height: 16px; }
+    .topbar-logo span {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 1px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    }
+    .btn-logout {
+      background: none; border: 1px solid rgba(255,77,109,0.3);
+      border-radius: 7px; padding: 6px 8px; color: var(--eq-error);
+      cursor: pointer; font-size: 11px; font-weight: 600; transition: background .2s;
+    }
+    .btn-logout:hover { background: rgba(255,77,109,0.1); }
+
+    /* ── CONTEÚDO ── */
+    .content {
+      margin-top: var(--top-h);
+      margin-bottom: var(--nav-h);
+      padding: 20px 16px;
+      min-height: calc(100vh - var(--top-h) - var(--nav-h));
+    }
+
+    .page-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px; font-weight: 700; margin-bottom: 4px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .page-sub { font-size: 13px; color: var(--eq-gray); margin-bottom: 20px; }
+
+    /* ── UPLOAD AREA ── */
+    .upload-area {
+      border: 2px dashed rgba(0,170,255,0.3);
+      border-radius: 14px; padding: 28px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      cursor: pointer; transition: all .2s; position: relative;
+      background: rgba(0,170,255,0.03); margin-bottom: 24px;
+    }
+    .upload-area:hover { border-color: var(--eq-cyan); background: rgba(0,170,255,0.07); }
+    .upload-area.drag { border-color: var(--eq-cyan); background: rgba(0,170,255,0.1); }
+    .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { color: var(--eq-cyan); }
+    .upload-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; }
+    .upload-sub { font-size: 13px; color: var(--eq-gray); text-align: center; }
+    .upload-badge {
+      background: rgba(0,170,255,0.12); border: 1px solid rgba(0,170,255,0.25);
+      border-radius: 6px; padding: 4px 12px; font-size: 12px; color: var(--eq-cyan); font-weight: 600;
+    }
+
+    /* progresso upload */
+    .upload-progress {
+      display: none; width: 100%; background: rgba(255,255,255,0.08);
+      border-radius: 4px; overflow: hidden; height: 6px; margin-top: 4px;
+    }
+    .upload-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--eq-blue-mid), var(--eq-cyan));
+      transition: width .3s; border-radius: 4px;
+    }
+
+    /* ── LISTA DE CIRCUITOS ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px; font-weight: 700; letter-spacing: .5px;
+      color: var(--eq-gray); text-transform: uppercase;
+    }
+    .count-badge {
+      background: rgba(0,170,255,0.12); border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 20px; padding: 2px 10px;
+      font-size: 12px; font-weight: 700; color: var(--eq-cyan);
+    }
+
+    .circuito-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 16px;
+      margin-bottom: 12px; transition: border-color .2s;
+    }
+    .circuito-card:hover { border-color: rgba(0,170,255,0.2); }
+
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .card-nome {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 700;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .card-data { font-size: 11px; color: var(--eq-gray); margin-top: 2px; }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .status-pill.armazenado  { background: rgba(138,155,191,0.12); color: var(--eq-gray); border: 1px solid rgba(138,155,191,0.2); }
+    .status-pill.pendente    { background: rgba(255,179,0,0.12); color: var(--eq-warning); border: 1px solid rgba(255,179,0,0.25); }
+    .status-pill.concluido   { background: rgba(0,229,160,0.12); color: var(--eq-success); border: 1px solid rgba(0,229,160,0.25); }
+
+    .card-stats {
+      display: flex; gap: 16px; margin-bottom: 14px;
+      padding: 10px 12px; background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+    }
+    .cstat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .cstat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--eq-cyan); }
+    .cstat-label { font-size: 10px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .6px; }
+
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm {
+      padding: 8px 14px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+      cursor: pointer; border: none; transition: opacity .2s, transform .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-sm:active { transform: scale(.97); }
+    .btn-primary-sm { background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid)); color: #fff; }
+    .btn-outline-sm { background: transparent; border: 1px solid rgba(0,170,255,0.3); color: var(--eq-cyan); }
+    .btn-danger-sm  { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--eq-error); }
+    .btn-success-sm { background: linear-gradient(135deg, #1a8c4e, #0d6e3b); color: #fff; }
+    .btn-sm:hover { opacity: .85; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--nav-h);
+      background: rgba(10,22,40,0.97);
+      border-top: 1px solid rgba(0,170,255,0.15);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 4px; padding: 8px 4px;
+      cursor: pointer; border: none; background: none; color: var(--eq-gray);
+      text-decoration: none; transition: color .2s; position: relative;
+    }
+    .nav-item.active { color: var(--eq-cyan); }
+    .nav-item svg { width: 22px; height: 22px; }
+    .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .nav-item.active::after {
+      content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px;
+      background: var(--eq-cyan); border-radius: 0 0 4px 4px;
+    }
+    .badge {
+      position: absolute; top: 6px; right: calc(50% - 18px);
+      background: var(--eq-error); color: #fff;
+      font-size: 9px; font-weight: 700; min-width: 16px; height: 16px;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    }
+
+    /* ── MODAL DELEGAR INSPEÇÃO ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      width: 100%; max-width: 520px;
+      background: #0d1f3c;
+      border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px;
+      transform: translateY(100%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+      max-height: 85vh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-handle {
+      width: 40px; height: 4px; background: rgba(255,255,255,0.15);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px; font-weight: 700; margin-bottom: 6px;
+      background: linear-gradient(90deg, #fff, var(--eq-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .modal-sub { font-size: 13px; color: var(--eq-gray); margin-bottom: 20px; }
+    .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; color: var(--eq-gray); text-transform: uppercase; }
+    .modal-select {
+      width: 100%; padding: 12px 14px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: var(--eq-white);
+      font-family: 'Barlow', sans-serif; font-size: 14px;
+      outline: none; appearance: none; cursor: pointer;
+    }
+    .modal-select:focus { border-color: var(--eq-cyan); }
+    .modal-select option { background: #0d1f3c; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .btn-cancel {
+      flex: 1; padding: 13px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; color: var(--eq-gray);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+    .btn-save {
+      flex: 2; padding: 13px;
+      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
+      border: none; border-radius: 10px; color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center; padding: 40px 20px; color: var(--eq-gray);
+    }
+    .empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: .4; }
+    .empty p { font-size: 14px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
+      z-index: 3000; background: rgba(10,22,40,0.97); border-radius: 10px;
+      padding: 12px 20px; font-size: 14px; font-weight: 500;
+      border: 1px solid rgba(0,229,160,0.3); color: var(--eq-success);
+      opacity: 0; transition: all .3s; white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
+
+    /* spinner */
+    .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align: middle; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+    <span>STCGYN</span>
+  </div>
+  <div class="topbar-right">
+    <div class="avatar" id="avatarEl">?</div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<!-- CONTEÚDO -->
+<div class="content">
+  <div class="page-title">Circuitos</div>
+  <div class="page-sub">Gerencie os transformadores e delegue inspeções</div>
+
+  <!-- UPLOAD -->
+  <div class="upload-area" id="uploadArea">
+    <input type="file" accept=".html" id="fileInput" onchange="handleFileSelect(event)"/>
+    <div class="upload-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <div class="upload-title">Subir novo circuito</div>
+    <div class="upload-sub">Selecione o arquivo HTML exportado do sistema</div>
+    <div class="upload-badge">.html aceito</div>
+    <div class="upload-progress" id="uploadProgress">
+      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+    </div>
+  </div>
+
+  <!-- LISTA -->
+  <div class="section-header">
+    <div class="section-title">Circuitos cadastrados</div>
+    <div class="count-badge" id="countBadge">0</div>
+  </div>
+
+  <div id="listaCircuitos">
+    <!-- skeleton loading -->
+    <div class="skeleton" style="height:120px;margin-bottom:12px;"></div>
+    <div class="skeleton" style="height:120px;margin-bottom:12px;"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item" onclick="window.location.href='mapa.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+    <span class="nav-label">Mapa</span>
+  </button>
+  <button class="nav-item" onclick="window.location.href='anomalias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="nav-label">Anomalias</span>
+  </button>
+  <button class="nav-item" onclick="window.location.href='pendencias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span class="nav-label">Pendências</span>
+    <span class="badge hidden" id="badgePendencias" style="display:none">0</span>
+  </button>
+  <button class="nav-item" onclick="window.location.href='dashboard.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span class="nav-label">Dashboard</span>
+  </button>
+  <button class="nav-item active" onclick="window.location.href='circuitos.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-label">Circuitos</span>
+  </button>
+</nav>
+
+<!-- MODAL: DELEGAR INSPEÇÃO -->
+<div class="modal-overlay" id="modalDelegarInspecao">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Delegar Inspeção</div>
+    <div class="modal-sub" id="modalDelegarSub">Selecione o fiscal responsável pela inspeção</div>
+    <div class="modal-field">
+      <div class="modal-label">Fiscal responsável</div>
+      <select class="modal-select" id="selectFiscal">
+        <option value="">Carregando fiscais...</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalDelegarInspecao()">Cancelar</button>
+      <button class="btn-save" id="btnDelegarConfirmar" onclick="confirmarDelegacao()">Delegar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
+    authDomain: "anomalias-stcgyn.firebaseapp.com",
+    projectId: "anomalias-stcgyn",
+    storageBucket: "anomalias-stcgyn.firebasestorage.app",
+    messagingSenderId: "247707729519",
+    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  let currentUser = null;
+  let delegarCircuitoId = null;
+  let delegarCircuitoNome = null;
+
+  // ── auth guard: apenas admin ──
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    const snap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (!snap.exists()) { await signOut(auth); window.location.href = 'index.html'; return; }
+    const data = snap.data();
+    if (data.perfil !== 'admin') { window.location.href = 'mapa.html'; return; }
+    currentUser = { uid: user.uid, ...data };
+    document.getElementById('avatarEl').textContent = data.nome.charAt(0).toUpperCase();
+    await carregarCircuitos();
+    await carregarPendenciasBadge();
+  });
+
+  window.logout = async () => { await signOut(auth); window.location.href = 'index.html'; };
+
+  // ── carregar circuitos ──
+  async function carregarCircuitos() {
+    const snap = await getDocs(collection(db, 'circuitos'));
+    document.getElementById('countBadge').textContent = snap.size;
+    const lista = document.getElementById('listaCircuitos');
+
+    if (snap.empty) {
+      lista.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <p>Nenhum circuito cadastrado ainda.<br/>Suba um arquivo HTML acima.</p>
+      </div>`;
+      return;
+    }
+
+    lista.innerHTML = '';
+
+    // para cada circuito busca stats de anomalias e inspeção
+    for (const d of snap.docs) {
+      const c = d.data();
+
+      // anomalias pendentes
+      const anoSnap = await getDocs(query(collection(db, 'anomalias'),
+        where('circuitoId', '==', d.id), where('status', '==', 'pendente')));
+      // inspeção
+      const inspSnap = await getDocs(query(collection(db, 'inspecoes'),
+        where('circuitoId', '==', d.id)));
+
+      let statusInsp = 'armazenado';
+      let fiscalNome = '—';
+      let inspId = null;
+      if (!inspSnap.empty) {
+        const insp = inspSnap.docs[0].data();
+        inspId = inspSnap.docs[0].id;
+        statusInsp = insp.status || 'pendente';
+        fiscalNome = insp.fiscalNome || '—';
+      }
+
+      const dataStr = c.criadoEm?.toDate
+        ? c.criadoEm.toDate().toLocaleDateString('pt-BR')
+        : '—';
+
+      const statusLabel = {
+        armazenado: 'Armazenado',
+        pendente:   'Inspeção Pendente',
+        concluido:  'Inspecionado'
+      }[statusInsp];
+
+      lista.innerHTML += `
+        <div class="circuito-card" id="card-${d.id}">
+          <div class="card-header">
+            <div>
+              <div class="card-nome">${c.nome || d.id}</div>
+              <div class="card-data">Adicionado em ${dataStr}</div>
+            </div>
+            <span class="status-pill ${statusInsp}">${statusLabel}</span>
+          </div>
+
+          <div class="card-stats">
+            <div class="cstat">
+              <div class="cstat-val">${c.postes || '—'}</div>
+              <div class="cstat-label">Postes</div>
+            </div>
+            <div class="cstat">
+              <div class="cstat-val">${c.clientes || '—'}</div>
+              <div class="cstat-label">Clientes</div>
+            </div>
+            <div class="cstat">
+              <div class="cstat-val" style="color:${anoSnap.size > 0 ? 'var(--eq-warning)' : 'var(--eq-success)'}">
+                ${anoSnap.size}
+              </div>
+              <div class="cstat-label">Anomalias</div>
+            </div>
+            ${statusInsp !== 'armazenado' ? `
+            <div class="cstat">
+              <div class="cstat-val" style="font-size:13px;color:var(--eq-gray)">${fiscalNome.split(' ')[0]}</div>
+              <div class="cstat-label">Fiscal</div>
+            </div>` : ''}
+          </div>
+
+          <div class="card-actions">
+            <button class="btn-sm btn-outline-sm" onclick="verNoMapa('${d.id}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
+              Ver no mapa
+            </button>
+            ${statusInsp === 'armazenado' ? `
+              <button class="btn-sm btn-primary-sm" onclick="openModalDelegarInspecao('${d.id}', '${(c.nome || d.id).replace(/'/g,"\\'")}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Delegar inspeção
+              </button>` : ''}
+            ${statusInsp === 'pendente' ? `
+              <button class="btn-sm btn-outline-sm" style="color:var(--eq-warning);border-color:rgba(255,179,0,0.3)" onclick="openModalDelegarInspecao('${d.id}', '${(c.nome || d.id).replace(/'/g,"\\'")}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                Redelegar
+              </button>` : ''}
+            <button class="btn-sm btn-danger-sm" onclick="excluirCircuito('${d.id}', '${(c.nome || d.id).replace(/'/g,"\\'")}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              Excluir
+            </button>
+          </div>
+        </div>`;
+    }
+  }
+
+  // ── upload de arquivo HTML ──
+  window.handleFileSelect = async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.name.endsWith('.html')) return showToast('Apenas arquivos .html são aceitos.', true);
+
+    const progressWrap = document.getElementById('uploadProgress');
+    const progressBar  = document.getElementById('uploadProgressBar');
+    progressWrap.style.display = 'block';
+
+    // simula progresso de leitura
+    let prog = 0;
+    const interval = setInterval(() => {
+      prog += 15; if (prog > 85) clearInterval(interval);
+      progressBar.style.width = prog + '%';
+    }, 100);
+
+    try {
+      const htmlContent = await file.text();
+
+      // extrai nome do transformador do HTML
+      const nomeMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
+      const nomeCircuito = nomeMatch ? nomeMatch[1].trim() : file.name.replace('.html', '');
+
+      // extrai dados básicos para stats
+      const mPostes = htmlContent.match(/var postes\s*=\s*\[([\s\S]*?)\];/);
+      let qtdPostes = 0, qtdClientes = 0, potencia = null;
+      if (mPostes) {
+        const posStr = mPostes[0];
+        qtdPostes = (posStr.match(/lat:/g) || []).length;
+        const clientesMatch = posStr.match(/clientes:\s*(\d+)/);
+        if (clientesMatch) qtdClientes = parseInt(clientesMatch[1]);
+        const potMatch = posStr.match(/[Pp]otencia:\s*(\d+)/);
+        if (potMatch) potencia = parseInt(potMatch[1]);
+      }
+
+      // salva no Firestore
+      await addDoc(collection(db, 'circuitos'), {
+        nome: nomeCircuito,
+        htmlContent,
+        postes: qtdPostes,
+        clientes: qtdClientes,
+        potencia,
+        ativo: true,
+        criadoEm: serverTimestamp(),
+        adminId: currentUser.uid
+      });
+
+      clearInterval(interval);
+      progressBar.style.width = '100%';
+      setTimeout(() => { progressWrap.style.display = 'none'; progressBar.style.width = '0%'; }, 600);
+
+      showToast(`Circuito "${nomeCircuito}" adicionado!`);
+      document.getElementById('fileInput').value = '';
+      await carregarCircuitos();
+
+    } catch(err) {
+      clearInterval(interval);
+      progressWrap.style.display = 'none';
+      showToast('Erro ao processar o arquivo.', true);
+      console.error(err);
+    }
+  };
+
+  // drag and drop
+  const area = document.getElementById('uploadArea');
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag'); });
+  area.addEventListener('dragleave', () => area.classList.remove('drag'));
+  area.addEventListener('drop', e => {
+    e.preventDefault(); area.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById('fileInput');
+      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+      handleFileSelect({ target: input });
+    }
+  });
+
+  // ── ver no mapa ──
+  window.verNoMapa = function(id) {
+    sessionStorage.setItem('circuitoSelecionado', id);
+    window.location.href = 'mapa.html';
+  };
+
+  // ── excluir circuito ──
+  window.excluirCircuito = async function(id, nome) {
+    if (!confirm(`Excluir o circuito "${nome}"?\nIsso também removerá a inspeção delegada.`)) return;
+    try {
+      await deleteDoc(doc(db, 'circuitos', id));
+      // remove inspeções vinculadas
+      const inspSnap = await getDocs(query(collection(db, 'inspecoes'), where('circuitoId', '==', id)));
+      for (const d of inspSnap.docs) await deleteDoc(doc(db, 'inspecoes', d.id));
+      showToast(`Circuito "${nome}" excluído.`);
+      await carregarCircuitos();
+    } catch {
+      showToast('Erro ao excluir.', true);
+    }
+  };
+
+  // ── modal delegar inspeção ──
+  window.openModalDelegarInspecao = async function(circuitoId, circuitoNome) {
+    delegarCircuitoId   = circuitoId;
+    delegarCircuitoNome = circuitoNome;
+    document.getElementById('modalDelegarSub').textContent = `Circuito: ${circuitoNome}`;
+
+    const sel = document.getElementById('selectFiscal');
+    sel.innerHTML = '<option value="">Carregando fiscais...</option>';
+    document.getElementById('modalDelegarInspecao').classList.add('open');
+
+    const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil', '==', 'fiscal')));
+    sel.innerHTML = snap.empty
+      ? '<option value="">Nenhum fiscal cadastrado</option>'
+      : '';
+    snap.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.data().nome;
+      sel.appendChild(opt);
+    });
+  };
+
+  window.closeModalDelegarInspecao = function() {
+    document.getElementById('modalDelegarInspecao').classList.remove('open');
+  };
+
+  window.confirmarDelegacao = async function() {
+    const fiscalId = document.getElementById('selectFiscal').value;
+    if (!fiscalId) return showToast('Selecione um fiscal.', true);
+
+    const btn = document.getElementById('btnDelegarConfirmar');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      // busca nome do fiscal
+      const fSnap = await getDoc(doc(db, 'usuarios', fiscalId));
+      const fiscalNome = fSnap.data()?.nome || '—';
+
+      // remove inspeção anterior se existir
+      const inspSnap = await getDocs(query(collection(db, 'inspecoes'), where('circuitoId', '==', delegarCircuitoId)));
+      for (const d of inspSnap.docs) await deleteDoc(doc(db, 'inspecoes', d.id));
+
+      // cria nova inspeção
+      await addDoc(collection(db, 'inspecoes'), {
+        circuitoId:   delegarCircuitoId,
+        circuitoNome: delegarCircuitoNome,
+        fiscalId,
+        fiscalNome,
+        status:       'pendente',
+        delegadoEm:   serverTimestamp(),
+        adminId:      currentUser.uid
+      });
+
+      closeModalDelegarInspecao();
+      showToast(`Inspeção delegada para ${fiscalNome}!`);
+      await carregarCircuitos();
+    } catch(err) {
+      showToast('Erro ao delegar. Tente novamente.', true);
+      console.error(err);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Delegar';
+    }
+  };
+
+  // badge pendências
+  async function carregarPendenciasBadge() {
+    const snap = await getDocs(query(collection(db, 'inspecoes'), where('status', '==', 'pendente')));
+    if (snap.size > 0) {
+      const b = document.getElementById('badgePendencias');
+      b.textContent = snap.size; b.style.display = 'flex';
+    }
+  }
+
+  window.showToast = function(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  };
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+</script>
+
+</body>
+</html>
