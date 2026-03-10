@@ -670,11 +670,18 @@
       todosCircuitos = [];
       for (const id of idsComPendencia) {
         const cSnap = await getDoc(doc(db, 'circuitos', id));
-        if (cSnap.exists()) todosCircuitos.push({ id, ...cSnap.data() });
+        if (cSnap.exists()) {
+          const d = cSnap.data();
+          todosCircuitos.push({ id, nome: d.nome, postes: d.postes, clientes: d.clientes });
+        }
       }
     } else {
       const snap = await getDocs(collection(db, 'circuitos'));
-      todosCircuitos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // só metadados — htmlContent só é carregado no loadCircuitById
+      todosCircuitos = snap.docs.map(d => {
+        const data = d.data();
+        return { id: d.id, nome: data.nome, postes: data.postes, clientes: data.clientes };
+      });
     }
 
     renderDropdown('');
@@ -750,17 +757,50 @@
 
   async function loadCircuitById(id) {
     currentCircuitoId = id;
-    // limpa mapa
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
     document.getElementById('trafoCard').classList.add('hidden');
+    showToast('Carregando circuito…');
 
     const snap = await getDoc(doc(db, 'circuitos', id));
     if (!snap.exists()) return showToast('Circuito não encontrado.', true);
     const data = snap.data();
 
-    renderCircuito(data.htmlContent, id, data.nome);
+    // yield para não travar a UI antes de renderizar
+    await new Promise(r => setTimeout(r, 0));
+
+    const trafoData = renderCircuito(data.htmlContent, id, data.nome);
     await loadAnomaliasNoMapa(id);
+
+    // decômetro — assíncrono, depois do mapa já ter carregado
+    if (trafoData && data.nome) {
+      try {
+        const decoDiv = document.getElementById('trafoDecoBadge');
+        decoDiv.style.display = 'none';
+        decoDiv.innerHTML = '';
+        const decoSnap = await getDocs(query(collection(db,'decometro'), where('equipamento','==', data.nome)));
+        if (!decoSnap.empty) {
+          const all = decoSnap.docs[0].data().ocorrencias || [];
+          const hoje = new Date();
+          const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
+          const ini3m = new Date(fim3m.getFullYear(), fim3m.getMonth()-2, 1, 0, 0, 0);
+          const parseDt = s => {
+            if (!s) return null;
+            const [d,t] = String(s).split(' ');
+            const [dd,mm,yy] = d.split('/');
+            return new Date(`${yy}-${mm}-${dd}T${t||'00:00:00'}`);
+          };
+          const ocs3m = all.filter(o => { const dt=parseDt(o.inicio); return dt&&dt>=ini3m&&dt<=fim3m; });
+          const freq = ocs3m.length;
+          const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
+          let cls, label;
+          if (!freq) { cls='ok'; label='✓ 0 desarmes (3m)'; }
+          else { cls=chi>500?'critico':chi>100?'alerta':'ok'; label=`⚡ ${freq} desarme${freq>1?'s':''} · CHI ${chi.toFixed(1)} (3m)`; }
+          decoDiv.innerHTML = `<span class="deco-badge ${cls}">${label}</span>`;
+          decoDiv.style.display = 'block';
+        }
+      } catch(e) { console.warn('Deco load:', e); }
+    }
   }
 
   // ── renderizar postes/cabos do HTML ──
@@ -830,42 +870,6 @@
         document.getElementById('trafoPotencia').textContent = trafoData.potencia;
         document.getElementById('trafoClientes').textContent = trafoData.clientes;
         document.getElementById('trafoCard').classList.remove('hidden');
-
-        // buscar dados decômetro para este GN
-        const decoDiv = document.getElementById('trafoDecoBadge');
-        decoDiv.style.display = 'none';
-        decoDiv.innerHTML = '';
-        try {
-          const decoSnap = await getDocs(query(collection(db,'decometro'),
-            where('equipamento','==', circuitoNome)));
-          if (!decoSnap.empty) {
-            const all = decoSnap.docs[0].data().ocorrencias || [];
-            // filtrar últimos 3 meses fechados
-            const hoje = new Date();
-            const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
-            const ini3m = new Date(fim3m.getFullYear(), fim3m.getMonth()-2, 1, 0, 0, 0);
-            const parseDtBR = s => {
-              if (!s) return null;
-              const [d,t] = String(s).split(' ');
-              const [dd,mm,yy] = d.split('/');
-              return new Date(`${yy}-${mm}-${dd}T${t||'00:00:00'}`);
-            };
-            const ocs3m = all.filter(o => {
-              const dt = parseDtBR(o.inicio);
-              return dt && dt >= ini3m && dt <= fim3m;
-            });
-            const freq = ocs3m.length;
-            const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
-            let cls, label;
-            if (!freq) { cls='ok'; label='✓ 0 desarmes (3m)'; }
-            else {
-              cls = chi>500?'critico':chi>100?'alerta':'ok';
-              label = `⚡ ${freq} desarme${freq>1?'s':''} · CHI ${chi.toFixed(1)} (3m)`;
-            }
-            decoDiv.innerHTML = `<span class="deco-badge ${cls}">${label}</span>`;
-            decoDiv.style.display = 'block';
-          }
-        } catch(e) { console.warn('Deco load error', e); }
       }
 
       // zoom no circuito
@@ -875,6 +879,8 @@
       // armazena para uso na anomalia
       window._postesAtivos = postesData;
       window._conexoesAtivas = conexoesData;
+
+      return trafoData; // retorna para loadCircuitById usar
 
     } catch(err) {
       showToast('Erro ao renderizar circuito.', true);
