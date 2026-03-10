@@ -330,7 +330,7 @@
 
   <!-- UPLOAD -->
   <div class="upload-area" id="uploadArea">
-    <input type="file" accept=".html" id="fileInput" onchange="handleFileSelect(event)"/>
+    <input type="file" accept=".html" multiple id="fileInput" onchange="handleFileSelect(event)"/>
     <div class="upload-icon">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -549,94 +549,78 @@
   }
 
   // ── upload de arquivo HTML ──
+  // ── processa um único arquivo HTML ──
+  async function processarArquivo(file) {
+    if (!file.name.endsWith('.html')) {
+      showToast(`"${file.name}" não é .html — ignorado.`, true); return;
+    }
+    try {
+      const htmlContent = await file.text();
+      const nomeMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
+      const nomeCircuito = nomeMatch ? nomeMatch[1].trim() : file.name.replace('.html', '');
+
+      if (!nomeCircuito.toUpperCase().startsWith('GN')) {
+        showToast(`"${nomeCircuito}" não é um arquivo GN — ignorado.`, true); return;
+      }
+      const existSnap = await getDocs(query(collection(db, 'circuitos'), where('nome', '==', nomeCircuito)));
+      if (!existSnap.empty) {
+        showToast(`"${nomeCircuito}" já cadastrado — ignorado.`, true); return;
+      }
+      const qtdPostes   = (htmlContent.match(/lat\s*:/g) || []).length;
+      const mCli = htmlContent.match(/[Cc]lientes\s*:\s*(\d+)/);
+      const mPot = htmlContent.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
+      await addDoc(collection(db, 'circuitos'), {
+        nome: nomeCircuito, htmlContent,
+        postes:   qtdPostes,
+        clientes: mCli ? parseInt(mCli[1]) : 0,
+        potencia: mPot ? parseInt(mPot[1]) : null,
+        ativo: true, criadoEm: serverTimestamp(), adminId: currentUser.uid
+      });
+      showToast(`✓ "${nomeCircuito}" adicionado!`);
+    } catch(err) {
+      showToast(`Erro ao processar "${file.name}".`, true);
+      console.error(err);
+    }
+  }
+
+  // ── upload de um ou mais arquivos HTML ──
   window.handleFileSelect = async function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.name.endsWith('.html')) return showToast('Apenas arquivos .html são aceitos.', true);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
     const progressWrap = document.getElementById('uploadProgress');
     const progressBar  = document.getElementById('uploadProgressBar');
     progressWrap.style.display = 'block';
+    progressBar.style.width = '0%';
 
-    let prog = 0;
-    const interval = setInterval(() => {
-      prog += 15; if (prog > 85) clearInterval(interval);
-      progressBar.style.width = prog + '%';
-    }, 100);
-
-    try {
-      const htmlContent = await file.text();
-
-      // extrai nome do título do HTML
-      const nomeMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
-      const nomeCircuito = nomeMatch ? nomeMatch[1].trim() : file.name.replace('.html', '');
-
-      // ── validação: só aceitar arquivos GN ──
-      if (!nomeCircuito.toUpperCase().startsWith('GN')) {
-        clearInterval(interval);
-        progressWrap.style.display = 'none';
-        document.getElementById('fileInput').value = '';
-        return showToast('Apenas arquivos GN (transformadores) são aceitos.', true);
-      }
-
-      // verifica duplicata
-      const existSnap = await getDocs(query(collection(db, 'circuitos'), where('nome', '==', nomeCircuito)));
-      if (!existSnap.empty) {
-        clearInterval(interval);
-        progressWrap.style.display = 'none';
-        document.getElementById('fileInput').value = '';
-        return showToast(`Circuito "${nomeCircuito}" já está cadastrado.`, true);
-      }
-
-      // conta postes
-      const qtdPostes = (htmlContent.match(/lat\s*:/g) || []).length;
-
-      // extrai clientes e potência do popup do transformador
-      const mCli = htmlContent.match(/[Cc]lientes\s*:\s*(\d+)/);
-      const mPot = htmlContent.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
-      const qtdClientes = mCli ? parseInt(mCli[1]) : 0;
-      const potencia    = mPot ? parseInt(mPot[1]) : null;
-
-      // salva no Firestore
-      await addDoc(collection(db, 'circuitos'), {
-        nome: nomeCircuito,
-        htmlContent,
-        postes:   qtdPostes,
-        clientes: qtdClientes,
-        potencia,
-        ativo:    true,
-        criadoEm: serverTimestamp(),
-        adminId:  currentUser.uid
-      });
-
-      clearInterval(interval);
-      progressBar.style.width = '100%';
-      setTimeout(() => { progressWrap.style.display = 'none'; progressBar.style.width = '0%'; }, 600);
-
-      showToast(`Circuito "${nomeCircuito}" adicionado!`);
-      document.getElementById('fileInput').value = '';
-      await carregarCircuitos();
-
-    } catch(err) {
-      clearInterval(interval);
-      progressWrap.style.display = 'none';
-      showToast('Erro ao processar o arquivo.', true);
-      console.error(err);
+    for (let i = 0; i < files.length; i++) {
+      progressBar.style.width = Math.round(((i) / files.length) * 100) + '%';
+      await processarArquivo(files[i]);
     }
+    progressBar.style.width = '100%';
+    setTimeout(() => { progressWrap.style.display = 'none'; progressBar.style.width = '0%'; }, 600);
+    document.getElementById('fileInput').value = '';
+    await carregarCircuitos();
   };
 
-  // drag and drop
+  // drag and drop (múltiplos)
   const area = document.getElementById('uploadArea');
   area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag'); });
   area.addEventListener('dragleave', () => area.classList.remove('drag'));
-  area.addEventListener('drop', e => {
+  area.addEventListener('drop', async e => {
     e.preventDefault(); area.classList.remove('drag');
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      const input = document.getElementById('fileInput');
-      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
-      handleFileSelect({ target: input });
+    const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.html'));
+    if (!files.length) return showToast('Apenas arquivos .html são aceitos.', true);
+    const progressWrap = document.getElementById('uploadProgress');
+    const progressBar  = document.getElementById('uploadProgressBar');
+    progressWrap.style.display = 'block';
+    for (let i = 0; i < files.length; i++) {
+      progressBar.style.width = Math.round(((i) / files.length) * 100) + '%';
+      await processarArquivo(files[i]);
     }
+    progressBar.style.width = '100%';
+    setTimeout(() => { progressWrap.style.display = 'none'; progressBar.style.width = '0%'; }, 600);
+    await carregarCircuitos();
   });
 
   // ── ver no mapa ──
@@ -673,7 +657,7 @@
     const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil', '==', 'fiscal')));
     sel.innerHTML = snap.empty
       ? '<option value="">Nenhum fiscal cadastrado</option>'
-      : '';
+      : '<option value="">— Selecione um fiscal —</option>';
     snap.forEach(d => {
       const opt = document.createElement('option');
       opt.value = d.id;

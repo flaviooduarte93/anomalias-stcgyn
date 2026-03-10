@@ -58,21 +58,37 @@
 
     /* circuito selector */
     .circuit-select-wrap {
-      flex: 1; max-width: 260px; position: relative;
+      flex: 1; max-width: 280px; position: relative;
     }
-    .circuit-select-wrap select {
+    .circuit-select-wrap input {
       width: 100%; padding: 8px 32px 8px 12px;
       background: rgba(255,255,255,0.07);
       border: 1px solid rgba(0,170,255,0.2);
       border-radius: 8px; color: var(--eq-white);
       font-family: 'Barlow', sans-serif; font-size: 13px;
-      outline: none; appearance: none; cursor: pointer;
+      outline: none; cursor: text;
     }
-    .circuit-select-wrap select option { background: #0d1f3c; }
+    .circuit-select-wrap input::placeholder { color: var(--eq-gray); }
+    .circuit-select-wrap input:focus { border-color: rgba(0,170,255,0.5); }
     .circuit-select-wrap .arr {
       position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
       pointer-events: none; color: var(--eq-cyan);
     }
+    /* dropdown de sugestões */
+    .circuit-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2000;
+      background: #0d1f3c; border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 8px; max-height: 220px; overflow-y: auto;
+      display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .circuit-dropdown.open { display: block; }
+    .circuit-opt {
+      padding: 10px 14px; font-size: 13px; cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--eq-white);
+    }
+    .circuit-opt:last-child { border-bottom: none; }
+    .circuit-opt:hover, .circuit-opt.selected { background: rgba(0,170,255,0.12); color: var(--eq-cyan); }
+    .circuit-opt .match { color: var(--eq-cyan); font-weight: 700; }
 
     .topbar-user {
       display: flex; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer;
@@ -365,13 +381,13 @@
     <span>STCGYN</span>
   </div>
 
-  <div class="circuit-select-wrap">
-    <select id="circuitSelect" onchange="loadCircuit()">
-      <option value="">Selecione um transformador</option>
-    </select>
+  <div class="circuit-select-wrap" id="circuitWrap">
+    <input type="text" id="circuitInput" placeholder="Buscar transformador..." autocomplete="off"
+      oninput="filtrarCircuitos()" onfocus="abrirDropdown()" />
     <span class="arr">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
     </span>
+    <div class="circuit-dropdown" id="circuitDropdown"></div>
   </div>
 
   <div class="topbar-user">
@@ -626,42 +642,96 @@
   };
 
   // ── carregar circuitos do Firestore ──
-  async function loadCircuitos() {
-    const sel = document.getElementById('circuitSelect');
-    let q;
-    if (currentPerfil === 'equipe') {
-      q = query(collection(db, 'circuitos'), where('ativo', '==', true));
-    } else {
-      q = collection(db, 'circuitos');
-    }
-    const snap = await getDocs(q);
-    snap.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = d.data().nome || d.id;
-      sel.appendChild(opt);
-    });
+  let todosCircuitos = []; // cache local para busca instantânea
 
-    // se veio de outra tela via sessionStorage, seleciona e carrega automaticamente
+  async function loadCircuitos() {
+    // equipe: só vê circuitos que têm anomalia programada para ela
+    if (currentPerfil === 'equipe') {
+      const anomSnap = await getDocs(
+        query(collection(db, 'anomalias'),
+          where('equipeId', '==', currentUser.uid),
+          where('status', '==', 'programado'))
+      );
+      const idsComPendencia = [...new Set(anomSnap.docs.map(d => d.data().circuitoId).filter(Boolean))];
+      todosCircuitos = [];
+      for (const id of idsComPendencia) {
+        const cSnap = await getDoc(doc(db, 'circuitos', id));
+        if (cSnap.exists()) todosCircuitos.push({ id, ...cSnap.data() });
+      }
+    } else {
+      const snap = await getDocs(collection(db, 'circuitos'));
+      todosCircuitos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    renderDropdown('');
+
+    // se veio de outra tela via sessionStorage, carrega automaticamente
     const presel = sessionStorage.getItem('circuitoSelecionado');
     if (presel) {
       sessionStorage.removeItem('circuitoSelecionado');
-      const sel = document.getElementById('circuitSelect');
-      sel.value = presel;
-      if (sel.value === presel) await loadCircuitById(presel);
+      const circ = todosCircuitos.find(c => c.id === presel);
+      if (circ) {
+        document.getElementById('circuitInput').value = circ.nome || circ.id;
+        await loadCircuitById(presel);
+      }
     }
   }
 
-  // ── carregar circuito selecionado (pelo select) ──
-  window.loadCircuit = async function() {
-    const id = document.getElementById('circuitSelect').value;
-    if (id) await loadCircuitById(id);
-    else {
+  // ── renderiza o dropdown com filtro de texto ──
+  function renderDropdown(filtro) {
+    const dd = document.getElementById('circuitDropdown');
+    const termo = filtro.toLowerCase().trim();
+    const lista = termo
+      ? todosCircuitos.filter(c => (c.nome || c.id).toLowerCase().includes(termo))
+      : todosCircuitos;
+
+    if (!lista.length) {
+      dd.innerHTML = '<div class="circuit-opt" style="color:var(--eq-gray)">Nenhum resultado</div>';
+    } else {
+      dd.innerHTML = lista.map(c => {
+        const nome = c.nome || c.id;
+        const highlighted = termo
+          ? nome.replace(new RegExp(`(${termo})`, 'gi'), '<span class="match">$1</span>')
+          : nome;
+        return `<div class="circuit-opt" onclick="selecionarCircuito('${c.id}','${nome}')">${highlighted}</div>`;
+      }).join('');
+    }
+  }
+
+  window.filtrarCircuitos = function() {
+    const v = document.getElementById('circuitInput').value;
+    renderDropdown(v);
+    document.getElementById('circuitDropdown').classList.add('open');
+    if (!v) {
       currentCircuitoId = null;
       map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
       anomaliaMarkers = [];
       document.getElementById('trafoCard').classList.add('hidden');
     }
+  };
+
+  window.abrirDropdown = function() {
+    renderDropdown(document.getElementById('circuitInput').value);
+    document.getElementById('circuitDropdown').classList.add('open');
+  };
+
+  window.selecionarCircuito = async function(id, nome) {
+    document.getElementById('circuitInput').value = nome;
+    document.getElementById('circuitDropdown').classList.remove('open');
+    await loadCircuitById(id);
+  };
+
+  // fecha dropdown ao clicar fora
+  document.addEventListener('click', e => {
+    if (!document.getElementById('circuitWrap').contains(e.target)) {
+      document.getElementById('circuitDropdown').classList.remove('open');
+    }
+  });
+
+  // ── carregar circuito selecionado (pelo select) ──
+  window.loadCircuit = async function() {
+    const id = document.getElementById('circuitSelect')?.value;
+    if (id) await loadCircuitById(id);
   };
 
   async function loadCircuitById(id) {

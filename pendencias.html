@@ -512,8 +512,6 @@
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
     if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
     const data = snap.data();
-    if (data.perfil === 'equipe') { window.location.href = 'mapa.html'; return; }
-
     currentUser   = { uid: user.uid, ...data };
     currentPerfil = data.perfil;
     sessionStorage.setItem('userPerfil', data.perfil);
@@ -531,6 +529,8 @@
       document.getElementById('filtrosWrap').classList.remove('hidden');
       document.getElementById('nav-dashboard').classList.remove('hidden');
       document.getElementById('nav-circuitos').classList.remove('hidden');
+    } else if (currentPerfil === 'equipe') {
+      document.getElementById('pageSub').textContent = 'Seus serviços programados';
     } else {
       document.getElementById('pageSub').textContent = 'Suas inspeções pendentes';
     }
@@ -540,6 +540,22 @@
     let q;
     if (currentPerfil === 'admin') {
       q = collection(db, 'inspecoes');
+    } else if (currentPerfil === 'equipe') {
+      // equipe vê suas anomalias programadas (não inspecoes)
+      q = query(collection(db, 'anomalias'),
+        where('equipeId', '==', currentUser.uid),
+        where('status', '==', 'programado'));
+      const snap = await getDocs(q);
+      todasInspecoes = snap.docs.map(d => ({
+        id: d.id, ...d.data(),
+        // adapta campos para reutilizar renderLista
+        _tipo: 'anomalia'
+      }));
+      document.getElementById('sumTotal').textContent    = todasInspecoes.length;
+      document.getElementById('sumPendente').textContent  = todasInspecoes.length;
+      document.getElementById('sumConcluido').textContent = 0;
+      renderListaEquipe();
+      return;
     } else {
       q = query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid));
     }
@@ -563,6 +579,45 @@
     }
 
     renderLista();
+  }
+
+  // ── lista de serviços para equipe ──
+  function renderListaEquipe() {
+    const lista = document.getElementById('listaInspecoes');
+    document.getElementById('countPill').textContent = todasInspecoes.length;
+    document.getElementById('sectionTitle').textContent = 'Seus serviços programados';
+
+    if (!todasInspecoes.length) {
+      lista.innerHTML = `<div class="empty">
+        <div class="empty-icon">✅</div>
+        <p>Nenhum serviço programado para você no momento.</p>
+      </div>`;
+      return;
+    }
+
+    lista.innerHTML = '';
+    todasInspecoes.forEach(a => {
+      const criadoEm = a.criadoEm?.toDate ? a.criadoEm.toDate() : null;
+      const dataStr = criadoEm ? criadoEm.toLocaleDateString('pt-BR') : '—';
+      const tipoLabel = a.tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador';
+      lista.innerHTML += `
+        <div class="insp-card pendente" onclick="irParaMapa('${a.circuitoId}')">
+          <div class="insp-top">
+            <div class="insp-nome">${a.circuitoId || '—'}</div>
+            <span class="status-pill pendente">⏳ ${tipoLabel}</span>
+          </div>
+          <div class="insp-meta">
+            <div class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Endereço: <span>${a.endereco || '—'}</span>
+            </div>
+            <div class="meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Programado em <span>${dataStr}</span>
+            </div>
+          </div>
+        </div>`;
+    });
   }
 
   function renderLista() {
