@@ -72,8 +72,19 @@
     .circuit-select-wrap input:focus { border-color: rgba(0,170,255,0.5); }
     .circuit-select-wrap .arr {
       position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      pointer-events: none; color: var(--eq-cyan);
+      pointer-events: none; color: var(--eq-cyan); transition: opacity .15s;
     }
+    .circuit-select-wrap .btn-clear {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      display: none; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); border: none; cursor: pointer;
+      color: var(--eq-white); font-size: 13px; line-height: 1;
+      transition: background .15s;
+    }
+    .circuit-select-wrap .btn-clear:hover { background: rgba(255,77,109,0.4); }
+    .circuit-select-wrap.has-value .arr { display: none; }
+    .circuit-select-wrap.has-value .btn-clear { display: flex; }
     /* dropdown de sugestões */
     .circuit-dropdown {
       position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2000;
@@ -351,6 +362,11 @@
       background: linear-gradient(135deg, #1a8c4e, #0d6e3b);
       color: #fff;
     }
+    .popup-btn-del {
+      background: linear-gradient(135deg, #8c1a1a, #6e0d0d);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+    }
+    .popup-btn-del:hover { background: linear-gradient(135deg, #a32020, #8c1212); }
 
     /* ── MODAL PROGRAMAR (admin) ── */
     .modal-select {
@@ -395,10 +411,11 @@
 
   <div class="circuit-select-wrap" id="circuitWrap">
     <input type="text" id="circuitInput" placeholder="Buscar transformador..." autocomplete="off"
-      oninput="filtrarCircuitos()" onfocus="abrirDropdown()" />
+      oninput="filtrarCircuitos(); toggleClearBtn();" onfocus="abrirDropdown()" />
     <span class="arr">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
     </span>
+    <button class="btn-clear" id="btnClearInput" onclick="limparBusca()" tabindex="-1">×</button>
     <div class="circuit-dropdown" id="circuitDropdown"></div>
   </div>
 
@@ -562,7 +579,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
@@ -579,6 +596,12 @@
 
   // ── estado global ──
   let currentUser = null;
+
+  // ── Cloudinary: transforma URL original em versão comprimida ──
+  // salvo: w_1200,q_75,f_auto  (≈ 100-200KB para foto de campo)
+  // thumb: w_400,q_65,f_auto   (miniatura para popup/card)
+  function cldSave(url)  { return url ? url.replace('/upload/', '/upload/w_1200,q_75,f_auto/') : url; }
+  function cldThumb(url) { return url ? url.replace('/upload/', '/upload/w_400,q_65,f_auto/')  : url; }
   let currentPerfil = null;
   let currentCircuitoId = null;
   let anomaliaMarkers = [];
@@ -743,6 +766,23 @@
     }
   };
 
+  window.toggleClearBtn = function() {
+    const v = document.getElementById('circuitInput').value;
+    document.getElementById('circuitWrap').classList.toggle('has-value', v.length > 0);
+  };
+
+  window.limparBusca = function() {
+    const input = document.getElementById('circuitInput');
+    input.value = '';
+    document.getElementById('circuitWrap').classList.remove('has-value');
+    document.getElementById('circuitDropdown').classList.remove('open');
+    currentCircuitoId = null;
+    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+    anomaliaMarkers = [];
+    document.getElementById('trafoCard').classList.add('hidden');
+    input.focus();
+  };
+
   window.abrirDropdown = function() {
     renderDropdown(document.getElementById('circuitInput').value);
     document.getElementById('circuitDropdown').classList.add('open');
@@ -751,6 +791,7 @@
   window.selecionarCircuito = async function(id, nome) {
     document.getElementById('circuitInput').value = nome;
     document.getElementById('circuitDropdown').classList.remove('open');
+    toggleClearBtn();
     await loadCircuitById(id);
   };
 
@@ -781,7 +822,41 @@
     // yield para não travar a UI antes de renderizar
     await new Promise(r => setTimeout(r, 0));
 
-    const trafoData = renderCircuito(data.htmlContent, id, data.nome);
+    // ── suporte a 3 formatos ──
+    // 1. geodata (novo — JSON extraído, sem HTML)
+    // 2. htmlContent legado (Firestore direto)
+    // 3. htmlUrl legado (Storage — não mais usado, mas compatível)
+    let postesData = null, conexoesData = null, trafoInfo = null;
+
+    if (data.geodata) {
+      // formato novo: dados já extraídos
+      postesData   = (data.geodata.postes   || []).map(p => ({
+        id: p.id, lat: p.lat, lng: p.lng,
+        esforco: p.e || '', temTransformador: p.t === 1
+      }));
+      conexoesData = (data.geodata.conexoes || []).map(c => ({
+        de: c.d, para: c.p, fase: c.f, condutor: c.c,
+        trecho: c.t, comprimento: c.l, tipo: c.tp
+      }));
+      trafoInfo = { potencia: data.potencia || null, clientes: data.clientes || null };
+    } else {
+      // formato legado: precisa do HTML
+      let htmlContent = data.htmlContent || null;
+      if (!htmlContent && data.htmlUrl) {
+        try {
+          const resp = await fetch(data.htmlUrl);
+          htmlContent = await resp.text();
+        } catch(e) {
+          return showToast('Erro ao carregar circuito.', true);
+        }
+      }
+      if (!htmlContent) return showToast('Circuito sem dados.', true);
+      postesData   = extrairPostes(htmlContent);
+      conexoesData = extrairConexoes(htmlContent);
+      trafoInfo    = extrairInfoTrafo(htmlContent);
+    }
+
+    const trafoData = renderCircuitoData(postesData, conexoesData, trafoInfo, id, data.nome);
     await loadAnomaliasNoMapa(id);
 
     // decômetro — assíncrono, depois do mapa já ter carregado
@@ -815,22 +890,15 @@
     }
   }
 
-  // ── renderizar postes/cabos do HTML ──
-  function renderCircuito(htmlContent, circuitoId, circuitoNome) {
+  // ── renderizar postes/cabos a partir de dados já extraídos ──
+  function renderCircuitoData(postesData, conexoesData, trafoInfo, circuitoId, circuitoNome) {
     try {
-      // extrai dados via regex — mais robusto que eval
-      const postesData   = extrairPostes(htmlContent);
-      const conexoesData = extrairConexoes(htmlContent);
-
       if (!postesData.length) {
         showToast('Nenhum poste encontrado no circuito.', true);
         return;
       }
-
-      // cores de fase
       const faseCores = { 'ABCN':'#2e86de','AN':'#ff6b6b','BN':'#ffd93d','CN':'#6bcb77','N':'#aaa','ABC':'#2e86de' };
 
-      // desenha conexões
       conexoesData.forEach(c => {
         const o = postesData.find(p => p.id === c.de);
         const d = postesData.find(p => p.id === c.para);
@@ -845,19 +913,14 @@
           .addTo(map);
       });
 
-      // extrai dados do transformador direto do HTML (popup do trafo)
-      const trafoInfo = extrairInfoTrafo(htmlContent);
-
-      // desenha postes/trafo
       let trafoData = null;
       postesData.forEach(p => {
         const icon = p.temTransformador ? iconTrafo : iconPoste;
         const m = L.marker([p.lat, p.lng], { icon }).addTo(map);
-
         let html;
         if (p.temTransformador) {
-          const potencia = trafoInfo.potencia || p.potencia || '—';
-          const clientes = trafoInfo.clientes || p.clientes || p.ucs?.length || '—';
+          const potencia = (trafoInfo && trafoInfo.potencia) || p.potencia || '—';
+          const clientes = (trafoInfo && trafoInfo.clientes) || p.clientes || p.ucs?.length || '—';
           const gnNome   = circuitoNome || circuitoId;
           html = `<div class="popup-title">⚡ ${gnNome}</div>
             <div class="popup-row">Poste: <span>${p.id}</span></div>
@@ -875,6 +938,7 @@
         m.bindPopup(html);
       });
 
+      // card transformador
       // card transformador
       if (trafoData) {
         document.getElementById('trafoId').textContent       = circuitoNome || circuitoId;
@@ -919,6 +983,7 @@
   function plotarAnomalia(id, data) {
     const icon = data.tipo === 'poda' ? iconPoda : iconEspacador;
     const m = L.marker([data.lat, data.lng], { icon }).addTo(map);
+    m._anomaliaId = id;
     anomaliaMarkers.push(m);
 
     let html = `<div class="popup-title">Anomalia</div>
@@ -929,11 +994,11 @@
       <div class="popup-row">Por: <span>${data.fiscalNome || '—'}</span></div>`;
 
     if (data.fotoUrl) {
-      html += `<img class="popup-foto" src="${data.fotoUrl}" alt="Foto"/>`;
+      html += `<img class="popup-foto" src="${cldThumb(data.fotoUrl)}" alt="Foto"/>`;
     }
     if (data.fotoConcluidoUrl) {
       html += `<div class="popup-row" style="margin-top:6px;color:var(--eq-success)">✓ Foto de conclusão:</div>
-        <img class="popup-foto" src="${data.fotoConcluidoUrl}" alt="Foto conclusão"/>`;
+        <img class="popup-foto" src="${cldThumb(data.fotoConcluidoUrl)}" alt="Foto conclusão"/>`;
     }
 
     // botões por perfil
@@ -950,6 +1015,13 @@
         </button>
       </div>
       <button class="popup-btn popup-btn-conc" onclick="concluirServico('${id}')">Concluir Serviço</button>`;
+    }
+    // excluir — admin ou fiscal que apontou, nunca concluído
+    if (data.status !== 'concluido' &&
+        (currentPerfil === 'admin' || (currentPerfil === 'fiscal' && data.fiscalId === currentUser?.uid))) {
+      html += `<button class="popup-btn popup-btn-del" onclick="excluirAnomaliaDoMapa('${id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir anomalia
+      </button>`;
     }
 
     m.bindPopup(html, { maxWidth: 300 });
@@ -1046,7 +1118,7 @@
       formData.append('upload_preset', 'anomalias-stcgyn');
       const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
       const json = await res.json();
-      const fotoUrl = json.secure_url;
+      const fotoUrl = cldSave(json.secure_url);
 
       // salvar Firestore
       await addDoc(collection(db, 'anomalias'), {
@@ -1113,6 +1185,32 @@
     }
   };
 
+  // ── excluir anomalia (admin ou fiscal que apontou, nunca concluído) ──
+  window.excluirAnomaliaDoMapa = async function(anomaliaId) {
+    if (!confirm('Excluir este registro de anomalia?\nEsta ação não pode ser desfeita.')) return;
+    try {
+      // valida status antes de deletar
+      const snap = await getDoc(doc(db, 'anomalias', anomaliaId));
+      if (!snap.exists()) return showToast('Anomalia não encontrada.', true);
+      const d = snap.data();
+      if (d.status === 'concluido') return showToast('Não é possível excluir anomalias concluídas.', true);
+      if (currentPerfil === 'fiscal' && d.fiscalId !== currentUser.uid)
+        return showToast('Você só pode excluir anomalias que apontou.', true);
+
+      await deleteDoc(doc(db, 'anomalias', anomaliaId));
+
+      // remove marcador do mapa sem recarregar tudo
+      anomaliaMarkers = anomaliaMarkers.filter(m => {
+        if (m._anomaliaId === anomaliaId) { map.removeLayer(m); return false; }
+        return true;
+      });
+      showToast('Anomalia excluída.');
+    } catch(e) {
+      showToast('Erro ao excluir.', true);
+      console.error(e);
+    }
+  };
+
   // ── concluir serviço (equipe) ──
   window.concluirServico = function(anomaliaId) {
     const input = document.createElement('input');
@@ -1129,7 +1227,7 @@
         const json = await res.json();
         await updateDoc(doc(db, 'anomalias', anomaliaId), {
           status: 'concluido',
-          fotoConcluidoUrl: json.secure_url,
+          fotoConcluidoUrl: cldSave(json.secure_url),
           concluidoEm: serverTimestamp(),
           equipeConcluidoId: currentUser.uid
         });
@@ -1172,6 +1270,15 @@
   }
 
   // ── extração robusta de postes via regex ──
+
+  // ── legado: renderCircuito(htmlContent) ── delega para renderCircuitoData
+  function renderCircuito(htmlContent, circuitoId, circuitoNome) {
+    const postesData   = extrairPostes(htmlContent);
+    const conexoesData = extrairConexoes(htmlContent);
+    const trafoInfo    = extrairInfoTrafo(htmlContent);
+    return renderCircuitoData(postesData, conexoesData, trafoInfo, circuitoId, circuitoNome);
+  }
+
   function extrairPostes(html) {
     // extrai offset se existir
     const offsetLat = parseFloat((html.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;

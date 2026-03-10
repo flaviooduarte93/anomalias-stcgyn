@@ -496,6 +496,9 @@
   const db   = getFirestore(app);
 
   let currentUser    = null;
+
+  // ── Cloudinary: miniatura para cards ──
+  function cldThumb(url) { return url ? url.replace('/upload/', '/upload/w_400,q_65,f_auto/') : url; }
   let currentPerfil  = null;
   let todasAnomalias = [];
   let filtroTipo     = 'todos';
@@ -607,13 +610,13 @@
       const statusLabel = { pendente: '⏳ Pendente', programado: '📋 Programado', concluido: '✓ Concluído' }[a.status] || a.status;
 
       const fotoHtml = a.fotoUrl
-        ? `<img class="card-foto" src="${a.fotoUrl}" alt="Foto anomalia" loading="lazy"/>`
+        ? `<img class="card-foto" src="${cldThumb(a.fotoUrl)}" alt="Foto anomalia" loading="lazy"/>`
         : `<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
 
       const fotoConclusaoHtml = a.fotoConcluidoUrl
         ? `<div class="foto-conclusao-wrap">
             <div class="foto-conclusao-label">✓ Foto de conclusão</div>
-            <img class="foto-conclusao" src="${a.fotoConcluidoUrl}" alt="Foto conclusão" loading="lazy"/>
+            <img class="foto-conclusao" src="${cldThumb(a.fotoConcluidoUrl)}" alt="Foto conclusão" loading="lazy"/>
           </div>` : '';
 
       const equipeHtml = a.equipeId
@@ -631,7 +634,8 @@
           Programar
         </button>`;
       }
-      if (currentPerfil === 'admin') {
+      if ((currentPerfil === 'admin' || (currentPerfil === 'fiscal' && a.fiscalId === currentUser.uid))
+          && a.status !== 'concluido') {
         botoesHtml += `<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${a.id}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           Excluir
