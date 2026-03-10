@@ -120,6 +120,7 @@
       position: fixed;
       top: var(--top-h); left: 0; right: 0;
       bottom: var(--nav-h);
+      z-index: 1;
     }
 
     /* ── TRANSFORMER CARD ── */
@@ -587,12 +588,23 @@
   let fotoFile = null;
   let programarAnomaliaId = null;
 
-  // ── mapa ──
-  const map = L.map('map', { zoomControl: false }).setView([-16.68, -49.25], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 22
-  }).addTo(map);
-  L.control.zoom({ position: 'topright' }).addTo(map);
+  // ── mapa — inicializa após DOM completamente pintado ──
+  let map;
+  function initMap() {
+    map = L.map('map', { zoomControl: false }).setView([-16.68, -49.25], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 22
+    }).addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    setTimeout(() => map.invalidateSize(), 200);
+    window.addEventListener('resize', () => map.invalidateSize());
+  }
+  // garante que o mapa só inicia quando o CSS já foi aplicado
+  if (document.readyState === 'complete') {
+    initMap();
+  } else {
+    window.addEventListener('load', initMap);
+  }
 
   // ── ícones ──
   const iconPoste = L.divIcon({
