@@ -292,6 +292,32 @@
     .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
 
     /* spinner */
+    /* paginação */
+    .paginacao {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin: 20px 0 10px; flex-wrap: wrap;
+    }
+    .pag-btn {
+      min-width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: var(--eq-gray);
+      font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .2s; padding: 0 8px;
+    }
+    .pag-btn:hover { background: rgba(0,170,255,0.1); color: var(--eq-cyan); border-color: rgba(0,170,255,0.3); }
+    .pag-btn.active { background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid)); color: #fff; border-color: transparent; }
+    .pag-btn:disabled { opacity: .3; cursor: default; }
+
+    /* decômetro inline nos cards */
+    .deco-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    }
+    .deco-badge.ok    { background: rgba(0,229,160,0.1); color: var(--eq-success); border: 1px solid rgba(0,229,160,0.2); }
+    .deco-badge.alerta { background: rgba(255,179,0,0.1); color: var(--eq-warning); border: 1px solid rgba(255,179,0,0.2); }
+    .deco-badge.critico { background: rgba(255,77,109,0.1); color: var(--eq-error); border: 1px solid rgba(255,77,109,0.2); }
+    .deco-badge.sem { background: rgba(255,255,255,0.05); color: var(--eq-gray); border: 1px solid rgba(255,255,255,0.1); }
+
     .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align: middle; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
@@ -330,7 +356,7 @@
 
   <!-- UPLOAD -->
   <div class="upload-area" id="uploadArea">
-    <input type="file" accept=".html" multiple id="fileInput" onchange="handleFileSelect(event)"/>
+    <input type="file" accept=".html,.xlsx" multiple id="fileInput" onchange="handleFileSelect(event)"/>
     <div class="upload-icon">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -338,24 +364,78 @@
         <line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
     </div>
-    <div class="upload-title">Subir novo circuito</div>
-    <div class="upload-sub">Selecione o arquivo HTML exportado do sistema</div>
-    <div class="upload-badge">.html aceito</div>
+    <div class="upload-title">Subir circuito ou extração Decômetro</div>
+    <div class="upload-sub">Arquivos GN (.html) ou extração_decometro (.xlsx)</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <div class="upload-badge">.html — circuito</div>
+      <div class="upload-badge" style="background:rgba(0,229,160,0.12);color:var(--eq-success);border-color:rgba(0,229,160,0.3)">.xlsx — decômetro</div>
+    </div>
     <div class="upload-progress" id="uploadProgress">
       <div class="upload-progress-bar" id="uploadProgressBar"></div>
     </div>
   </div>
 
-  <!-- LISTA -->
-  <div class="section-header">
-    <div class="section-title">Circuitos cadastrados</div>
-    <div class="count-badge" id="countBadge">0</div>
+  <!-- BUSCA + LISTA -->
+  <div class="section-header" style="flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="section-title">Circuitos cadastrados</div>
+      <div class="count-badge" id="countBadge">0</div>
+    </div>
+    <div style="position:relative;flex:1;min-width:180px;max-width:300px">
+      <input type="text" id="buscaCircuito" placeholder="Buscar GN..." oninput="filtrarLista()"
+        style="width:100%;padding:7px 12px 7px 32px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:13px;outline:none"/>
+      <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
   </div>
 
   <div id="listaCircuitos">
-    <!-- skeleton loading -->
     <div class="skeleton" style="height:120px;margin-bottom:12px;"></div>
     <div class="skeleton" style="height:120px;margin-bottom:12px;"></div>
+  </div>
+
+  <!-- PAGINAÇÃO -->
+  <div class="paginacao" id="paginacao"></div>
+
+</div>
+
+<!-- MODAL: RESUMO DECÔMETRO -->
+<div class="modal-overlay" id="modalDecometro">
+  <div class="modal" style="max-width:700px;max-height:80vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="modal-title" id="decTitulo">Resumo Decômetro</div>
+      <button onclick="fecharModalDeco()" style="background:none;border:none;color:var(--eq-gray);cursor:pointer;font-size:20px;line-height:1">✕</button>
+    </div>
+    <div class="modal-sub" id="decSub">Últimos 3 meses fechados</div>
+    <!-- KPIs -->
+    <div style="display:flex;gap:12px;margin:14px 0 18px">
+      <div style="flex:1;background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--eq-warning)" id="decFreq">—</div>
+        <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">Desarmes</div>
+      </div>
+      <div style="flex:1;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--eq-error)" id="decChi">—</div>
+        <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">CHI Total</div>
+      </div>
+    </div>
+    <!-- Tabela -->
+    <div style="overflow-x:auto">
+      <table id="decTabela" style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr>
+            <th onclick="ordenarDeco('numero')" style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Ocorrência ↕</th>
+            <th onclick="ordenarDeco('inicio')" style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Início ↕</th>
+            <th onclick="ordenarDeco('fim')" style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Fim ↕</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray)">Causa</th>
+            <th onclick="ordenarDeco('chi')" style="cursor:pointer;padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray)">CHI ↕</th>
+          </tr>
+        </thead>
+        <tbody id="decTabelaBody"></tbody>
+      </table>
+    </div>
+    <div id="decVazio" style="display:none;text-align:center;padding:20px;color:var(--eq-gray);font-size:13px">
+      Nenhuma ocorrência nos últimos 3 meses fechados.
+    </div>
   </div>
 </div>
 
@@ -407,10 +487,11 @@
 <div class="toast" id="toast"></div>
 
 <!-- FIREBASE -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
@@ -446,132 +527,332 @@
   window.logout = async () => { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; };
 
   // ── carregar circuitos ──
-  async function carregarCircuitos() {
-    const snap = await getDocs(collection(db, 'circuitos'));
-    document.getElementById('countBadge').textContent = snap.size;
-    const lista = document.getElementById('listaCircuitos');
+  // ── globals para paginação, busca e decômetro ──
+  let todosCircuitosCache = [];
+  let decometroCache = {}; // { 'GN11XXXXX': [{numero,inicio,fim,causa,chi}, ...] }
+  let paginaAtual = 1;
+  const POR_PAGINA = 10;
+  let listaFiltrada = [];
+  let decoOrdem = { col: 'chi', asc: false }; // ordem padrão: CHI desc
+  let decoAtualNome = '';
 
-    if (snap.empty) {
+  // parseia "DD/MM/AAAA HH:MM:SS"
+  function parseDataBR(str) {
+    if (!str) return null;
+    const s = String(str).trim();
+    const [d, t] = s.split(' ');
+    const [dd, mm, yy] = d.split('/');
+    return new Date(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}T${t||'00:00:00'}`);
+  }
+
+  // últimos 3 meses fechados (ex: em março → dez+jan+fev)
+  function janela3Meses() {
+    const hoje = new Date();
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
+    const ini = new Date(fim.getFullYear(), fim.getMonth() - 2, 1, 0, 0, 0);
+    return { ini, fim };
+  }
+
+  // filtra ocorrências de um GN nos últimos 3 meses
+  function ocorrencias3m(nomeGN) {
+    const all = decometroCache[nomeGN] || null;
+    if (!all) return null; // sem dados
+    const { ini, fim } = janela3Meses();
+    return all.filter(o => {
+      const dt = parseDataBR(o.inicio);
+      return dt && dt >= ini && dt <= fim;
+    });
+  }
+
+  // badge HTML resumo decômetro (para cards e status)
+  function decoBadgeHtml(nomeGN) {
+    const ocs = ocorrencias3m(nomeGN);
+    if (ocs === null) return `<span class="deco-badge sem">Sem dados decômetro</span>`;
+    if (!ocs.length)  return `<span class="deco-badge ok">✓ 0 desarmes (3m)</span>`;
+    const freq = ocs.length;
+    const chi  = ocs.reduce((s,o) => s + (parseFloat(o.chi)||0), 0);
+    const cls  = chi > 500 ? 'critico' : chi > 100 ? 'alerta' : 'ok';
+    return `<span class="deco-badge ${cls}">⚡ ${freq} desarme${freq>1?'s':''} · CHI ${chi.toFixed(1)} (3m)</span>`;
+  }
+
+  // ── carregar circuitos ──
+  async function carregarCircuitos() {
+    // carrega decômetro do Firestore
+    const decoSnap = await getDocs(collection(db, 'decometro'));
+    decometroCache = {};
+    decoSnap.docs.forEach(d => {
+      const dados = d.data();
+      if (dados.equipamento) decometroCache[dados.equipamento] = dados.ocorrencias || [];
+    });
+
+    const snap = await getDocs(collection(db, 'circuitos'));
+    todosCircuitosCache = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    document.getElementById('countBadge').textContent = todosCircuitosCache.length;
+    filtrarLista();
+  }
+
+  window.filtrarLista = function() {
+    const termo = (document.getElementById('buscaCircuito')?.value || '').toLowerCase().trim();
+    listaFiltrada = termo
+      ? todosCircuitosCache.filter(c => (c.nome||c._id).toLowerCase().includes(termo))
+      : [...todosCircuitosCache];
+    paginaAtual = 1;
+    renderPagina();
+  };
+
+  async function renderPagina() {
+    const lista = document.getElementById('listaCircuitos');
+    const total = listaFiltrada.length;
+
+    if (!total) {
       lista.innerHTML = `<div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        <p>Nenhum circuito cadastrado ainda.<br/>Suba um arquivo HTML acima.</p>
+        <p>Nenhum circuito encontrado.<br/>Suba um arquivo HTML acima.</p>
       </div>`;
+      document.getElementById('paginacao').innerHTML = '';
       return;
     }
 
+    const totalPags = Math.max(1, Math.ceil(total / POR_PAGINA));
+    paginaAtual = Math.min(paginaAtual, totalPags);
+    const pagina = listaFiltrada.slice((paginaAtual-1)*POR_PAGINA, paginaAtual*POR_PAGINA);
+
     lista.innerHTML = '';
 
-    // para cada circuito busca stats de anomalias e inspeção
-    for (const d of snap.docs) {
-      const c = d.data();
+    for (const c of pagina) {
+      const id = c._id;
+      const anoSnap = await getDocs(query(collection(db,'anomalias'),
+        where('circuitoId','==',id), where('status','==','pendente')));
+      const inspSnap = await getDocs(query(collection(db,'inspecoes'),
+        where('circuitoId','==',id)));
 
-      // anomalias pendentes
-      const anoSnap = await getDocs(query(collection(db, 'anomalias'),
-        where('circuitoId', '==', d.id), where('status', '==', 'pendente')));
-      // inspeção
-      const inspSnap = await getDocs(query(collection(db, 'inspecoes'),
-        where('circuitoId', '==', d.id)));
-
-      let statusInsp = 'armazenado';
-      let fiscalNome = '—';
-      let inspId = null;
+      let statusInsp='armazenado', fiscalNome='—';
       if (!inspSnap.empty) {
         const insp = inspSnap.docs[0].data();
-        inspId = inspSnap.docs[0].id;
-        statusInsp = insp.status || 'pendente';
-        fiscalNome = insp.fiscalNome || '—';
+        statusInsp = insp.status||'pendente';
+        fiscalNome = insp.fiscalNome||'—';
       }
 
-      const dataStr = c.criadoEm?.toDate
-        ? c.criadoEm.toDate().toLocaleDateString('pt-BR')
-        : '—';
-
-      const statusLabel = {
-        armazenado: 'Armazenado',
-        pendente:   'Inspeção Pendente',
-        concluido:  'Inspecionado'
-      }[statusInsp];
+      const dataStr = c.criadoEm?.toDate ? c.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+      const statusLabel = {armazenado:'Armazenado',pendente:'Inspeção Pendente',concluido:'Inspecionado'}[statusInsp];
+      const nomeEsc = (c.nome||id).replace(/'/g,"\'");
+      const temDeco = decometroCache.hasOwnProperty(c.nome);
 
       lista.innerHTML += `
-        <div class="circuito-card" id="card-${d.id}">
+        <div class="circuito-card" id="card-${id}">
           <div class="card-header">
             <div>
-              <div class="card-nome">${c.nome || d.id}</div>
+              <div class="card-nome">${c.nome||id}</div>
               <div class="card-data">Adicionado em ${dataStr}</div>
             </div>
             <span class="status-pill ${statusInsp}">${statusLabel}</span>
           </div>
-
           <div class="card-stats">
+            <div class="cstat"><div class="cstat-val">${c.postes||'—'}</div><div class="cstat-label">Postes</div></div>
+            <div class="cstat"><div class="cstat-val">${c.clientes||'—'}</div><div class="cstat-label">Clientes</div></div>
             <div class="cstat">
-              <div class="cstat-val">${c.postes || '—'}</div>
-              <div class="cstat-label">Postes</div>
-            </div>
-            <div class="cstat">
-              <div class="cstat-val">${c.clientes || '—'}</div>
-              <div class="cstat-label">Clientes</div>
-            </div>
-            <div class="cstat">
-              <div class="cstat-val" style="color:${anoSnap.size > 0 ? 'var(--eq-warning)' : 'var(--eq-success)'}">
-                ${anoSnap.size}
-              </div>
+              <div class="cstat-val" style="color:${anoSnap.size>0?'var(--eq-warning)':'var(--eq-success)'}">${anoSnap.size}</div>
               <div class="cstat-label">Anomalias</div>
             </div>
-            ${statusInsp !== 'armazenado' ? `
-            <div class="cstat">
-              <div class="cstat-val" style="font-size:13px;color:var(--eq-gray)">${fiscalNome.split(' ')[0]}</div>
-              <div class="cstat-label">Fiscal</div>
-            </div>` : ''}
+            ${statusInsp!=='armazenado'?`<div class="cstat"><div class="cstat-val" style="font-size:13px;color:var(--eq-gray)">${fiscalNome.split(' ')[0]}</div><div class="cstat-label">Fiscal</div></div>`:''}
           </div>
-
+          <div style="margin:8px 0 4px">${decoBadgeHtml(c.nome)}</div>
           <div class="card-actions">
-            <button class="btn-sm btn-outline-sm" onclick="verNoMapa('${d.id}')">
+            <button class="btn-sm btn-outline-sm" onclick="verNoMapa('${id}')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
               Ver no mapa
             </button>
-            ${statusInsp === 'armazenado' ? `
-              <button class="btn-sm btn-primary-sm" onclick="openModalDelegarInspecao('${d.id}', '${(c.nome || d.id).replace(/'/g,"\\'")}')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Delegar inspeção
-              </button>` : ''}
-            ${statusInsp === 'pendente' ? `
-              <button class="btn-sm btn-outline-sm" style="color:var(--eq-warning);border-color:rgba(255,179,0,0.3)" onclick="openModalDelegarInspecao('${d.id}', '${(c.nome || d.id).replace(/'/g,"\\'")}')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                Redelegar
-              </button>` : ''}
-            <button class="btn-sm btn-danger-sm" onclick="excluirCircuito('${d.id}', '${(c.nome || d.id).replace(/'/g,"\\'")}')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            ${temDeco?`<button class="btn-sm btn-outline-sm" style="color:var(--eq-cyan);border-color:rgba(0,170,255,0.3)" onclick="abrirModalDeco('${nomeEsc}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Resumo Decômetro
+            </button>`:''}
+            ${statusInsp==='armazenado'?`<button class="btn-sm btn-primary-sm" onclick="openModalDelegarInspecao('${id}','${nomeEsc}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Delegar inspeção
+            </button>`:''}
+            ${statusInsp==='pendente'?`<button class="btn-sm btn-outline-sm" style="color:var(--eq-warning);border-color:rgba(255,179,0,0.3)" onclick="openModalDelegarInspecao('${id}','${nomeEsc}')">
+              Redelegar
+            </button>`:''}
+            <button class="btn-sm btn-danger-sm" onclick="excluirCircuito('${id}','${nomeEsc}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
               Excluir
             </button>
           </div>
         </div>`;
     }
+    renderPaginacao(totalPags);
+  }
+
+  function renderPaginacao(totalPags) {
+    const el = document.getElementById('paginacao');
+    if (totalPags <= 1) { el.innerHTML=''; return; }
+    let html = `<button class="pag-btn" onclick="irPagina(${paginaAtual-1})" ${paginaAtual===1?'disabled':''}>‹</button>`;
+    for (let i=1; i<=totalPags; i++) {
+      if (totalPags>7 && Math.abs(i-paginaAtual)>2 && i!==1 && i!==totalPags) {
+        if (i===2||i===totalPags-1) html+=`<span style="color:var(--eq-gray);padding:0 4px">…</span>`;
+        continue;
+      }
+      html+=`<button class="pag-btn${i===paginaAtual?' active':''}" onclick="irPagina(${i})">${i}</button>`;
+    }
+    html+=`<button class="pag-btn" onclick="irPagina(${paginaAtual+1})" ${paginaAtual===totalPags?'disabled':''}>›</button>`;
+    el.innerHTML = html;
+  }
+
+  window.irPagina = function(n) { paginaAtual=n; renderPagina(); window.scrollTo(0,0); };
+
+  // ── Modal Resumo Decômetro ──
+  window.abrirModalDeco = function(nomeGN) {
+    decoAtualNome = nomeGN;
+    decoOrdem = { col:'chi', asc:false };
+    document.getElementById('decTitulo').textContent = nomeGN;
+    const { ini, fim } = janela3Meses();
+    const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    document.getElementById('decSub').textContent =
+      `Últimos 3 meses fechados: ${meses[ini.getMonth()]}/${ini.getFullYear()} – ${meses[fim.getMonth()]}/${fim.getFullYear()}`;
+    const ocs = ocorrencias3m(nomeGN) || [];
+    document.getElementById('decFreq').textContent = ocs.length;
+    const chiTotal = ocs.reduce((s,o)=>s+(parseFloat(o.chi)||0),0);
+    document.getElementById('decChi').textContent = chiTotal.toFixed(2);
+    renderTabelaDeco(ocs);
+    document.getElementById('modalDecometro').classList.add('open');
+  };
+
+  window.fecharModalDeco = function() {
+    document.getElementById('modalDecometro').classList.remove('open');
+  };
+
+  window.ordenarDeco = function(col) {
+    if (decoOrdem.col===col) decoOrdem.asc=!decoOrdem.asc;
+    else { decoOrdem.col=col; decoOrdem.asc=(col!=='chi'); }
+    renderTabelaDeco(ocorrencias3m(decoAtualNome)||[]);
+  };
+
+  function renderTabelaDeco(ocs) {
+    const tbody = document.getElementById('decTabelaBody');
+    const vazio = document.getElementById('decVazio');
+    if (!ocs.length) { tbody.innerHTML=''; vazio.style.display='block'; return; }
+    vazio.style.display='none';
+    const sorted = [...ocs].sort((a,b)=>{
+      let va,vb;
+      if (decoOrdem.col==='chi') { va=parseFloat(a.chi)||0; vb=parseFloat(b.chi)||0; }
+      else if (decoOrdem.col==='inicio') { va=parseDataBR(a.inicio)||0; vb=parseDataBR(b.inicio)||0; }
+      else if (decoOrdem.col==='fim')    { va=parseDataBR(a.fim)||0;    vb=parseDataBR(b.fim)||0; }
+      else { va=a.numero||''; vb=b.numero||''; }
+      return decoOrdem.asc ? (va>vb?1:va<vb?-1:0) : (va<vb?1:va>vb?-1:0);
+    });
+    tbody.innerHTML = sorted.map((o,i) => {
+      const chi = parseFloat(o.chi)||0;
+      const chiCls = chi>500?'var(--eq-error)':chi>100?'var(--eq-warning)':'var(--eq-success)';
+      const zebra = i%2===0?'background:rgba(255,255,255,0.02)':'';
+      return `<tr style="${zebra}">
+        <td style="padding:7px 10px;color:var(--eq-cyan)">${o.numero||'—'}</td>
+        <td style="padding:7px 10px;white-space:nowrap">${o.inicio||'—'}</td>
+        <td style="padding:7px 10px;white-space:nowrap">${o.fim||'—'}</td>
+        <td style="padding:7px 10px;color:var(--eq-gray);font-size:11px">${o.causa||'—'}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:700;color:${chiCls}">${chi.toFixed(2)}</td>
+      </tr>`;
+    }).join('');
   }
 
   // ── upload de arquivo HTML ──
   // ── processa um único arquivo HTML ──
   async function processarArquivo(file) {
+    // ── XLSX: extração decômetro ──
+    if (file.name.endsWith('.xlsx')) {
+      if (!file.name.toLowerCase().includes('extracao_decometro')) {
+        showToast(`"${file.name}" não é uma extração Decômetro — ignorado.`, true); return;
+      }
+      try {
+        const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab, { type:'array', cellDates:false });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+        // encontrar linha de headers (contém 'Número')
+        let hIdx = rows.findIndex(r => r.includes('Número'));
+        if (hIdx < 0) { showToast('Formato inválido: coluna "Número" não encontrada.', true); return; }
+        const h = rows[hIdx];
+        const col = k => h.indexOf(k);
+        const iNum=col('Número'), iIni=col('Data Início'), iFim=col('Data Fim'),
+              iCausa=col('Causa'), iChi=col('CHI'), iCd=col('CD');
+        if ([iNum,iIni,iFim,iChi,iCd].some(x=>x<0)) {
+          showToast('Colunas obrigatórias não encontradas no xlsx.', true); return;
+        }
+        // agrupar por equipamento (CD), ignorando '---'
+        const porEquip = {};
+        for (const r of rows.slice(hIdx+1)) {
+          const equip = String(r[iCd]||'').trim();
+          if (!equip || equip==='---' || !equip.startsWith('GN')) continue;
+          if (!porEquip[equip]) porEquip[equip] = new Set();
+          porEquip[equip].add(String(r[iNum]||''));
+        }
+        // salvar ocorrências detalhadas por equipamento
+        const ocorsPorEquip = {};
+        for (const r of rows.slice(hIdx+1)) {
+          const equip = String(r[iCd]||'').trim();
+          if (!equip || equip==='---' || !equip.startsWith('GN')) continue;
+          if (!ocorsPorEquip[equip]) ocorsPorEquip[equip] = {};
+          const num = String(r[iNum]||'').trim();
+          if (!num) continue;
+          // distinct por número de ocorrência
+          if (!ocorsPorEquip[equip][num]) {
+            ocorsPorEquip[equip][num] = {
+              numero: num,
+              inicio: String(r[iIni]||'').trim(),
+              fim:    String(r[iFim]||'').trim(),
+              causa:  String(r[iCausa]||'').trim(),
+              chi:    parseFloat(r[iChi])||0
+            };
+          }
+        }
+        // salvar/atualizar no Firestore (coleção 'decometro', doc por equipamento)
+        let salvos=0;
+        for (const [equip, ocsMap] of Object.entries(ocorsPorEquip)) {
+          const ocorrencias = Object.values(ocsMap);
+          const existSnap = await getDocs(query(collection(db,'decometro'), where('equipamento','==',equip)));
+          if (!existSnap.empty) {
+            const docRef = existSnap.docs[0].ref;
+            // merge: preservar ocorrências antigas e adicionar/atualizar novas
+            const existOcs = existSnap.docs[0].data().ocorrencias || [];
+            const existMap = {};
+            existOcs.forEach(o => { existMap[o.numero] = o; });
+            ocorrencias.forEach(o => { existMap[o.numero] = o; });
+            await updateDoc(docRef, { ocorrencias: Object.values(existMap), atualizadoEm: serverTimestamp() });
+          } else {
+            await addDoc(collection(db,'decometro'), {
+              equipamento: equip, ocorrencias, criadoEm: serverTimestamp()
+            });
+          }
+          salvos++;
+        }
+        showToast(`✓ Decômetro: ${salvos} equipamento${salvos!==1?'s':''} atualizados!`);
+      } catch(err) {
+        showToast(`Erro ao processar "${file.name}".`, true);
+        console.error(err);
+      }
+      return;
+    }
+
+    // ── HTML: circuito GN ──
     if (!file.name.endsWith('.html')) {
-      showToast(`"${file.name}" não é .html — ignorado.`, true); return;
+      showToast(`"${file.name}" formato não suportado — ignorado.`, true); return;
     }
     try {
       const htmlContent = await file.text();
       const nomeMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
       const nomeCircuito = nomeMatch ? nomeMatch[1].trim() : file.name.replace('.html', '');
-
       if (!nomeCircuito.toUpperCase().startsWith('GN')) {
         showToast(`"${nomeCircuito}" não é um arquivo GN — ignorado.`, true); return;
       }
-      const existSnap = await getDocs(query(collection(db, 'circuitos'), where('nome', '==', nomeCircuito)));
+      const existSnap = await getDocs(query(collection(db,'circuitos'), where('nome','==',nomeCircuito)));
       if (!existSnap.empty) {
         showToast(`"${nomeCircuito}" já cadastrado — ignorado.`, true); return;
       }
-      const qtdPostes   = (htmlContent.match(/lat\s*:/g) || []).length;
+      const qtdPostes = (htmlContent.match(/lat\s*:/g)||[]).length;
       const mCli = htmlContent.match(/[Cc]lientes\s*:\s*(\d+)/);
       const mPot = htmlContent.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
-      await addDoc(collection(db, 'circuitos'), {
+      await addDoc(collection(db,'circuitos'), {
         nome: nomeCircuito, htmlContent,
-        postes:   qtdPostes,
+        postes: qtdPostes,
         clientes: mCli ? parseInt(mCli[1]) : 0,
         potencia: mPot ? parseInt(mPot[1]) : null,
         ativo: true, criadoEm: serverTimestamp(), adminId: currentUser.uid

@@ -235,6 +235,20 @@
     .trafo-pill.finalizado { background: rgba(0,229,160,0.12); color: var(--eq-success); border: 1px solid rgba(0,229,160,0.25); }
     .trafo-pill.pendente   { background: rgba(255,179,0,0.12); color: var(--eq-warning); border: 1px solid rgba(255,179,0,0.25); }
 
+    /* deco badge no dashboard */
+    .deco-badge { display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:600; }
+    .deco-badge.ok     { background:rgba(0,229,160,.1);color:#00e5a0;border:1px solid rgba(0,229,160,.2); }
+    .deco-badge.alerta { background:rgba(255,179,0,.1);color:#ffb300;border:1px solid rgba(255,179,0,.2); }
+    .deco-badge.critico { background:rgba(255,77,109,.1);color:#ff4d6d;border:1px solid rgba(255,77,109,.2); }
+    .deco-badge.sem    { background:rgba(255,255,255,.05);color:#8a9bbf;border:1px solid rgba(255,255,255,.1); }
+
+    /* paginação */
+    .paginacao { display:flex;align-items:center;justify-content:center;gap:6px;margin:14px 0 4px;flex-wrap:wrap; }
+    .pag-btn { min-width:32px;height:32px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#8a9bbf;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0 7px; }
+    .pag-btn:hover { background:rgba(0,170,255,.1);color:#00aaff;border-color:rgba(0,170,255,.3); }
+    .pag-btn.active { background:linear-gradient(135deg,#1a56c4,#7c3fc0);color:#fff;border-color:transparent; }
+    .pag-btn:disabled { opacity:.3;cursor:default; }
+
     /* ── BOTTOM NAV ── */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
@@ -356,12 +370,20 @@
 
   <!-- TRANSFORMADORES FINALIZADOS -->
   <div class="trafo-section">
-    <div class="trafo-section-title">⚡ Status dos transformadores</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="trafo-section-title" style="margin-bottom:0">⚡ Status dos transformadores</div>
+      <div style="position:relative;min-width:160px;max-width:260px;flex:1">
+        <input type="text" id="buscaStatus" placeholder="Buscar GN..." oninput="filtrarStatus()"
+          style="width:100%;padding:7px 12px 7px 30px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#f0f4ff;font-family:'Barlow',sans-serif;font-size:12px;outline:none"/>
+        <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+    </div>
     <div id="listaTrafo">
       <div class="skeleton" style="height:40px;margin-bottom:8px;"></div>
       <div class="skeleton" style="height:40px;margin-bottom:8px;"></div>
       <div class="skeleton" style="height:40px;"></div>
     </div>
+    <div class="paginacao" id="paginacaoStatus"></div>
   </div>
 
 </div>
@@ -447,10 +469,12 @@
     anomalias = anoSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     inspecoes = inspSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     circuitos = circSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    statusFiltrado = [...circuitos];
 
     renderKPIs();
     renderGrafico();
     renderRanking();
+    await carregarDecoDash();
     renderTrafo();
     await carregarBadgePendencias();
   }
@@ -671,26 +695,101 @@
   }
 
   // ── TRANSFORMADORES STATUS ──
+  // ── status de transformadores com paginação + decômetro ──
+  let decoCacheDash = {};
+  let statusFiltrado = [];
+  let statusPagina = 1;
+  const STATUS_POR_PAG = 10;
+
+  function parseDtBRDash(str) {
+    if (!str) return null;
+    const [d,t] = String(str).split(' ');
+    const [dd,mm,yy] = d.split('/');
+    return new Date(`${yy}-${mm}-${dd}T${t||'00:00:00'}`);
+  }
+
+  function janela3MDash() {
+    const hoje = new Date();
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
+    const ini = new Date(fim.getFullYear(), fim.getMonth()-2, 1, 0, 0, 0);
+    return { ini, fim };
+  }
+
+  function decoBadgeDash(nomeGN) {
+    const all = decoCacheDash[nomeGN];
+    if (!all) return `<span class="deco-badge sem">Sem dados decômetro</span>`;
+    const { ini, fim } = janela3MDash();
+    const ocs = all.filter(o => { const dt=parseDtBRDash(o.inicio); return dt&&dt>=ini&&dt<=fim; });
+    if (!ocs.length) return `<span class="deco-badge ok">✓ 0 desarmes</span>`;
+    const freq = ocs.length;
+    const chi  = ocs.reduce((s,o)=>s+(parseFloat(o.chi)||0),0);
+    const cls  = chi>500?'critico':chi>100?'alerta':'ok';
+    return `<span class="deco-badge ${cls}">⚡ ${freq} desarme${freq>1?'s':''} · CHI ${chi.toFixed(1)}</span>`;
+  }
+
+  async function carregarDecoDash() {
+    const snap = await getDocs(collection(db,'decometro'));
+    decoCacheDash = {};
+    snap.docs.forEach(d => {
+      const dados = d.data();
+      if (dados.equipamento) decoCacheDash[dados.equipamento] = dados.ocorrencias||[];
+    });
+  }
+
+  window.filtrarStatus = function() {
+    const termo = (document.getElementById('buscaStatus')?.value||'').toLowerCase().trim();
+    statusFiltrado = termo
+      ? circuitos.filter(c=>(c.nome||c.id).toLowerCase().includes(termo))
+      : [...circuitos];
+    statusPagina = 1;
+    renderTrafo();
+  };
+
   function renderTrafo() {
     const el = document.getElementById('listaTrafo');
     if (!circuitos.length) {
-      el.innerHTML = '<p style="color:var(--eq-gray);font-size:13px;padding:8px 0">Nenhum circuito cadastrado.</p>';
-      return;
+      el.innerHTML = '<p style="color:#8a9bbf;font-size:13px;padding:8px 0">Nenhum circuito cadastrado.</p>';
+      document.getElementById('paginacaoStatus').innerHTML=''; return;
     }
+    if (!statusFiltrado.length) statusFiltrado = [...circuitos];
 
-    el.innerHTML = circuitos.map(c => {
-      const insp = inspecoes.find(i => i.circuitoId === c.id && i.status === 'concluido');
-      const temPendente = anomalias.some(a => a.circuitoId === c.id && a.status === 'pendente');
+    const total = statusFiltrado.length;
+    const totalPags = Math.max(1, Math.ceil(total/STATUS_POR_PAG));
+    statusPagina = Math.min(statusPagina, totalPags);
+    const pagina = statusFiltrado.slice((statusPagina-1)*STATUS_POR_PAG, statusPagina*STATUS_POR_PAG);
+
+    el.innerHTML = pagina.map(c => {
+      const insp = inspecoes.find(i=>i.circuitoId===c.id&&i.status==='concluido');
+      const temPendente = anomalias.some(a=>a.circuitoId===c.id&&a.status==='pendente');
       const finalizado = insp && !temPendente;
-
-      return `<div class="trafo-row">
-        <div class="trafo-nome">${c.nome || c.id}</div>
-        <span class="trafo-pill ${finalizado ? 'finalizado' : 'pendente'}">
-          ${finalizado ? '✓ Finalizado' : '⏳ Pendente'}
-        </span>
+      const badge = decoBadgeDash(c.nome||c.id);
+      return `<div class="trafo-row" style="flex-wrap:wrap;gap:6px">
+        <div class="trafo-nome" style="min-width:120px">${c.nome||c.id}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${badge}
+          <span class="trafo-pill ${finalizado?'finalizado':'pendente'}">
+            ${finalizado?'✓ Finalizado':'⏳ Pendente'}
+          </span>
+        </div>
       </div>`;
     }).join('');
+
+    // paginação
+    const pagEl = document.getElementById('paginacaoStatus');
+    if (totalPags<=1) { pagEl.innerHTML=''; return; }
+    let html = `<button class="pag-btn" onclick="statusIrPag(${statusPagina-1})" ${statusPagina===1?'disabled':''}>‹</button>`;
+    for (let i=1;i<=totalPags;i++) {
+      if (totalPags>7&&Math.abs(i-statusPagina)>2&&i!==1&&i!==totalPags) {
+        if(i===2||i===totalPags-1) html+=`<span style="color:#8a9bbf;padding:0 4px">…</span>`;
+        continue;
+      }
+      html+=`<button class="pag-btn${i===statusPagina?' active':''}" onclick="statusIrPag(${i})">${i}</button>`;
+    }
+    html+=`<button class="pag-btn" onclick="statusIrPag(${statusPagina+1})" ${statusPagina===totalPags?'disabled':''}>›</button>`;
+    pagEl.innerHTML = html;
   }
+
+  window.statusIrPag = function(n) { statusPagina=n; renderTrafo(); };
 
   async function carregarBadgePendencias() {
     const badge = document.getElementById('badgePendencias');

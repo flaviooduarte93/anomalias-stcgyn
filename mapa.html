@@ -128,12 +128,13 @@
       z-index: 900;
       background: rgba(10,22,40,0.92);
       border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 14px; padding: 14px 16px;
+      border-radius: 14px; padding: 12px 16px;
       backdrop-filter: blur(16px);
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      display: flex; flex-direction: column; gap: 8px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
       transition: transform .3s, opacity .3s;
     }
+    .trafo-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .trafo-card.hidden { transform: translateY(20px); opacity: 0; pointer-events: none; }
 
     .trafo-info { display: flex; flex-direction: column; gap: 2px; }
@@ -152,6 +153,16 @@
     .stat-label { font-size: 10px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .6px; }
 
     .trafo-actions { display: flex; flex-direction: column; gap: 6px; }
+
+    /* badge decômetro inline */
+    .deco-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    }
+    .deco-badge.ok     { background: rgba(0,229,160,0.1); color: #00e5a0; border: 1px solid rgba(0,229,160,0.2); }
+    .deco-badge.alerta { background: rgba(255,179,0,0.1); color: #ffb300; border: 1px solid rgba(255,179,0,0.2); }
+    .deco-badge.critico { background: rgba(255,77,109,0.1); color: #ff4d6d; border: 1px solid rgba(255,77,109,0.2); }
+    .deco-badge.sem    { background: rgba(255,255,255,0.05); color: #8a9bbf; border: 1px solid rgba(255,255,255,0.1); }
 
     /* ── FAB — botão apontar anomalia (fiscal) ── */
     .fab {
@@ -405,21 +416,24 @@
 
 <!-- CARD TRANSFORMADOR -->
 <div class="trafo-card hidden" id="trafoCard">
-  <div class="trafo-info">
-    <div class="trafo-label">⚡ Transformador</div>
-    <div class="trafo-id" id="trafoId">—</div>
-    <div class="trafo-poste" id="trafoCircuito">—</div>
-  </div>
-  <div class="trafo-stats">
-    <div class="stat">
-      <div class="stat-val" id="trafoPotencia">—</div>
-      <div class="stat-label">kVA</div>
+  <div class="trafo-card-top">
+    <div class="trafo-info">
+      <div class="trafo-label">⚡ Transformador</div>
+      <div class="trafo-id" id="trafoId">—</div>
+      <div class="trafo-poste" id="trafoCircuito">—</div>
     </div>
-    <div class="stat">
-      <div class="stat-val" id="trafoClientes">—</div>
-      <div class="stat-label">Clientes</div>
+    <div class="trafo-stats">
+      <div class="stat">
+        <div class="stat-val" id="trafoPotencia">—</div>
+        <div class="stat-label">kVA</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="trafoClientes">—</div>
+        <div class="stat-label">Clientes</div>
+      </div>
     </div>
   </div>
+  <div id="trafoDecoBadge" style="display:none"></div>
 </div>
 
 <!-- FAB: apontar anomalia (fiscal) -->
@@ -816,6 +830,42 @@
         document.getElementById('trafoPotencia').textContent = trafoData.potencia;
         document.getElementById('trafoClientes').textContent = trafoData.clientes;
         document.getElementById('trafoCard').classList.remove('hidden');
+
+        // buscar dados decômetro para este GN
+        const decoDiv = document.getElementById('trafoDecoBadge');
+        decoDiv.style.display = 'none';
+        decoDiv.innerHTML = '';
+        try {
+          const decoSnap = await getDocs(query(collection(db,'decometro'),
+            where('equipamento','==', circuitoNome)));
+          if (!decoSnap.empty) {
+            const all = decoSnap.docs[0].data().ocorrencias || [];
+            // filtrar últimos 3 meses fechados
+            const hoje = new Date();
+            const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
+            const ini3m = new Date(fim3m.getFullYear(), fim3m.getMonth()-2, 1, 0, 0, 0);
+            const parseDtBR = s => {
+              if (!s) return null;
+              const [d,t] = String(s).split(' ');
+              const [dd,mm,yy] = d.split('/');
+              return new Date(`${yy}-${mm}-${dd}T${t||'00:00:00'}`);
+            };
+            const ocs3m = all.filter(o => {
+              const dt = parseDtBR(o.inicio);
+              return dt && dt >= ini3m && dt <= fim3m;
+            });
+            const freq = ocs3m.length;
+            const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
+            let cls, label;
+            if (!freq) { cls='ok'; label='✓ 0 desarmes (3m)'; }
+            else {
+              cls = chi>500?'critico':chi>100?'alerta':'ok';
+              label = `⚡ ${freq} desarme${freq>1?'s':''} · CHI ${chi.toFixed(1)} (3m)`;
+            }
+            decoDiv.innerHTML = `<span class="deco-badge ${cls}">${label}</span>`;
+            decoDiv.style.display = 'block';
+          }
+        } catch(e) { console.warn('Deco load error', e); }
       }
 
       // zoom no circuito
