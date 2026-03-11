@@ -1,6 +1,6 @@
 // Service Worker — Anomalias STCGYN
 // Versão: incrementar aqui força atualização em todos os clientes
-const VERSION = 'v1';
+const VERSION = 'v3';
 
 // Instala e ativa imediatamente sem esperar abas fecharem
 self.addEventListener('install', () => self.skipWaiting());
