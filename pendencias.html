@@ -624,23 +624,22 @@
 
   function renderLista() {
     const lista = document.getElementById('listaInspecoes');
-    let itens = todasInspecoes;
+    let itens = [...todasInspecoes];
 
-    if (filtroAtivo !== 'todos') {
-      itens = itens.filter(i => i.status === filtroAtivo);
-    }
-
-    // fiscal vê só pendentes por padrão
+    // fiscal sempre vê só pendentes
     if (currentPerfil === 'fiscal') {
       itens = itens.filter(i => i.status === 'pendente');
+    } else if (filtroAtivo !== 'todos') {
+      itens = itens.filter(i => i.status === filtroAtivo);
     }
 
     document.getElementById('countPill').textContent = itens.length;
     document.getElementById('sectionTitle').textContent =
-      filtroAtivo === 'todos' ? 'Todas as inspeções' :
+      currentPerfil === 'fiscal' ? 'Inspeções pendentes' :
+      filtroAtivo === 'todos'    ? 'Todas as inspeções' :
       filtroAtivo === 'pendente' ? 'Inspeções pendentes' : 'Inspeções concluídas';
 
-    if (itens.length === 0) {
+    if (!itens.length) {
       lista.innerHTML = `<div class="empty">
         <div class="empty-icon">✅</div>
         <p>${currentPerfil === 'fiscal'
@@ -651,17 +650,13 @@
       return;
     }
 
-    lista.innerHTML = '';
-
-    itens.forEach(insp => {
-      const delegadoEm = insp.delegadoEm?.toDate ? insp.delegadoEm.toDate() : null;
-      const diasEmAberto = delegadoEm
-        ? Math.floor((Date.now() - delegadoEm.getTime()) / 86400000)
-        : null;
+    lista.innerHTML = itens.map(insp => {
+      const delegadoEm   = insp.delegadoEm?.toDate ? insp.delegadoEm.toDate() : null;
+      const diasEmAberto = delegadoEm ? Math.floor((Date.now() - delegadoEm.getTime()) / 86400000) : null;
 
       let diasBadgeHtml = '';
       if (diasEmAberto !== null && insp.status === 'pendente') {
-        const cls = diasEmAberto <= 3 ? 'ok' : diasEmAberto <= 7 ? 'alerta' : 'critico';
+        const cls   = diasEmAberto <= 3 ? 'ok' : diasEmAberto <= 7 ? 'alerta' : 'critico';
         const label = diasEmAberto === 0 ? 'Hoje' : `${diasEmAberto}d em aberto`;
         diasBadgeHtml = `<span class="dias-badge ${cls}">⏱ ${label}</span>`;
       }
@@ -669,15 +664,14 @@
       const dataStr = delegadoEm ? delegadoEm.toLocaleDateString('pt-BR') : '—';
       const urgente = diasEmAberto !== null && diasEmAberto > 7 && insp.status === 'pendente';
 
-      lista.innerHTML += `
+      return `
         <div class="insp-card ${insp.status} ${urgente ? 'urgente' : ''}" onclick="irParaMapa('${insp.circuitoId}')">
           <div class="insp-top">
-            <div class="insp-nome">${insp.circuitoNome || insp.circuitoId}</div>
+            <div class="insp-nome">${insp.circuitoNome || insp.circuitoId || '—'}</div>
             <span class="status-pill ${insp.status}">
               ${insp.status === 'pendente' ? '⏳ Pendente' : '✓ Concluído'}
             </span>
           </div>
-
           <div class="insp-meta">
             <div class="meta-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -690,14 +684,13 @@
             </div>` : ''}
             ${diasBadgeHtml}
           </div>
-
           <div class="insp-actions" onclick="event.stopPropagation()">
             <button class="btn-sm btn-outline-sm" onclick="irParaMapa('${insp.circuitoId}')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
               Ver no mapa
             </button>
             ${insp.status === 'pendente' && currentPerfil === 'fiscal' ? `
-            <button class="btn-sm btn-success-sm" onclick="openModalConcluir('${insp.id}', '${(insp.circuitoNome||'').replace(/'/g,"\\'")}')">
+            <button class="btn-sm btn-success-sm" onclick="openModalConcluir('${insp.id}', '${(insp.circuitoNome||'').replace(/'/g,"\'")}')">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
               Concluir inspeção
             </button>` : ''}
@@ -710,7 +703,7 @@
             </div>` : ''}
           </div>
         </div>`;
-    });
+    }).join('');
   }
 
   // ── filtros (admin) ──
