@@ -728,6 +728,7 @@
       const circ = todosCircuitos.find(c => c.id === presel);
       if (circ) {
         document.getElementById('circuitInput').value = circ.nome || circ.id;
+        toggleClearBtn();
         await loadCircuitById(presel);
       }
     }
