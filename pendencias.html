@@ -407,7 +407,9 @@
   (function(){
     var p = sessionStorage.getItem('userPerfil') || '';
     document.write('<style>'
-      + (p === 'admin' ? '' : '#nav-dashboard,#nav-circuitos{display:none}')
+      + (p === 'admin' ? '' :
+         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos{display:none}' :
+         '#nav-dashboard,#nav-circuitos{display:none}')
       + '</style>');
   })();
 </script>

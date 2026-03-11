@@ -298,6 +298,14 @@
     .foto-preview { width: 100%; border-radius: 8px; display: none; }
 
     .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .qty-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(0,170,255,0.15); border: 1px solid rgba(0,170,255,0.3);
+      color: var(--eq-cyan); font-size: 20px; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .qty-btn:hover { background: rgba(0,170,255,0.3); }
     .btn-cancel {
       flex: 1; padding: 13px;
       background: rgba(255,255,255,0.06);
@@ -545,6 +553,30 @@
       </div>
     </div>
 
+    <div class="modal-field">
+      <div class="modal-label">Quantidade de serviços</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="qty-btn" onclick="alterarQty(-1)">−</button>
+        <span id="qtyValor" style="font-size:20px;font-weight:700;color:var(--eq-white);min-width:28px;text-align:center">1</span>
+        <button class="qty-btn" onclick="alterarQty(1)">+</button>
+      </div>
+    </div>
+
+    <div class="modal-field" id="textoOrdemWrap" style="display:none">
+      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Texto para OS</span>
+        <button onclick="copiarTextoOS()" style="background:none;border:1px solid rgba(0,170,255,0.3);border-radius:6px;padding:3px 8px;color:var(--eq-cyan);font-size:11px;cursor:pointer">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
+        </button>
+      </div>
+      <div id="textoOS" style="
+        margin-top:6px; padding:10px 12px;
+        background:rgba(0,170,255,0.06); border:1px solid rgba(0,170,255,0.2);
+        border-radius:8px; font-size:13px; color:var(--eq-white);
+        line-height:1.5; user-select:all; cursor:text;
+      "></div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModalAnomalia()">Cancelar</button>
       <button class="btn-save" id="btnSalvarAnomalia" onclick="salvarAnomalia()" disabled>Salvar</button>
@@ -604,6 +636,7 @@
   function cldThumb(url) { return url ? url.replace('/upload/', '/upload/w_400,q_65,f_auto/')  : url; }
   let currentPerfil = null;
   let currentCircuitoId = null;
+  let currentTrafoNome = null;
   let anomaliaMarkers = [];
   let currentAnomaliaPos = null;
   let currentAnomaliaPostes = null;
@@ -950,7 +983,8 @@
       // card transformador
       // card transformador
       if (trafoData) {
-        document.getElementById('trafoId').textContent       = circuitoNome || circuitoId;
+        currentTrafoNome = circuitoNome || circuitoId;
+        document.getElementById('trafoId').textContent       = currentTrafoNome;
         document.getElementById('trafoCircuito').textContent = `Poste: ${trafoData.id}`;
         document.getElementById('trafoPotencia').textContent = trafoData.potencia;
         document.getElementById('trafoClientes').textContent = trafoData.clientes;
@@ -1051,6 +1085,9 @@
     document.getElementById('modalEndereco').classList.add('loading');
     document.getElementById('modalCoords').textContent = '—';
     document.getElementById('modalPostes').textContent = '—';
+    document.getElementById('qtyValor').textContent = '1';
+    document.getElementById('textoOrdemWrap').style.display = 'none';
+    document.getElementById('textoOS').textContent = '';
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const lat = pos.coords.latitude;
@@ -1067,6 +1104,7 @@
         });
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
         document.getElementById('modalPostes').textContent = currentAnomaliaPostes;
+        gerarTextoOS();
       }
 
       // geocode reverso
@@ -1095,7 +1133,48 @@
     selectedTipo = tipo;
     document.getElementById('tipoPoda').classList.toggle('selected', tipo === 'poda');
     document.getElementById('tipoEspacador').classList.toggle('selected', tipo === 'espacador');
+    gerarTextoOS();
     checkSalvarEnabled();
+  };
+
+  window.alterarQty = function(delta) {
+    const el = document.getElementById('qtyValor');
+    const atual = parseInt(el.textContent) || 1;
+    const novo = Math.max(1, Math.min(99, atual + delta));
+    el.textContent = novo;
+    gerarTextoOS();
+  };
+
+  function gerarTextoOS() {
+    if (!selectedTipo || !currentAnomaliaPostes) {
+      document.getElementById('textoOrdemWrap').style.display = 'none';
+      return;
+    }
+    const qty    = parseInt(document.getElementById('qtyValor').textContent) || 1;
+    const trafo  = currentTrafoNome || currentCircuitoId || '—';
+    const postes = currentAnomaliaPostes; // ex: "12345 — 12346"
+    const acao   = selectedTipo === 'poda'
+      ? `Realizar ${qty} poda${qty > 1 ? 's' : ''} de árvore`
+      : `Instalar ${qty} espaçador${qty > 1 ? 'es' : ''}`;
+    const texto  = `${trafo} - ${acao} entre os postes ${postes}`;
+    document.getElementById('textoOS').textContent = texto;
+    document.getElementById('textoOrdemWrap').style.display = 'block';
+  }
+
+  window.copiarTextoOS = function() {
+    const texto = document.getElementById('textoOS').textContent;
+    if (!texto) return;
+    navigator.clipboard.writeText(texto).then(() => {
+      showToast('Texto copiado!');
+    }).catch(() => {
+      // fallback para dispositivos sem clipboard API
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById('textoOS'));
+      sel.removeAllRanges();
+      sel.addRange(range);
+      showToast('Selecione e copie o texto manualmente.');
+    });
   };
 
   window.previewFoto = function(e) {
@@ -1130,6 +1209,8 @@
       const fotoUrl = cldSave(json.secure_url);
 
       // salvar Firestore
+      const qty     = parseInt(document.getElementById('qtyValor').textContent) || 1;
+      const textoOS = document.getElementById('textoOS').textContent || '';
       await addDoc(collection(db, 'anomalias'), {
         circuitoId:  currentCircuitoId,
         tipo:        selectedTipo,
@@ -1137,6 +1218,8 @@
         lng:         currentAnomaliaPos.lng,
         endereco:    currentAnomaliaPos.endereco || '',
         postes:      currentAnomaliaPostes || '',
+        quantidade:  qty,
+        textoOS,
         fotoUrl,
         fiscalId:    currentUser.uid,
         fiscalNome:  currentUser.nome,
