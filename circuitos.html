@@ -503,6 +503,7 @@
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+
   const firebaseConfig = {
     apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
     authDomain: "anomalias-stcgyn.firebaseapp.com",
@@ -512,9 +513,9 @@
     appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
   };
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+  const app     = initializeApp(firebaseConfig);
+  const auth    = getAuth(app);
+  const db      = getFirestore(app);
 
   let currentUser = null;
   let delegarCircuitoId = null;
@@ -848,20 +849,51 @@
       if (!nomeCircuito.toUpperCase().startsWith('GN')) {
         showToast(`"${nomeCircuito}" não é um arquivo GN — ignorado.`, true); return;
       }
-      onProgress?.(50, 'Verificando duplicata…');
+      onProgress?.(40, 'Verificando duplicata…');
       const existSnap = await getDocs(query(collection(db,'circuitos'), where('nome','==',nomeCircuito)));
       if (!existSnap.empty) {
         showToast(`"${nomeCircuito}" já cadastrado — ignorado.`, true); return;
       }
-      onProgress?.(75, `Salvando ${nomeCircuito}…`);
-      const qtdPostes = (htmlContent.match(/lat\s*:/g)||[]).length;
+
+      onProgress?.(60, 'Extraindo dados do circuito…');
+
+      // ── extrai postes ──
+      const offsetLat = parseFloat((htmlContent.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
+      const offsetLng = parseFloat((htmlContent.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
+      const postes = [];
+      const reP = /\{\s*id:\s*'([^']+)',\s*lat:\s*(-?[\d.]+),\s*lng:\s*(-?[\d.]+),\s*esforco:\s*'([^']*)',\s*temTransformador:\s*(\d)/g;
+      let mp;
+      while ((mp = reP.exec(htmlContent)) !== null) {
+        postes.push({
+          id: mp[1],
+          lat: Math.round((parseFloat(mp[2]) + offsetLat) * 1e7) / 1e7,
+          lng: Math.round((parseFloat(mp[3]) + offsetLng) * 1e7) / 1e7,
+          e: mp[4],   // esforco abreviado
+          t: parseInt(mp[5]) === 1 ? 1 : 0  // temTransformador
+        });
+      }
+
+      // ── extrai conexões ──
+      const conexoes = [];
+      const reC = /\{\s*de:\s*'([^']+)',\s*para:\s*'([^']+)',\s*fase:\s*'([^']+)',\s*condutor:\s*'([^']+)',\s*trecho:\s*'([^']+)',\s*comprimento:\s*([\d.]+),\s*tipo:\s*'([^']+)'/g;
+      let mc;
+      while ((mc = reC.exec(htmlContent)) !== null) {
+        conexoes.push({ d: mc[1], p: mc[2], f: mc[3], c: mc[4], t: mc[5], l: parseFloat(mc[6]), tp: mc[7] });
+      }
+
+      // ── extrai info do trafo ──
+      const mPot = htmlContent.match(/[Pp]otenci[ae]\s*:\s*(\d+)/);
       const mCli = htmlContent.match(/[Cc]lientes\s*:\s*(\d+)/);
-      const mPot = htmlContent.match(/[Pp]otenci[ae]\D{0,5}(\d+)/);
+      const potencia  = mPot ? parseInt(mPot[1]) : null;
+      const clientes  = mCli ? parseInt(mCli[1]) : 0;
+
+      onProgress?.(85, `Salvando ${nomeCircuito}…`);
       await addDoc(collection(db,'circuitos'), {
-        nome: nomeCircuito, htmlContent,
-        postes: qtdPostes,
-        clientes: mCli ? parseInt(mCli[1]) : 0,
-        potencia: mPot ? parseInt(mPot[1]) : null,
+        nome:    nomeCircuito,
+        postes:  postes.length,
+        clientes,
+        potencia,
+        geodata: { postes, conexoes },   // JSON compacto — sem HTML
         ativo: true, criadoEm: serverTimestamp(), adminId: currentUser.uid
       });
       onProgress?.(100, 'Concluído!');
@@ -935,6 +967,7 @@
   // ── ver no mapa ──
   window.verNoMapa = function(id) {
     sessionStorage.setItem('circuitoSelecionado', id);
+    sessionStorage.setItem('mapaOrigem', 'circuitos');
     window.location.href = 'mapa.html';
   };
 

@@ -773,6 +773,14 @@
   };
 
   window.limparBusca = function() {
+    const origem = sessionStorage.getItem('mapaOrigem');
+    sessionStorage.removeItem('mapaOrigem');
+
+    if (origem === 'circuitos') {
+      window.location.href = 'circuitos.html';
+      return;
+    }
+
     const input = document.getElementById('circuitInput');
     input.value = '';
     document.getElementById('circuitWrap').classList.remove('has-value');
