@@ -654,7 +654,6 @@
     const lista = document.getElementById('listaInspecoes');
     let itens = [...todasInspecoes];
 
-    // fiscal sempre vê só pendentes
     if (currentPerfil === 'fiscal') {
       itens = itens.filter(i => i.status === 'pendente');
     } else if (filtroAtivo !== 'todos') {
@@ -668,75 +667,83 @@
       filtroAtivo === 'pendente' ? 'Inspeções pendentes' : 'Inspeções concluídas';
 
     if (!itens.length) {
-      lista.innerHTML = `<div class="empty">
-        <div class="empty-icon">✅</div>
-        <p>${currentPerfil === 'fiscal'
-          ? 'Você não tem inspeções pendentes!<br/><strong>Tudo em dia por aqui.</strong>'
-          : 'Nenhuma inspeção encontrada para o filtro selecionado.'
-        }</p>
-      </div>`;
+      const msg = currentPerfil === 'fiscal'
+        ? 'Você não tem inspeções pendentes!<br><strong>Tudo em dia por aqui.</strong>'
+        : 'Nenhuma inspeção encontrada para o filtro selecionado.';
+      lista.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>' + msg + '</p></div>';
       return;
     }
 
-    lista.innerHTML = itens.map(insp => {
-      const delegadoEm   = insp.delegadoEm?.toDate ? insp.delegadoEm.toDate() : null;
+    const html = itens.map(function(insp) {
+      const delegadoEm   = insp.delegadoEm && insp.delegadoEm.toDate ? insp.delegadoEm.toDate() : null;
       const diasEmAberto = delegadoEm ? Math.floor((Date.now() - delegadoEm.getTime()) / 86400000) : null;
+      const dataStr      = delegadoEm ? delegadoEm.toLocaleDateString('pt-BR') : '—';
+      const urgente      = diasEmAberto !== null && diasEmAberto > 7 && insp.status === 'pendente';
+      const nome         = insp.circuitoNome || insp.circuitoId || '—';
+      const statusLabel  = insp.status === 'pendente' ? '⏳ Pendente' : '✓ Concluído';
 
-      let diasBadgeHtml = '';
+      let diasBadge = '';
       if (diasEmAberto !== null && insp.status === 'pendente') {
         const cls   = diasEmAberto <= 3 ? 'ok' : diasEmAberto <= 7 ? 'alerta' : 'critico';
-        const label = diasEmAberto === 0 ? 'Hoje' : `${diasEmAberto}d em aberto`;
-        diasBadgeHtml = `<span class="dias-badge ${cls}">⏱ ${label}</span>`;
+        const label = diasEmAberto === 0 ? 'Hoje' : diasEmAberto + 'd em aberto';
+        diasBadge   = '<span class="dias-badge ' + cls + '">⏱ ' + label + '</span>';
       }
 
-      const dataStr = delegadoEm ? delegadoEm.toLocaleDateString('pt-BR') : '—';
-      const urgente = diasEmAberto !== null && diasEmAberto > 7 && insp.status === 'pendente';
+      let metaAdmin = '';
+      if (currentPerfil === 'admin') {
+        metaAdmin = '<div class="meta-item">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+          + 'Fiscal: <span>' + (insp.fiscalNome || '—') + '</span></div>';
+      }
 
-      return `
-        <div class="insp-card ${insp.status} ${urgente ? 'urgente' : ''}" onclick="irParaMapa('${insp.circuitoId}')">
-          <div class="insp-top">
-            <div class="insp-nome">${insp.circuitoNome || insp.circuitoId || '—'}</div>
-            <span class="status-pill ${insp.status}">
-              ${insp.status === 'pendente' ? '⏳ Pendente' : '✓ Concluído'}
-            </span>
-          </div>
-          <div class="insp-meta">
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Delegado em <span>${dataStr}</span>
-            </div>
-            ${currentPerfil === 'admin' ? `
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Fiscal: <span>${insp.fiscalNome || '—'}</span>
-            </div>` : ''}
-            ${diasBadgeHtml}
-          </div>
-          <div class="insp-actions" onclick="event.stopPropagation()">
-            <button class="btn-sm btn-outline-sm" onclick="irParaMapa('${insp.circuitoId}')">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
-              Ver no mapa
-            </button>
-            ${insp.status === 'pendente' && currentPerfil === 'fiscal' ? `
-            <button class="btn-sm btn-success-sm" onclick="openModalConcluir('${insp.id}', '${(insp.circuitoNome||'').replace(/'/g,"\'")}')">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              Concluir inspeção
-            </button>` : ''}
-            ${insp.status === 'pendente' && currentPerfil === 'admin' ? `
-            <button class="btn-sm btn-danger-sm" onclick="openModalCancelar('${insp.id}', '${(insp.circuitoNome||'').replace(/'/g,"\'")}')">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              Cancelar inspeção
-            </button>` : ''}
-            ${insp.status === 'concluido' ? `
-            <div class="meta-item" style="padding:6px 0">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--eq-success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              <span style="color:var(--eq-success);font-size:12px">
-                Concluído em ${insp.concluidoEm?.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '—'}
-              </span>
-            </div>` : ''}
-          </div>
-        </div>`;
+      let btnConcluir = '';
+      if (insp.status === 'pendente' && currentPerfil === 'fiscal') {
+        const nomeEsc = (insp.circuitoNome || '').replace(/'/g, "\'");
+        btnConcluir = '<button class="btn-sm btn-success-sm" onclick="openModalConcluir('' + insp.id + '', '' + nomeEsc + '')">'
+          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+          + ' Concluir inspeção</button>';
+      }
+
+      let btnCancelar = '';
+      if (insp.status === 'pendente' && currentPerfil === 'admin') {
+        const nomeEsc = (insp.circuitoNome || '').replace(/'/g, "\'");
+        btnCancelar = '<button class="btn-sm btn-danger-sm" onclick="openModalCancelar('' + insp.id + '', '' + nomeEsc + '')">'
+          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+          + ' Cancelar inspeção</button>';
+      }
+
+      let concluidoInfo = '';
+      if (insp.status === 'concluido') {
+        const dt = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '—';
+        concluidoInfo = '<div class="meta-item" style="padding:6px 0">'
+          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--eq-success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+          + '<span style="color:var(--eq-success);font-size:12px"> Concluído em ' + dt + '</span></div>';
+      }
+
+      return '<div class="insp-card ' + insp.status + (urgente ? ' urgente' : '') + '" onclick="irParaMapa('' + insp.circuitoId + '')">'
+        + '<div class="insp-top">'
+        + '<div class="insp-nome">' + nome + '</div>'
+        + '<span class="status-pill ' + insp.status + '">' + statusLabel + '</span>'
+        + '</div>'
+        + '<div class="insp-meta">'
+        + '<div class="meta-item">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+        + 'Delegado em <span>' + dataStr + '</span></div>'
+        + metaAdmin
+        + diasBadge
+        + '</div>'
+        + '<div class="insp-actions" onclick="event.stopPropagation()">'
+        + '<button class="btn-sm btn-outline-sm" onclick="irParaMapa('' + insp.circuitoId + '')">'
+        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>'
+        + ' Ver no mapa</button>'
+        + btnConcluir
+        + btnCancelar
+        + concluidoInfo
+        + '</div>'
+        + '</div>';
     }).join('');
+
+    lista.innerHTML = html;
   }
 
   // ── filtros (admin) ──
