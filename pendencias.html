@@ -6,847 +6,532 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
-  <title>Anomalias STCGYN — Pendências</title>
+  <title>Anomalias STCGYN - Pendencias</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --eq-blue-dark:  #0a1628;
-      --eq-blue-mid:   #1a56c4;
-      --eq-cyan:       #00aaff;
-      --eq-purple-mid: #7c3fc0;
-      --eq-white:      #f0f4ff;
-      --eq-gray:       #8a9bbf;
-      --eq-error:      #ff4d6d;
-      --eq-success:    #00e5a0;
-      --eq-warning:    #ffb300;
-      --nav-h:         64px;
-      --top-h:         56px;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bd:#0a1628;--bm:#1a56c4;--cy:#00aaff;--pm:#7c3fc0;
+      --wh:#f0f4ff;--gr:#8a9bbf;--er:#ff4d6d;--su:#00e5a0;--wa:#ffb300;
+      --nh:64px;--th:56px;
     }
-
-    html, body {
-      height: 100%; font-family: 'Barlow', sans-serif;
-      background: var(--eq-blue-dark); color: var(--eq-white);
-      -webkit-tap-highlight-color: transparent;
-      overflow-x: hidden;
-    }
-
-    /* ── TOPBAR ── */
-    .topbar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-      height: var(--top-h);
-      background: rgba(10,22,40,0.97);
-      border-bottom: 1px solid rgba(0,170,255,0.15);
-      backdrop-filter: blur(16px);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px; gap: 10px;
-    }
-    .topbar-logo { display: flex; align-items: center; gap: 8px; }
-    .topbar-logo .icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    }
-    .topbar-logo .icon svg { width: 16px; height: 16px; }
-    .topbar-logo span {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 15px; font-weight: 700; letter-spacing: 1px;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .topbar-right { display: flex; align-items: center; gap: 8px; }
-    .avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
-    }
-    .btn-logout {
-      background: none; border: 1px solid rgba(255,77,109,0.3);
-      border-radius: 7px; padding: 6px 8px; color: var(--eq-error);
-      cursor: pointer; font-size: 11px; font-weight: 600;
-    }
-    .btn-logout:hover { background: rgba(255,77,109,0.1); }
-
-    /* ── CONTEÚDO ── */
-    .content {
-      margin-top: var(--top-h);
-      margin-bottom: var(--nav-h);
-      padding: 20px 16px;
-      min-height: calc(100vh - var(--top-h) - var(--nav-h));
-    }
-
-    .page-header { margin-bottom: 20px; }
-    .page-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 22px; font-weight: 700;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .page-sub { font-size: 13px; color: var(--eq-gray); margin-top: 2px; }
-
-    /* ── FILTROS (admin) ── */
-    .filtros {
-      display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto;
-      padding-bottom: 4px; scrollbar-width: none;
-    }
-    .filtros::-webkit-scrollbar { display: none; }
-    .filtro-btn {
-      padding: 7px 14px; border-radius: 20px; white-space: nowrap;
-      font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600;
-      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05); color: var(--eq-gray);
-      transition: all .2s;
-    }
-    .filtro-btn.active {
-      background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35);
-      color: var(--eq-cyan);
-    }
-
-    /* ── SUMÁRIO ── */
-    .summary-row {
-      display: flex; gap: 10px; margin-bottom: 20px;
-    }
-    .summary-card {
-      flex: 1; background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px; padding: 14px 12px;
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-    }
-    .summary-card.pendente { border-color: rgba(255,179,0,0.2); }
-    .summary-card.concluido { border-color: rgba(0,229,160,0.2); }
-    .summary-val {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 28px; font-weight: 700;
-    }
-    .summary-card.pendente .summary-val { color: var(--eq-warning); }
-    .summary-card.concluido .summary-val { color: var(--eq-success); }
-    .summary-card.total .summary-val { color: var(--eq-cyan); }
-    .summary-label { font-size: 11px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .6px; text-align: center; }
-
-    /* ── SECTION HEADER ── */
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
-    }
-    .section-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 14px; font-weight: 700; letter-spacing: .8px;
-      color: var(--eq-gray); text-transform: uppercase;
-    }
-    .count-pill {
-      background: rgba(0,170,255,0.1); border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 20px; padding: 2px 10px;
-      font-size: 12px; font-weight: 700; color: var(--eq-cyan);
-    }
-
-    /* ── CARD INSPEÇÃO ── */
-    .insp-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px; padding: 16px;
-      margin-bottom: 10px; cursor: pointer;
-      transition: all .2s; position: relative; overflow: hidden;
-    }
-    .insp-card:hover { border-color: rgba(0,170,255,0.25); transform: translateY(-1px); }
-    .insp-card.pendente { border-left: 3px solid var(--eq-warning); }
-    .insp-card.concluido { border-left: 3px solid var(--eq-success); }
-
-    /* indicador de urgência */
-    .insp-card.urgente::after {
-      content: ''; position: absolute; top: 0; right: 0;
-      width: 0; height: 0;
-      border-style: solid;
-      border-width: 0 20px 20px 0;
-      border-color: transparent var(--eq-error) transparent transparent;
-    }
-
-    .insp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-    .insp-nome {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 18px; font-weight: 700; line-height: 1.2;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    .status-pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 20px; flex-shrink: 0;
-      font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
-    }
-    .status-pill.pendente  { background: rgba(255,179,0,0.12);  color: var(--eq-warning); border: 1px solid rgba(255,179,0,0.25); }
-    .status-pill.concluido { background: rgba(0,229,160,0.12); color: var(--eq-success); border: 1px solid rgba(0,229,160,0.25); }
-
-    .insp-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-    .meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--eq-gray); }
-    .meta-item svg { width: 13px; height: 13px; flex-shrink: 0; }
-    .meta-item span { color: var(--eq-white); }
-
-    /* dias em aberto */
-    .dias-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 8px; border-radius: 6px;
-      font-size: 11px; font-weight: 700;
-    }
-    .dias-badge.ok      { background: rgba(0,229,160,0.1);  color: var(--eq-success); }
-    .dias-badge.alerta  { background: rgba(255,179,0,0.12); color: var(--eq-warning); }
-    .dias-badge.critico { background: rgba(255,77,109,0.12); color: var(--eq-error); }
-
-    .insp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn-sm {
-      padding: 8px 14px; border-radius: 8px;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
-      cursor: pointer; border: none; transition: opacity .2s, transform .15s;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .btn-sm:active { transform: scale(.97); }
-    .btn-primary-sm  { background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid)); color: #fff; }
-    .btn-outline-sm  { background: transparent; border: 1px solid rgba(0,170,255,0.3); color: var(--eq-cyan); }
-    .btn-success-sm  { background: linear-gradient(135deg, #1a8c4e, #0d6e3b); color: #fff; }
-    .btn-warning-sm  { background: transparent; border: 1px solid rgba(255,179,0,0.3); color: var(--eq-warning); }
-    .btn-danger-sm   { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--eq-error); }
-    .btn-sm:hover { opacity: .85; }
-
-    /* ── EMPTY STATE ── */
-    .empty {
-      text-align: center; padding: 60px 20px; color: var(--eq-gray);
-    }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    .empty p { font-size: 14px; line-height: 1.6; }
-    .empty strong { color: var(--eq-success); }
-
-    /* ── MODAL CONCLUIR INSPEÇÃO ── */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 2000;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-      display: flex; align-items: flex-end; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .3s;
-    }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
-    .modal {
-      width: 100%; max-width: 520px;
-      background: #0d1f3c;
-      border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 20px 20px 0 0;
-      padding: 24px 20px 32px;
-      transform: translateY(100%); transition: transform .35s cubic-bezier(.16,1,.3,1);
-      max-height: 85vh; overflow-y: auto;
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
-    .modal-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 0 auto 20px; }
-    .modal-title {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 6px;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .modal-sub { font-size: 13px; color: var(--eq-gray); margin-bottom: 20px; line-height: 1.5; }
-
-    .checklist { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-    .check-item {
-      display: flex; align-items: center; gap: 12px;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px; padding: 12px 14px; cursor: pointer;
-      transition: all .2s;
-    }
-    .check-item.checked {
-      background: rgba(0,229,160,0.06); border-color: rgba(0,229,160,0.2);
-    }
-    .check-box {
-      width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
-      border: 2px solid rgba(255,255,255,0.2);
-      display: flex; align-items: center; justify-content: center;
-      transition: all .2s;
-    }
-    .check-item.checked .check-box {
-      background: var(--eq-success); border-color: var(--eq-success);
-    }
-    .check-text { font-size: 14px; font-weight: 500; }
-
-    .obs-area {
-      width: 100%; padding: 12px 14px; min-height: 80px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; color: var(--eq-white); font-family: 'Barlow', sans-serif;
-      font-size: 14px; resize: none; outline: none;
-    }
-    .obs-area:focus { border-color: var(--eq-cyan); }
-    .obs-area::placeholder { color: rgba(138,155,191,0.5); }
-
-    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .btn-cancel {
-      flex: 1; padding: 13px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; color: var(--eq-gray);
-      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
-    }
-    .btn-cancel:hover { background: rgba(255,255,255,0.1); }
-    .btn-save {
-      flex: 2; padding: 13px;
-      background: linear-gradient(135deg, #1a8c4e, #0d6e3b);
-      border: none; border-radius: 10px; color: #fff;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
-    }
-    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
-
-    /* ── BOTTOM NAV ── */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
-      height: var(--nav-h);
-      background: rgba(10,22,40,0.97);
-      border-top: 1px solid rgba(0,170,255,0.15);
-      backdrop-filter: blur(16px);
-      display: flex; align-items: center;
-    }
-    .nav-item {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 4px; padding: 8px 4px;
-      cursor: pointer; border: none; background: none; color: var(--eq-gray);
-      transition: color .2s; position: relative;
-    }
-    .nav-item.active { color: var(--eq-cyan); }
-    .nav-item svg { width: 22px; height: 22px; }
-    .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
-    .nav-item.active::after {
-      content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px;
-      background: var(--eq-cyan); border-radius: 0 0 4px 4px;
-    }
-    .nav-item.hidden { display: none; }
-    .badge {
-      position: absolute; top: 6px; right: calc(50% - 18px);
-      background: var(--eq-error); color: #fff;
-      font-size: 9px; font-weight: 700; min-width: 16px; height: 16px;
-      border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
-    }
-
-    /* skeleton */
-    .skeleton {
-      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
-      background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 14px;
-    }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-    /* toast */
-    .toast {
-      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%;
-      transform: translateX(-50%) translateY(20px); z-index: 3000;
-      background: rgba(10,22,40,0.97); border-radius: 10px;
-      padding: 12px 20px; font-size: 14px; font-weight: 500;
-      border: 1px solid rgba(0,229,160,0.3); color: var(--eq-success);
-      opacity: 0; transition: all .3s; white-space: nowrap;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
-
-    .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bd);color:var(--wh);-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+    .topbar{position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--th);background:rgba(10,22,40,.97);border-bottom:1px solid rgba(0,170,255,.15);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:10px}
+    .tlogo{display:flex;align-items:center;gap:8px}
+    .ticon{width:32px;height:32px;background:linear-gradient(135deg,var(--bm),var(--pm));border-radius:8px;display:flex;align-items:center;justify-content:center}
+    .ticon svg{width:16px;height:16px}
+    .tname{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .tright{display:flex;align-items:center;gap:8px}
+    .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--bm),var(--pm));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
+    .btn-sair{background:none;border:1px solid rgba(255,77,109,.3);border-radius:7px;padding:6px 8px;color:var(--er);cursor:pointer;font-size:11px;font-weight:600}
+    .content{margin-top:var(--th);margin-bottom:var(--nh);padding:20px 16px}
+    .page-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .page-sub{font-size:13px;color:var(--gr);margin-top:2px;margin-bottom:20px}
+    .filtros{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+    .filtros::-webkit-scrollbar{display:none}
+    .filtros.hidden{display:none}
+    .fbtn{padding:7px 14px;border-radius:20px;white-space:nowrap;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--gr);transition:all .2s}
+    .fbtn.active{background:rgba(0,170,255,.12);border-color:rgba(0,170,255,.35);color:var(--cy)}
+    .sumrow{display:flex;gap:10px;margin-bottom:20px}
+    .sumcard{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .sumcard.p{border-color:rgba(255,179,0,.2)}
+    .sumcard.c{border-color:rgba(0,229,160,.2)}
+    .sumval{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700}
+    .sumcard.t .sumval{color:var(--cy)}
+    .sumcard.p .sumval{color:var(--wa)}
+    .sumcard.c .sumval{color:var(--su)}
+    .sumlbl{font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;text-align:center}
+    .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .sec-ttl{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.8px;color:var(--gr);text-transform:uppercase}
+    .pill{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.2);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;color:var(--cy)}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+    .card:hover{border-color:rgba(0,170,255,.25);transform:translateY(-1px)}
+    .card.pendente{border-left:3px solid var(--wa)}
+    .card.concluido{border-left:3px solid var(--su)}
+    .card.urgente::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 20px 20px 0;border-color:transparent var(--er) transparent transparent}
+    .ctop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .cnome{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;line-height:1.2;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .spill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+    .spill.pendente{background:rgba(255,179,0,.12);color:var(--wa);border:1px solid rgba(255,179,0,.25)}
+    .spill.concluido{background:rgba(0,229,160,.12);color:var(--su);border:1px solid rgba(0,229,160,.25)}
+    .cmeta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+    .mi{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gr)}
+    .mi svg{width:13px;height:13px;flex-shrink:0}
+    .mi span{color:var(--wh)}
+    .dbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
+    .dbadge.ok{background:rgba(0,229,160,.1);color:var(--su)}
+    .dbadge.alerta{background:rgba(255,179,0,.12);color:var(--wa)}
+    .dbadge.critico{background:rgba(255,77,109,.12);color:var(--er)}
+    .cacts{display:flex;gap:8px;flex-wrap:wrap}
+    .bsm{padding:8px 14px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;border:none;transition:opacity .2s,transform .15s;display:flex;align-items:center;gap:6px}
+    .bsm:active{transform:scale(.97)}
+    .bsm:hover{opacity:.85}
+    .b-out{background:transparent;border:1px solid rgba(0,170,255,.3);color:var(--cy)}
+    .b-suc{background:linear-gradient(135deg,#1a8c4e,#0d6e3b);color:#fff}
+    .b-dan{background:transparent;border:1px solid rgba(255,77,109,.3);color:var(--er)}
+    .empty{text-align:center;padding:60px 20px;color:var(--gr)}
+    .empty-icon{font-size:48px;margin-bottom:12px}
+    .empty p{font-size:14px;line-height:1.6}
+    .mover{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+    .mover.open{opacity:1;pointer-events:all}
+    .modal{width:100%;max-width:520px;background:#0d1f3c;border:1px solid rgba(0,170,255,.2);border-radius:20px 20px 0 0;padding:24px 20px 36px;transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1);max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .mover.open .modal{transform:translateY(0)}
+    .mhdl{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
+    .mttl{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .mttl.danger{background:none;-webkit-text-fill-color:var(--er)}
+    .msub{font-size:13px;color:var(--gr);margin-bottom:20px;line-height:1.5}
+    .mobs-lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--gr);text-transform:uppercase;margin-bottom:6px;display:block}
+    .obs{width:100%;padding:12px 14px;min-height:80px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--wh);font-family:'Barlow',sans-serif;font-size:14px;resize:none;outline:none}
+    .obs:focus{border-color:var(--cy)}
+    .obs::placeholder{color:rgba(138,155,191,.5)}
+    .chklist{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+    .chi{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
+    .chi.checked{background:rgba(0,229,160,.06);border-color:rgba(0,229,160,.2)}
+    .chbox{width:20px;height:20px;border-radius:6px;flex-shrink:0;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .chi.checked .chbox{background:var(--su);border-color:var(--su)}
+    .chtxt{font-size:14px;font-weight:500}
+    .macts{display:flex;gap:10px;margin-top:16px}
+    .bcnl{flex:1;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--gr);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+    .bsav{flex:2;padding:13px;background:linear-gradient(135deg,#1a8c4e,#0d6e3b);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+    .bsav:disabled{opacity:.5;cursor:not-allowed}
+    .botnav{position:fixed;bottom:0;left:0;right:0;z-index:1000;height:var(--nh);background:rgba(10,22,40,.97);border-top:1px solid rgba(0,170,255,.15);backdrop-filter:blur(16px);display:flex;align-items:center}
+    .ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;min-height:44px;cursor:pointer;border:none;background:none;color:var(--gr);transition:color .2s;position:relative}
+    .ni.active{color:var(--cy)}
+    .ni svg{width:22px;height:22px}
+    .nlbl{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+    .ni.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--cy);border-radius:0 0 4px 4px}
+    .ni.hidden{display:none}
+    .sk{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:sh 1.5s infinite;border-radius:14px}
+    @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .toast{position:fixed;bottom:calc(var(--nh) + 16px);left:50%;transform:translateX(-50%) translateY(20px);z-index:3000;background:rgba(10,22,40,.97);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:500;border:1px solid rgba(0,229,160,.3);color:var(--su);opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.error{border-color:rgba(255,77,109,.3);color:var(--er)}
+    .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
+    @keyframes sp{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-logo">
-    <div class="icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-      </svg>
-    </div>
-    <span>STCGYN</span>
+  <div class="tlogo">
+    <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="tname">STCGYN</span>
   </div>
-  <div class="topbar-right">
+  <div class="tright">
     <div class="avatar" id="avatarEl">?</div>
-    <button class="btn-logout" onclick="logout()">Sair</button>
+    <button class="btn-sair" onclick="doLogout()">Sair</button>
   </div>
 </div>
 
-<!-- CONTEÚDO -->
 <div class="content">
-  <div class="page-header">
-    <div class="page-title">Pendências</div>
-    <div class="page-sub" id="pageSub">Carregando...</div>
-  </div>
+  <div class="page-title">Pendencias</div>
+  <div class="page-sub" id="pageSub">Carregando...</div>
 
-  <!-- filtros (admin vê todos; fiscal vê só os seus) -->
   <div class="filtros hidden" id="filtrosWrap">
-    <button class="filtro-btn active" onclick="setFiltro('todos', this)">Todos</button>
-    <button class="filtro-btn" onclick="setFiltro('pendente', this)">Pendentes</button>
-    <button class="filtro-btn" onclick="setFiltro('concluido', this)">Concluídos</button>
+    <button class="fbtn active" onclick="setFiltro('todos',this)">Todos</button>
+    <button class="fbtn" onclick="setFiltro('pendente',this)">Pendentes</button>
+    <button class="fbtn" onclick="setFiltro('concluido',this)">Concluidos</button>
   </div>
 
-  <!-- sumário -->
-  <div class="summary-row" id="summaryRow">
-    <div class="summary-card total">
-      <div class="summary-val" id="sumTotal">—</div>
-      <div class="summary-label">Total</div>
-    </div>
-    <div class="summary-card pendente">
-      <div class="summary-val" id="sumPendente">—</div>
-      <div class="summary-label">Pendentes</div>
-    </div>
-    <div class="summary-card concluido">
-      <div class="summary-val" id="sumConcluido">—</div>
-      <div class="summary-label">Concluídos</div>
-    </div>
+  <div class="sumrow">
+    <div class="sumcard t"><div class="sumval" id="sTotal">-</div><div class="sumlbl">Total</div></div>
+    <div class="sumcard p"><div class="sumval" id="sPend">-</div><div class="sumlbl">Pendentes</div></div>
+    <div class="sumcard c"><div class="sumval" id="sConc">-</div><div class="sumlbl">Concluidos</div></div>
   </div>
 
-  <!-- lista -->
-  <div class="section-header">
-    <div class="section-title" id="sectionTitle">Inspeções</div>
-    <div class="count-pill" id="countPill">0</div>
+  <div class="sec-hdr">
+    <div class="sec-ttl" id="secTtl">Inspecoes</div>
+    <div class="pill" id="cntPill">-</div>
   </div>
 
-  <div id="listaInspecoes">
-    <div class="skeleton" style="height:130px;margin-bottom:10px;"></div>
-    <div class="skeleton" style="height:130px;margin-bottom:10px;"></div>
-    <div class="skeleton" style="height:130px;"></div>
+  <div id="lista">
+    <div class="sk" style="height:130px;margin-bottom:10px"></div>
+    <div class="sk" style="height:130px;margin-bottom:10px"></div>
+    <div class="sk" style="height:130px"></div>
   </div>
 </div>
 
-<!-- BOTTOM NAV -->
 <script>
-  (function(){
-    var p = sessionStorage.getItem('userPerfil') || '';
-    document.write('<style>'
-      + (p === 'admin' ? '' :
-         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos{display:none}' :
-         '#nav-dashboard,#nav-circuitos{display:none}')
-      + '</style>');
-  })();
+(function(){
+  var p=sessionStorage.getItem('userPerfil')||'';
+  var css=p==='admin'?'':p==='equipe'?'#ni-anom,#ni-dash,#ni-circ{display:none}':'#ni-dash,#ni-circ{display:none}';
+  if(css)document.write('<style>'+css+'</style>');
+})();
 </script>
-<nav class="bottom-nav" id="bottomNav">
-  <button class="nav-item" onclick="window.location.href='mapa.html'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-    <span class="nav-label">Mapa</span>
+
+<nav class="botnav">
+  <button class="ni" onclick="location.href='mapa.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+    <span class="nlbl">Mapa</span>
   </button>
-  <button class="nav-item" onclick="window.location.href='anomalias.html'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span class="nav-label">Anomalias</span>
+  <button class="ni" id="ni-anom" onclick="location.href='anomalias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="nlbl">Anomalias</span>
   </button>
-  <button class="nav-item active" onclick="window.location.href='pendencias.html'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-    <span class="nav-label">Pendências</span>
+  <button class="ni active" onclick="location.href='pendencias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span class="nlbl">Pendencias</span>
   </button>
-  <button class="nav-item" id="nav-dashboard" onclick="window.location.href='dashboard.html'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    <span class="nav-label">Dashboard</span>
+  <button class="ni" id="ni-dash" onclick="location.href='dashboard.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span class="nlbl">Dashboard</span>
   </button>
-  <button class="nav-item" id="nav-circuitos" onclick="window.location.href='circuitos.html'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-    <span class="nav-label">Circuitos</span>
+  <button class="ni" id="ni-circ" onclick="location.href='circuitos.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span class="nlbl">Circuitos</span>
   </button>
 </nav>
 
-<!-- MODAL: concluir inspeção (fiscal) -->
-<div class="modal-overlay" id="modalConcluir">
+<!-- MODAL CONCLUIR -->
+<div class="mover" id="mConcluir">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Concluir Inspeção</div>
-    <div class="modal-sub" id="modalConcluirSub">Confirme os itens verificados durante a inspeção.</div>
-
-    <div class="checklist" id="checklist">
-      <div class="check-item" onclick="toggleCheck(this)">
-        <div class="check-box">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <span class="check-text">Postes inspecionados visualmente</span>
-      </div>
-      <div class="check-item" onclick="toggleCheck(this)">
-        <div class="check-box">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <span class="check-text">Cabos e conexões verificados</span>
-      </div>
-      <div class="check-item" onclick="toggleCheck(this)">
-        <div class="check-box">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <span class="check-text">Transformador avaliado</span>
-      </div>
-      <div class="check-item" onclick="toggleCheck(this)">
-        <div class="check-box">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <span class="check-text">Anomalias registradas (se houver)</span>
-      </div>
+    <div class="mhdl"></div>
+    <div class="mttl">Concluir Inspecao</div>
+    <div class="msub" id="mConcluirSub">Confirme os itens verificados.</div>
+    <div class="chklist">
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Postes inspecionados visualmente</span></div>
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Cabos e conexoes verificados</span></div>
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Transformador avaliado</span></div>
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Anomalias registradas (se houver)</span></div>
     </div>
-
-    <div class="modal-field" style="margin-bottom:0">
-      <div class="modal-label" style="font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--eq-gray);text-transform:uppercase;margin-bottom:6px;">Observações (opcional)</div>
-      <textarea class="obs-area" id="obsInspecao" placeholder="Descreva observações relevantes da inspeção..."></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModalConcluir()">Cancelar</button>
-      <button class="btn-save" id="btnConcluirConfirmar" onclick="confirmarConclusao()">Concluir</button>
+    <label class="mobs-lbl">Observacoes (opcional)</label>
+    <textarea class="obs" id="obsConc" placeholder="Observacoes relevantes..."></textarea>
+    <div class="macts">
+      <button class="bcnl" onclick="fechaMConc()">Cancelar</button>
+      <button class="bsav" id="btnConc" onclick="confirmConc()">Concluir</button>
     </div>
   </div>
 </div>
 
-
-<!-- MODAL CANCELAR INSPEÇÃO (admin) -->
-<div class="modal-overlay" id="modalCancelar">
+<!-- MODAL CANCELAR -->
+<div class="mover" id="mCancelar">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="color:var(--eq-error)">Cancelar Inspeção</div>
-    <div class="modal-sub" id="modalCancelarSub">Esta ação não pode ser desfeita.</div>
-    <div class="modal-field">
-      <div class="modal-label" style="font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--eq-gray);text-transform:uppercase;margin-bottom:6px;">Motivo do cancelamento</div>
-      <textarea class="obs-area" id="motivoCancelamento" placeholder="Descreva o motivo..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModalCancelar()">Voltar</button>
-      <button class="btn-save" id="btnCancelarConfirmar" onclick="confirmarCancelamento()" style="background:linear-gradient(135deg,var(--eq-error),#c0392b)">Cancelar inspeção</button>
+    <div class="mhdl"></div>
+    <div class="mttl danger">Cancelar Inspecao</div>
+    <div class="msub" id="mCancelarSub">Esta acao nao pode ser desfeita.</div>
+    <label class="mobs-lbl">Motivo do cancelamento</label>
+    <textarea class="obs" id="obsCanc" placeholder="Descreva o motivo..."></textarea>
+    <div class="macts">
+      <button class="bcnl" onclick="fechaMCanc()">Voltar</button>
+      <button class="bsav" id="btnCanc" onclick="confirmCanc()" style="background:linear-gradient(135deg,#c0392b,#922b21)">Cancelar inspecao</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, collection, getDocs,
+  updateDoc, deleteDoc, query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
-    authDomain: "anomalias-stcgyn.firebaseapp.com",
-    projectId: "anomalias-stcgyn",
-    storageBucket: "anomalias-stcgyn.firebasestorage.app",
-    messagingSenderId: "247707729519",
-    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
-  };
+const app = initializeApp({
+  apiKey:"AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
+  authDomain:"anomalias-stcgyn.firebaseapp.com",
+  projectId:"anomalias-stcgyn",
+  storageBucket:"anomalias-stcgyn.firebasestorage.app",
+  messagingSenderId:"247707729519",
+  appId:"1:247707729519:web:c3dcaf6d9e707fee59979a"
+});
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+// ---- estado global ----
+let cUser   = null;   // {uid, nome, perfil}
+let cPerf   = null;   // 'admin' | 'fiscal' | 'equipe'
+let dados   = [];     // array de inspecoes/anomalias carregadas
+let filtro  = 'todos';
+let idConc  = null;
+let idCanc  = null;
+let pronto  = false;  // flag: auth ja resolveu
 
-  let currentUser    = null;
-  let currentPerfil  = null;
-  let todasInspecoes = [];
-  let filtroAtivo    = 'todos';
-  let concluirInspId = null;
-  let _uidCarregado  = null;  // evita recarregar para o mesmo usuário
+// ---- auth ----
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { location.href = 'index.html'; return; }
+  if (pronto) return;
+  pronto = true;
 
-  onAuthStateChanged(auth, async user => {
-    if (!user) { window.location.href = 'index.html'; return; }
-    if (_uidCarregado === user.uid) return;  // mesmo usuário, já carregado
-    _uidCarregado = user.uid;
-
+  try {
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
-    const data = snap.data();
-    currentUser   = { uid: user.uid, ...data };
-    currentPerfil = data.perfil;
-    sessionStorage.setItem('userPerfil', data.perfil);
-    document.getElementById('avatarEl').textContent = data.nome.charAt(0).toUpperCase();
+    if (!snap.exists()) {
+      await signOut(auth);
+      sessionStorage.removeItem('userPerfil');
+      location.href = 'index.html';
+      return;
+    }
+    const d = snap.data();
+    cUser = { uid: user.uid, nome: d.nome || '', perfil: d.perfil || '' };
+    cPerf = d.perfil;
+    sessionStorage.setItem('userPerfil', cPerf);
+    document.getElementById('avatarEl').textContent = (d.nome||'?')[0].toUpperCase();
+    setupUI();
+    await carregar();
+  } catch(e) {
+    console.error('init error', e);
+    showErr('Erro ao carregar. Recarregue a pagina.');
+  }
+});
 
-    setupPorPerfil();
-    await carregarInspecoes();
+window.doLogout = async () => {
+  await signOut(auth);
+  sessionStorage.removeItem('userPerfil');
+  location.href = 'index.html';
+};
+
+// ---- setup por perfil ----
+function setupUI() {
+  const sub = document.getElementById('pageSub');
+  const fw  = document.getElementById('filtrosWrap');
+  const nd  = document.getElementById('ni-dash');
+  const nc  = document.getElementById('ni-circ');
+
+  if (cPerf === 'admin') {
+    sub.textContent = 'Todas as inspecoes delegadas';
+    fw.classList.remove('hidden');
+    if (nd) nd.classList.remove('hidden');
+    if (nc) nc.classList.remove('hidden');
+  } else if (cPerf === 'equipe') {
+    sub.textContent = 'Seus servicos programados';
+  } else {
+    sub.textContent = 'Suas inspecoes pendentes';
+  }
+}
+
+// ---- carregar dados do Firestore ----
+async function carregar() {
+  showSk();
+  try {
+    if (cPerf === 'equipe') {
+      const snap = await getDocs(query(
+        collection(db, 'anomalias'),
+        where('equipeId', '==', cUser.uid),
+        where('status',   '==', 'programado')
+      ));
+      dados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updSum(dados.length, dados.length, 0);
+      renderEquipe();
+    } else {
+      const q = cPerf === 'admin'
+        ? collection(db, 'inspecoes')
+        : query(collection(db, 'inspecoes'), where('fiscalId', '==', cUser.uid));
+      const snap = await getDocs(q);
+      dados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const tot  = dados.length;
+      const pend = dados.filter(x => x.status === 'pendente').length;
+      const conc = dados.filter(x => x.status === 'concluido').length;
+      updSum(tot, pend, conc);
+      renderLista();
+    }
+  } catch(e) {
+    console.error('carregar error', e);
+    showErr('Erro ao buscar dados. Tente recarregar.');
+  }
+}
+
+function updSum(tot, pend, conc) {
+  document.getElementById('sTotal').textContent = tot;
+  document.getElementById('sPend').textContent  = pend;
+  document.getElementById('sConc').textContent  = conc;
+}
+
+// ---- render equipe (anomalias programadas) ----
+function renderEquipe() {
+  const el = document.getElementById('lista');
+  document.getElementById('cntPill').textContent = dados.length;
+  document.getElementById('secTtl').textContent  = 'Servicos programados';
+  if (!dados.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">ok</div><p>Nenhum servico programado para voce.</p></div>';
+    return;
+  }
+  let h = '';
+  dados.forEach(function(a) {
+    const dt  = ts(a.criadoEm);
+    const tl  = a.tipo === 'poda' ? 'Poda' : a.tipo === 'mux' ? 'Mux' : 'Espacador';
+    const cid = safe(a.circuitoId);
+    h += '<div class="card pendente" onclick="goMapa(' + q(cid) + ')">'
+       + '<div class="ctop"><div class="cnome">' + (a.circuitoId||'-') + '</div>'
+       + '<span class="spill pendente">' + tl + '</span></div>'
+       + '<div class="cmeta">'
+       + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Endereco: <span>' + (a.endereco||'-') + '</span></div>'
+       + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Programado: <span>' + dt + '</span></div>'
+       + '</div></div>';
+  });
+  el.innerHTML = h;
+}
+
+// ---- render fiscal/admin (inspecoes) ----
+function renderLista() {
+  const el = document.getElementById('lista');
+  let itens = dados.slice();
+
+  if (cPerf === 'fiscal') {
+    itens = itens.filter(function(x) { return x.status === 'pendente'; });
+  } else if (filtro !== 'todos') {
+    itens = itens.filter(function(x) { return x.status === filtro; });
+  }
+
+  document.getElementById('cntPill').textContent = itens.length;
+  document.getElementById('secTtl').textContent  =
+    cPerf === 'fiscal'     ? 'Inspecoes pendentes' :
+    filtro === 'pendente'  ? 'Inspecoes pendentes' :
+    filtro === 'concluido' ? 'Inspecoes concluidas' : 'Todas as inspecoes';
+
+  if (!itens.length) {
+    const msg = cPerf === 'fiscal' ? 'Nenhuma inspecao pendente. Tudo em dia!' : 'Nenhuma inspecao encontrada.';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">ok</div><p>' + msg + '</p></div>';
+    return;
+  }
+
+  let h = '';
+  itens.forEach(function(insp) {
+    const delObj  = insp.delegadoEm && insp.delegadoEm.toDate ? insp.delegadoEm.toDate() : null;
+    const dias    = delObj ? Math.floor((Date.now() - delObj.getTime()) / 86400000) : null;
+    const dtStr   = delObj ? delObj.toLocaleDateString('pt-BR') : '-';
+    const urgente = dias !== null && dias > 7 && insp.status === 'pendente';
+    const nome    = insp.circuitoNome || insp.circuitoId || '-';
+    const stLbl   = insp.status === 'pendente' ? 'Pendente' : 'Concluido';
+    const cid     = safe(insp.circuitoId);
+    const iid     = safe(insp.id);
+    const iNome   = safe(insp.circuitoNome || '');
+
+    let dBadge = '';
+    if (dias !== null && insp.status === 'pendente') {
+      const cls = dias <= 3 ? 'ok' : dias <= 7 ? 'alerta' : 'critico';
+      const lbl = dias === 0 ? 'Hoje' : dias + 'd em aberto';
+      dBadge = '<span class="dbadge ' + cls + '">' + lbl + '</span>';
+    }
+
+    let fiscMeta = '';
+    if (cPerf === 'admin') {
+      fiscMeta = '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Fiscal: <span>' + (insp.fiscalNome || '-') + '</span></div>';
+    }
+
+    let btnAcao = '';
+    if (insp.status === 'pendente' && cPerf === 'fiscal') {
+      btnAcao = '<button class="bsm b-suc" onclick="abreMConc(' + q(iid) + ',' + q(iNome) + ')">'
+              + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>';
+    } else if (insp.status === 'pendente' && cPerf === 'admin') {
+      btnAcao = '<button class="bsm b-dan" onclick="abreMCanc(' + q(iid) + ',' + q(iNome) + ')">'
+              + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancelar</button>';
+    }
+
+    let concInfo = '';
+    if (insp.status === 'concluido') {
+      const dtC = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '-';
+      concInfo = '<div class="mi" style="padding:6px 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span style="color:var(--su);font-size:12px">Concluido em ' + dtC + '</span></div>';
+    }
+
+    h += '<div class="card ' + insp.status + (urgente ? ' urgente' : '') + '" onclick="goMapa(' + q(cid) + ')">'
+       + '<div class="ctop"><div class="cnome">' + nome + '</div><span class="spill ' + insp.status + '">' + stLbl + '</span></div>'
+       + '<div class="cmeta">'
+       + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Delegado: <span>' + dtStr + '</span></div>'
+       + fiscMeta + dBadge
+       + '</div>'
+       + '<div class="cacts" onclick="event.stopPropagation()">'
+       + '<button class="bsm b-out" onclick="goMapa(' + q(cid) + ')">'
+       + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>'
+       + btnAcao + concInfo
+       + '</div></div>';
   });
 
+  el.innerHTML = h;
+}
 
-  window.logout = async () => { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; };
+// ---- helpers ----
+function safe(s) { return String(s || ''); }
+function q(s)    { return "'" + safe(s).replace(/\/g,'\\').replace(/'/g,"\'") + "'"; }
+function ts(t)   { return t && t.toDate ? t.toDate().toLocaleDateString('pt-BR') : '-'; }
+function showSk() {
+  document.getElementById('lista').innerHTML =
+    '<div class="sk" style="height:130px;margin-bottom:10px"></div>'
+    + '<div class="sk" style="height:130px;margin-bottom:10px"></div>'
+    + '<div class="sk" style="height:130px"></div>';
+}
+function showErr(msg) {
+  document.getElementById('lista').innerHTML = '<div class="empty"><div class="empty-icon">x</div><p>' + msg + '</p></div>';
+}
 
-  function setupPorPerfil() {
-    if (currentPerfil === 'admin') {
-      document.getElementById('pageSub').textContent = 'Todas as inspeções delegadas';
-      document.getElementById('filtrosWrap').classList.remove('hidden');
-      document.getElementById('nav-dashboard').classList.remove('hidden');
-      document.getElementById('nav-circuitos').classList.remove('hidden');
-    } else if (currentPerfil === 'equipe') {
-      document.getElementById('pageSub').textContent = 'Seus serviços programados';
-    } else {
-      document.getElementById('pageSub').textContent = 'Suas inspeções pendentes';
-    }
-  }
+// ---- filtros ----
+window.setFiltro = function(f, btn) {
+  filtro = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLista();
+};
 
-  async function carregarInspecoes() {
-    // mostra skeletons enquanto carrega
-    document.getElementById('listaInspecoes').innerHTML = `
-      <div class="skeleton" style="height:130px;margin-bottom:10px;"></div>
-      <div class="skeleton" style="height:130px;margin-bottom:10px;"></div>
-      <div class="skeleton" style="height:130px;"></div>`;
+window.goMapa = function(id) {
+  if (id) sessionStorage.setItem('circuitoSelecionado', id);
+  location.href = 'mapa.html';
+};
 
-    try {
-      if (currentPerfil === 'equipe') {
-        const snap = await getDocs(query(collection(db, 'anomalias'),
-          where('equipeId', '==', currentUser.uid),
-          where('status', '==', 'programado')));
-        todasInspecoes = snap.docs.map(d => ({ id: d.id, ...d.data(), _tipo: 'anomalia' }));
-        document.getElementById('sumTotal').textContent    = todasInspecoes.length;
-        document.getElementById('sumPendente').textContent  = todasInspecoes.length;
-        document.getElementById('sumConcluido').textContent = 0;
-        renderListaEquipe();
-        return;
-      }
+// ---- modal concluir ----
+window.abreMConc = function(id, nome) {
+  idConc = id;
+  document.getElementById('mConcluirSub').textContent = 'Circuito: ' + nome;
+  document.querySelectorAll('.chi').forEach(el => el.classList.remove('checked'));
+  document.getElementById('obsConc').value = '';
+  document.getElementById('mConcluir').classList.add('open');
+};
+window.fechaMConc = function() { document.getElementById('mConcluir').classList.remove('open'); };
+window.togCheck   = function(el) { el.classList.toggle('checked'); };
 
-      const q = currentPerfil === 'admin'
-        ? collection(db, 'inspecoes')
-        : query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid));
-
-      const snap = await getDocs(q);
-      todasInspecoes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      const total     = todasInspecoes.length;
-      const pendentes = todasInspecoes.filter(i => i.status === 'pendente').length;
-      const concluidos = todasInspecoes.filter(i => i.status === 'concluido').length;
-
-      document.getElementById('sumTotal').textContent    = total;
-      document.getElementById('sumPendente').textContent  = pendentes;
-      document.getElementById('sumConcluido').textContent = concluidos;
-
-      if (pendentes > 0) {
-        const b = document.getElementById('badgeNav');
-        b.textContent = pendentes; b.style.display = 'flex';
-      }
-
-      renderLista();
-    } catch(e) {
-      console.error('carregarInspecoes:', e);
-      document.getElementById('listaInspecoes').innerHTML =
-        `<div class="empty"><div class="empty-icon">⚠️</div><p>Erro ao carregar. Recarregue a página.</p></div>`;
-    }
-  }
-
-  // ── lista de serviços para equipe ──
-  function renderListaEquipe() {
-    const lista = document.getElementById('listaInspecoes');
-    document.getElementById('countPill').textContent = todasInspecoes.length;
-    document.getElementById('sectionTitle').textContent = 'Seus serviços programados';
-
-    if (!todasInspecoes.length) {
-      lista.innerHTML = `<div class="empty">
-        <div class="empty-icon">✅</div>
-        <p>Nenhum serviço programado para você no momento.</p>
-      </div>`;
-      return;
-    }
-
-    lista.innerHTML = '';
-    todasInspecoes.forEach(a => {
-      const criadoEm = a.criadoEm?.toDate ? a.criadoEm.toDate() : null;
-      const dataStr = criadoEm ? criadoEm.toLocaleDateString('pt-BR') : '—';
-      const tipoLabel = a.tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador';
-      lista.innerHTML += `
-        <div class="insp-card pendente" onclick="irParaMapa('${a.circuitoId}')">
-          <div class="insp-top">
-            <div class="insp-nome">${a.circuitoId || '—'}</div>
-            <span class="status-pill pendente">⏳ ${tipoLabel}</span>
-          </div>
-          <div class="insp-meta">
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Endereço: <span>${a.endereco || '—'}</span>
-            </div>
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Programado em <span>${dataStr}</span>
-            </div>
-          </div>
-        </div>`;
+window.confirmConc = async function() {
+  const checks   = document.querySelectorAll('.chi');
+  const marcados = [...checks].filter(c => c.classList.contains('checked')).length;
+  if (marcados < checks.length) { showToast('Marque todos os itens.', true); return; }
+  const obs = document.getElementById('obsConc').value.trim();
+  const btn = document.getElementById('btnConc');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await updateDoc(doc(db, 'inspecoes', idConc), {
+      status: 'concluido', observacoes: obs,
+      concluidoEm: serverTimestamp(),
+      fiscalId: cUser.uid, fiscalNome: cUser.nome
     });
-  }
+    fechaMConc();
+    showToast('Inspecao concluida!');
+    pronto = false;
+    await carregar();
+  } catch(e) { showToast('Erro ao concluir.', true); }
+  finally { btn.disabled = false; btn.textContent = 'Concluir'; }
+};
 
-  function renderLista() {
-    const lista = document.getElementById('listaInspecoes');
-    let itens = [...todasInspecoes];
+// ---- modal cancelar ----
+window.abreMCanc = function(id, nome) {
+  idCanc = id;
+  document.getElementById('mCancelarSub').textContent = 'Circuito: ' + nome;
+  document.getElementById('obsCanc').value = '';
+  document.getElementById('mCancelar').classList.add('open');
+};
+window.fechaMCanc = function() { document.getElementById('mCancelar').classList.remove('open'); };
 
-    if (currentPerfil === 'fiscal') {
-      itens = itens.filter(i => i.status === 'pendente');
-    } else if (filtroAtivo !== 'todos') {
-      itens = itens.filter(i => i.status === filtroAtivo);
-    }
+window.confirmCanc = async function() {
+  const motivo = document.getElementById('obsCanc').value.trim();
+  if (!motivo) { showToast('Informe o motivo.', true); return; }
+  const btn = document.getElementById('btnCanc');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await deleteDoc(doc(db, 'inspecoes', idCanc));
+    fechaMCanc();
+    showToast('Inspecao cancelada.');
+    pronto = false;
+    await carregar();
+  } catch(e) { showToast('Erro ao cancelar.', true); }
+  finally { btn.disabled = false; btn.textContent = 'Cancelar inspecao'; }
+};
 
-    document.getElementById('countPill').textContent = itens.length;
-    document.getElementById('sectionTitle').textContent =
-      currentPerfil === 'fiscal' ? 'Inspeções pendentes' :
-      filtroAtivo === 'todos'    ? 'Todas as inspeções' :
-      filtroAtivo === 'pendente' ? 'Inspeções pendentes' : 'Inspeções concluídas';
+// ---- toast ----
+window.showToast = function(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isErr ? ' error' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+};
 
-    if (!itens.length) {
-      const msg = currentPerfil === 'fiscal'
-        ? 'Você não tem inspeções pendentes!<br><strong>Tudo em dia por aqui.</strong>'
-        : 'Nenhuma inspeção encontrada para o filtro selecionado.';
-      lista.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>' + msg + '</p></div>';
-      return;
-    }
-
-    const html = itens.map(function(insp) {
-      const delegadoEm   = insp.delegadoEm && insp.delegadoEm.toDate ? insp.delegadoEm.toDate() : null;
-      const diasEmAberto = delegadoEm ? Math.floor((Date.now() - delegadoEm.getTime()) / 86400000) : null;
-      const dataStr      = delegadoEm ? delegadoEm.toLocaleDateString('pt-BR') : '—';
-      const urgente      = diasEmAberto !== null && diasEmAberto > 7 && insp.status === 'pendente';
-      const nome         = insp.circuitoNome || insp.circuitoId || '—';
-      const statusLabel  = insp.status === 'pendente' ? '⏳ Pendente' : '✓ Concluído';
-
-      let diasBadge = '';
-      if (diasEmAberto !== null && insp.status === 'pendente') {
-        const cls   = diasEmAberto <= 3 ? 'ok' : diasEmAberto <= 7 ? 'alerta' : 'critico';
-        const label = diasEmAberto === 0 ? 'Hoje' : diasEmAberto + 'd em aberto';
-        diasBadge   = '<span class="dias-badge ' + cls + '">⏱ ' + label + '</span>';
-      }
-
-      let metaAdmin = '';
-      if (currentPerfil === 'admin') {
-        metaAdmin = '<div class="meta-item">'
-          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-          + 'Fiscal: <span>' + (insp.fiscalNome || '—') + '</span></div>';
-      }
-
-      let btnConcluir = '';
-      if (insp.status === 'pendente' && currentPerfil === 'fiscal') {
-        const nomeEsc = (insp.circuitoNome || '').replace(/'/g, "\'");
-        btnConcluir = '<button class="btn-sm btn-success-sm" onclick="openModalConcluir('' + insp.id + '', '' + nomeEsc + '')">'
-          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-          + ' Concluir inspeção</button>';
-      }
-
-      let btnCancelar = '';
-      if (insp.status === 'pendente' && currentPerfil === 'admin') {
-        const nomeEsc = (insp.circuitoNome || '').replace(/'/g, "\'");
-        btnCancelar = '<button class="btn-sm btn-danger-sm" onclick="openModalCancelar('' + insp.id + '', '' + nomeEsc + '')">'
-          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-          + ' Cancelar inspeção</button>';
-      }
-
-      let concluidoInfo = '';
-      if (insp.status === 'concluido') {
-        const dt = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '—';
-        concluidoInfo = '<div class="meta-item" style="padding:6px 0">'
-          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--eq-success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-          + '<span style="color:var(--eq-success);font-size:12px"> Concluído em ' + dt + '</span></div>';
-      }
-
-      return '<div class="insp-card ' + insp.status + (urgente ? ' urgente' : '') + '" onclick="irParaMapa('' + insp.circuitoId + '')">'
-        + '<div class="insp-top">'
-        + '<div class="insp-nome">' + nome + '</div>'
-        + '<span class="status-pill ' + insp.status + '">' + statusLabel + '</span>'
-        + '</div>'
-        + '<div class="insp-meta">'
-        + '<div class="meta-item">'
-        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
-        + 'Delegado em <span>' + dataStr + '</span></div>'
-        + metaAdmin
-        + diasBadge
-        + '</div>'
-        + '<div class="insp-actions" onclick="event.stopPropagation()">'
-        + '<button class="btn-sm btn-outline-sm" onclick="irParaMapa('' + insp.circuitoId + '')">'
-        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>'
-        + ' Ver no mapa</button>'
-        + btnConcluir
-        + btnCancelar
-        + concluidoInfo
-        + '</div>'
-        + '</div>';
-    }).join('');
-
-    lista.innerHTML = html;
-  }
-
-  // ── filtros (admin) ──
-  window.setFiltro = function(filtro, btn) {
-    filtroAtivo = filtro;
-    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderLista();
-  };
-
-  // ── ir para mapa com circuito filtrado ──
-  window.irParaMapa = function(circuitoId) {
-    sessionStorage.setItem('circuitoSelecionado', circuitoId);
-    window.location.href = 'mapa.html';
-  };
-
-  // ── modal concluir inspeção (fiscal) ──
-  window.openModalConcluir = function(inspId, circuitoNome) {
-    concluirInspId = inspId;
-    document.getElementById('modalConcluirSub').textContent = `Circuito: ${circuitoNome}`;
-    // resetar checklist
-    document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
-    document.getElementById('obsInspecao').value = '';
-    document.getElementById('modalConcluir').classList.add('open');
-  };
-
-  window.closeModalConcluir = function() {
-    document.getElementById('modalConcluir').classList.remove('open');
-  };
-
-  window.toggleCheck = function(el) {
-    el.classList.toggle('checked');
-  };
-
-  window.confirmarConclusao = async function() {
-    const checks = document.querySelectorAll('.check-item');
-    const marcados = [...checks].filter(c => c.classList.contains('checked')).length;
-    if (marcados < checks.length) {
-      return showToast('Marque todos os itens para concluir.', true);
-    }
-    const obs = document.getElementById('obsInspecao').value.trim();
-    const btn = document.getElementById('btnConcluirConfirmar');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-
-    try {
-      await updateDoc(doc(db, 'inspecoes', concluirInspId), {
-        status:       'concluido',
-        observacoes:  obs,
-        concluidoEm:  serverTimestamp(),
-        fiscalId:     currentUser.uid,
-        fiscalNome:   currentUser.nome
-      });
-      closeModalConcluir();
-      showToast('Inspeção concluída!');
-      await carregarInspecoes();
-    } catch {
-      showToast('Erro ao concluir. Tente novamente.', true);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Concluir';
-    }
-  };
-
-  // ── modal cancelar inspeção (admin) ──
-  let cancelarInspId = null;
-
-  window.openModalCancelar = function(inspId, circuitoNome) {
-    cancelarInspId = inspId;
-    document.getElementById('modalCancelarSub').textContent = `Circuito: ${circuitoNome}`;
-    document.getElementById('motivoCancelamento').value = '';
-    document.getElementById('modalCancelar').classList.add('open');
-  };
-
-  window.closeModalCancelar = function() {
-    document.getElementById('modalCancelar').classList.remove('open');
-  };
-
-  window.confirmarCancelamento = async function() {
-    const motivo = document.getElementById('motivoCancelamento').value.trim();
-    if (!motivo) return showToast('Informe o motivo do cancelamento.', true);
-    const btn = document.getElementById('btnCancelarConfirmar');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-    try {
-      await deleteDoc(doc(db, 'inspecoes', cancelarInspId));
-      closeModalCancelar();
-      showToast('Inspeção cancelada.');
-      await carregarInspecoes();
-    } catch {
-      showToast('Erro ao cancelar. Tente novamente.', true);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Cancelar inspeção';
-    }
-  };
-
-  window.showToast = function(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast' + (isError ? ' error' : '') + ' show';
-    setTimeout(() => t.classList.remove('show'), 3000);
-  };
-
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 </script>
-
 </body>
 </html>
