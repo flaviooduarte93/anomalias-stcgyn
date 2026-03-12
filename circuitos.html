@@ -499,7 +499,7 @@
 <!-- FIREBASE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -513,7 +513,7 @@
     appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
   };
 
-  const app     = initializeApp(firebaseConfig);
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth    = getAuth(app);
   const db      = getFirestore(app);
 
@@ -540,7 +540,9 @@
   // ── carregar circuitos ──
   // ── globals para paginação, busca e decômetro ──
   let todosCircuitosCache = [];
-  let decometroCache = {}; // { 'GN11XXXXX': [{numero,inicio,fim,causa,chi}, ...] }
+  let decometroCache  = {}; // { 'GN11XXXXX': [{numero,inicio,fim,causa,chi}, ...] }
+  let anomaliasCache  = {}; // { circuitoId: qtd_pendentes }
+  let inspecoesCache  = {}; // { circuitoId: { status, fiscalNome } }
   let paginaAtual = 1;
   const POR_PAGINA = 10;
   let listaFiltrada = [];
@@ -588,16 +590,40 @@
 
   // ── carregar circuitos ──
   async function carregarCircuitos() {
-    // carrega decômetro do Firestore
-    const decoSnap = await getDocs(collection(db, 'decometro'));
+    // 3 queries em paralelo — sem waterfall
+    const [decoSnap, circSnap, anoSnap, inspSnap] = await Promise.all([
+      getDocs(collection(db, 'decometro')),
+      getDocs(collection(db, 'circuitos')),
+      getDocs(collection(db, 'anomalias')),
+      getDocs(collection(db, 'inspecoes')),
+    ]);
+
+    // cache decômetro
     decometroCache = {};
     decoSnap.docs.forEach(d => {
       const dados = d.data();
       if (dados.equipamento) decometroCache[dados.equipamento] = dados.ocorrencias || [];
     });
 
-    const snap = await getDocs(collection(db, 'circuitos'));
-    todosCircuitosCache = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // cache anomalias pendentes por circuito
+    anomaliasCache = {};
+    anoSnap.docs.forEach(d => {
+      const dados = d.data();
+      if (dados.status === 'pendente') {
+        anomaliasCache[dados.circuitoId] = (anomaliasCache[dados.circuitoId] || 0) + 1;
+      }
+    });
+
+    // cache inspeções por circuito
+    inspecoesCache = {};
+    inspSnap.docs.forEach(d => {
+      const dados = d.data();
+      if (dados.circuitoId && !inspecoesCache[dados.circuitoId]) {
+        inspecoesCache[dados.circuitoId] = { status: dados.status || 'pendente', fiscalNome: dados.fiscalNome || '—' };
+      }
+    });
+
+    todosCircuitosCache = circSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
     document.getElementById('countBadge').textContent = todosCircuitosCache.length;
     filtrarLista();
   }
@@ -611,7 +637,7 @@
     renderPagina();
   };
 
-  async function renderPagina() {
+  function renderPagina() {
     const lista = document.getElementById('listaCircuitos');
     const total = listaFiltrada.length;
 
@@ -628,28 +654,18 @@
     paginaAtual = Math.min(paginaAtual, totalPags);
     const pagina = listaFiltrada.slice((paginaAtual-1)*POR_PAGINA, paginaAtual*POR_PAGINA);
 
-    lista.innerHTML = '';
-
-    for (const c of pagina) {
+    lista.innerHTML = pagina.map(c => {
       const id = c._id;
-      const anoSnap = await getDocs(query(collection(db,'anomalias'),
-        where('circuitoId','==',id), where('status','==','pendente')));
-      const inspSnap = await getDocs(query(collection(db,'inspecoes'),
-        where('circuitoId','==',id)));
+      const qtdAno = anomaliasCache[id] || 0;
+      const insp   = inspecoesCache[id] || null;
+      const statusInsp  = insp ? insp.status : 'armazenado';
+      const fiscalNome  = insp ? insp.fiscalNome : '—';
+      const dataStr     = c.criadoEm?.toDate ? c.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+      const statusLabel = {armazenado:'Armazenado',pendente:'Inspeção Pendente',concluido:'Inspecionado'}[statusInsp] || statusInsp;
+      const nomeEsc     = (c.nome||id).replace(/'/g,"\'");
+      const temDeco     = decometroCache.hasOwnProperty(c.nome);
 
-      let statusInsp='armazenado', fiscalNome='—';
-      if (!inspSnap.empty) {
-        const insp = inspSnap.docs[0].data();
-        statusInsp = insp.status||'pendente';
-        fiscalNome = insp.fiscalNome||'—';
-      }
-
-      const dataStr = c.criadoEm?.toDate ? c.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-      const statusLabel = {armazenado:'Armazenado',pendente:'Inspeção Pendente',concluido:'Inspecionado'}[statusInsp];
-      const nomeEsc = (c.nome||id).replace(/'/g,"\'");
-      const temDeco = decometroCache.hasOwnProperty(c.nome);
-
-      lista.innerHTML += `
+      return `
         <div class="circuito-card" id="card-${id}">
           <div class="card-header">
             <div>
@@ -662,7 +678,7 @@
             <div class="cstat"><div class="cstat-val">${c.postes||'—'}</div><div class="cstat-label">Postes</div></div>
             <div class="cstat"><div class="cstat-val">${c.clientes||'—'}</div><div class="cstat-label">Clientes</div></div>
             <div class="cstat">
-              <div class="cstat-val" style="color:${anoSnap.size>0?'var(--eq-warning)':'var(--eq-success)'}">${anoSnap.size}</div>
+              <div class="cstat-val" style="color:${qtdAno>0?'var(--eq-warning)':'var(--eq-success)'}">${qtdAno}</div>
               <div class="cstat-label">Anomalias</div>
             </div>
             ${statusInsp!=='armazenado'?`<div class="cstat"><div class="cstat-val" style="font-size:13px;color:var(--eq-gray)">${fiscalNome.split(' ')[0]}</div><div class="cstat-label">Fiscal</div></div>`:''}
@@ -690,7 +706,8 @@
             </button>
           </div>
         </div>`;
-    }
+    }).join('');
+
     renderPaginacao(totalPags);
   }
 
