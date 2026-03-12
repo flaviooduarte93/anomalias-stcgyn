@@ -1198,11 +1198,10 @@
     gerarTextoOS();
   };
 
-  function onPostesInput() {
-    // Quando usuario edita manualmente, atualiza currentAnomaliaPostes e regenera o textoOS
+  window.onPostesInput = function() {
     currentAnomaliaPostes = document.getElementById('modalPostes').value.trim();
     gerarTextoOS();
-  }
+  };
 
   function gerarTextoOS() {
     if (!selectedTipo || !currentAnomaliaPostes) {
