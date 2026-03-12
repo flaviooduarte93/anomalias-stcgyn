@@ -179,7 +179,7 @@
     /* ── FAB — botão apontar anomalia (fiscal) ── */
     .fab {
       position: fixed;
-      bottom: calc(var(--nav-h) + 80px);
+      bottom: calc(var(--nav-h) + 16px);
       right: 16px; z-index: 950;
       width: 52px; height: 52px; border-radius: 50%;
       background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
@@ -842,6 +842,7 @@
       map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
       anomaliaMarkers = [];
       document.getElementById('trafoCard').classList.add('hidden');
+      reposicionarFAB();
     }
   };
 
@@ -867,6 +868,7 @@
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
     document.getElementById('trafoCard').classList.add('hidden');
+      reposicionarFAB();
     input.focus();
   };
 
@@ -900,6 +902,7 @@
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
     document.getElementById('trafoCard').classList.add('hidden');
+      reposicionarFAB();
     showToast('Carregando circuito…');
 
     const snap = await getDoc(doc(db, 'circuitos', id));
@@ -1044,6 +1047,7 @@
         document.getElementById('trafoPotencia').textContent = trafoData.potencia;
         document.getElementById('trafoClientes').textContent = trafoData.clientes;
         document.getElementById('trafoCard').classList.remove('hidden');
+        reposicionarFAB();
         // guarda coords para botoes de rota do card
         const rb = document.getElementById('trafoRotaBtns');
         rb.style.display = 'flex';
@@ -1447,6 +1451,32 @@
   };
 
   // ── navegação (Google Maps / Waze) ──
+  // ── Reposicionar FAB acima do trafo-card ──
+  function reposicionarFAB() {
+    const fab  = document.getElementById('fabAnomalias');
+    const card = document.getElementById('trafoCard');
+    const nav  = document.querySelector('.bottom-nav');
+    if (!fab) return;
+    const navH    = nav ? nav.offsetHeight : 64;
+    const cardVis = card && !card.classList.contains('hidden');
+    if (cardVis) {
+      const cardH = card.offsetHeight;
+      fab.style.bottom = (navH + cardH + 12) + 'px';
+    } else {
+      fab.style.bottom = (navH + 16) + 'px';
+    }
+  }
+
+  // Observar mudancas no card para reposicionar automaticamente
+  (function() {
+    const card = document.getElementById('trafoCard');
+    if (!card) return;
+    const ro = new ResizeObserver(reposicionarFAB);
+    ro.observe(card);
+    const mo = new MutationObserver(reposicionarFAB);
+    mo.observe(card, { attributes: true, attributeFilter: ['class'] });
+  })();
+
   window.abrirNavTrafo = function(app) {
     const rb  = document.getElementById('trafoRotaBtns');
     const lat = rb.dataset.lat;
