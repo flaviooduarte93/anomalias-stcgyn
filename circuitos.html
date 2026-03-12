@@ -863,8 +863,12 @@
       const htmlContent = await file.text();
       const nomeMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
       const nomeCircuito = nomeMatch ? nomeMatch[1].trim() : file.name.replace('.html', '');
-      if (!nomeCircuito.toUpperCase().startsWith('GN')) {
-        showToast(`"${nomeCircuito}" não é um arquivo GN — ignorado.`, true); return;
+      // Aceita: título começa com GN  OU  caracteres 3-4 do nome do arquivo = "11"
+      const nomeUpper = nomeCircuito.toUpperCase();
+      const fileChars34 = file.name.substring(2, 4);
+      const valido = nomeUpper.startsWith('GN') || fileChars34 === '11';
+      if (!valido) {
+        showToast(`"${nomeCircuito}" não reconhecido — o título deve começar com GN ou os caracteres 3-4 do arquivo devem ser "11".`, true); return;
       }
       onProgress?.(40, 'Verificando duplicata…');
       const existSnap = await getDocs(query(collection(db,'circuitos'), where('nome','==',nomeCircuito)));

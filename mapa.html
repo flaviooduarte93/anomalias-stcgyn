@@ -492,9 +492,9 @@
     // Se não tem perfil ainda (primeiro load antes do Firebase), esconde tudo exceto mapa
     document.write('<style id="navInitStyle">'
       + (p === 'admin' ? '' :
-         p === 'fiscal' ? '#nav-dashboard,#nav-circuitos{display:none}' :
-         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos{display:none}' :
-         '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos{display:none}')
+         p === 'fiscal' ? '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
+         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
+         '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
       + '</style>');
   })();
 </script>
@@ -515,6 +515,10 @@
   <button class="nav-item" id="nav-dashboard" onclick="navTo('dashboard.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span class="nav-label">Dashboard</span>
+  </button>
+  <button class="nav-item" id="nav-mbx" onclick="navTo('mbx.html', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    <span class="nav-label">MBX</span>
   </button>
   <button class="nav-item" id="nav-circuitos" onclick="navTo('circuitos.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
