@@ -527,8 +527,17 @@
       <div class="modal-value" id="modalCoords">—</div>
     </div>
     <div class="modal-field">
-      <div class="modal-label">Entre os postes</div>
-      <div class="modal-value" id="modalPostes">—</div>
+      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Entre os postes</span>
+        <span style="font-size:10px;color:var(--eq-gray);font-weight:400;letter-spacing:0">preenchido automaticamente — editável</span>
+      </div>
+      <input type="text" id="modalPostes"
+        placeholder="Ex: 12345 — 12346"
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;"
+        oninput="onPostesInput()"
+        onfocus="this.style.borderColor='var(--eq-cyan)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+      />
     </div>
 
     <div class="modal-field">
@@ -1127,7 +1136,7 @@
     document.getElementById('modalEndereco').textContent = 'Obtendo localização...';
     document.getElementById('modalEndereco').classList.add('loading');
     document.getElementById('modalCoords').textContent = '—';
-    document.getElementById('modalPostes').textContent = '—';
+    document.getElementById('modalPostes').value = '';
     document.getElementById('qtyValor').textContent = '1';
     document.getElementById('textoOrdemWrap').style.display = 'none';
     document.getElementById('textoOS').textContent = '';
@@ -1146,7 +1155,7 @@
           return da - db2;
         });
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
-        document.getElementById('modalPostes').textContent = currentAnomaliaPostes;
+        document.getElementById('modalPostes').value = currentAnomaliaPostes;
         gerarTextoOS();
       }
 
@@ -1188,6 +1197,12 @@
     el.textContent = novo;
     gerarTextoOS();
   };
+
+  function onPostesInput() {
+    // Quando usuario edita manualmente, atualiza currentAnomaliaPostes e regenera o textoOS
+    currentAnomaliaPostes = document.getElementById('modalPostes').value.trim();
+    gerarTextoOS();
+  }
 
   function gerarTextoOS() {
     if (!selectedTipo || !currentAnomaliaPostes) {
