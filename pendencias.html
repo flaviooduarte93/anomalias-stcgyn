@@ -28,6 +28,7 @@
     html, body {
       height: 100%; font-family: 'Barlow', sans-serif;
       background: var(--eq-blue-dark); color: var(--eq-white);
+      -webkit-tap-highlight-color: transparent;
       overflow-x: hidden;
     }
 
@@ -73,6 +74,7 @@
       margin-top: var(--top-h);
       margin-bottom: var(--nav-h);
       padding: 20px 16px;
+      min-height: calc(100vh - var(--top-h) - var(--nav-h));
     }
 
     .page-header { margin-bottom: 20px; }
@@ -203,6 +205,7 @@
     .btn-outline-sm  { background: transparent; border: 1px solid rgba(0,170,255,0.3); color: var(--eq-cyan); }
     .btn-success-sm  { background: linear-gradient(135deg, #1a8c4e, #0d6e3b); color: #fff; }
     .btn-warning-sm  { background: transparent; border: 1px solid rgba(255,179,0,0.3); color: var(--eq-warning); }
+    .btn-danger-sm   { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--eq-error); }
     .btn-sm:hover { opacity: .85; }
 
     /* ── EMPTY STATE ── */
@@ -482,13 +485,31 @@
   </div>
 </div>
 
+
+<!-- MODAL CANCELAR INSPEÇÃO (admin) -->
+<div class="modal-overlay" id="modalCancelar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="color:var(--eq-error)">Cancelar Inspeção</div>
+    <div class="modal-sub" id="modalCancelarSub">Esta ação não pode ser desfeita.</div>
+    <div class="modal-field">
+      <div class="modal-label" style="font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--eq-gray);text-transform:uppercase;margin-bottom:6px;">Motivo do cancelamento</div>
+      <textarea class="obs-area" id="motivoCancelamento" placeholder="Descreva o motivo..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalCancelar()">Voltar</button>
+      <button class="btn-save" id="btnCancelarConfirmar" onclick="confirmarCancelamento()" style="background:linear-gradient(135deg,var(--eq-error),#c0392b)">Cancelar inspeção</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
@@ -694,6 +715,11 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
               Concluir inspeção
             </button>` : ''}
+            ${insp.status === 'pendente' && currentPerfil === 'admin' ? `
+            <button class="btn-sm btn-danger-sm" onclick="openModalCancelar('${insp.id}', '${(insp.circuitoNome||'').replace(/'/g,"\'")}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancelar inspeção
+            </button>` : ''}
             ${insp.status === 'concluido' ? `
             <div class="meta-item" style="padding:6px 0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--eq-success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -763,6 +789,37 @@
       showToast('Erro ao concluir. Tente novamente.', true);
     } finally {
       btn.disabled = false; btn.textContent = 'Concluir';
+    }
+  };
+
+  // ── modal cancelar inspeção (admin) ──
+  let cancelarInspId = null;
+
+  window.openModalCancelar = function(inspId, circuitoNome) {
+    cancelarInspId = inspId;
+    document.getElementById('modalCancelarSub').textContent = `Circuito: ${circuitoNome}`;
+    document.getElementById('motivoCancelamento').value = '';
+    document.getElementById('modalCancelar').classList.add('open');
+  };
+
+  window.closeModalCancelar = function() {
+    document.getElementById('modalCancelar').classList.remove('open');
+  };
+
+  window.confirmarCancelamento = async function() {
+    const motivo = document.getElementById('motivoCancelamento').value.trim();
+    if (!motivo) return showToast('Informe o motivo do cancelamento.', true);
+    const btn = document.getElementById('btnCancelarConfirmar');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+    try {
+      await deleteDoc(doc(db, 'inspecoes', cancelarInspId));
+      closeModalCancelar();
+      showToast('Inspeção cancelada.');
+      await carregarInspecoes();
+    } catch {
+      showToast('Erro ao cancelar. Tente novamente.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Cancelar inspeção';
     }
   };
 
