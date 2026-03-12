@@ -529,12 +529,12 @@
   let todasInspecoes = [];
   let filtroAtivo    = 'todos';
   let concluirInspId = null;
-  let _inicializado  = false;  // guard contra double-fire do onAuthStateChanged
+  let _uidCarregado  = null;  // evita recarregar para o mesmo usuário
 
   onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href = 'index.html'; return; }
-    if (_inicializado) return;   // já inicializou — ignora segunda chamada
-    _inicializado = true;
+    if (_uidCarregado === user.uid) return;  // mesmo usuário, já carregado
+    _uidCarregado = user.uid;
 
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
     if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
@@ -547,6 +547,7 @@
     setupPorPerfil();
     await carregarInspecoes();
   });
+
 
   window.logout = async () => { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; };
 
