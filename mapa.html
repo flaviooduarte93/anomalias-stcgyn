@@ -462,6 +462,16 @@
     </div>
   </div>
   <div id="trafoDecoBadge" style="display:none"></div>
+  <div id="trafoRotaBtns" style="display:none;gap:8px;margin-top:10px">
+    <button onclick="abrirNavTrafo('maps')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a8c4e,#0d6e3b);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+      Google Maps
+    </button>
+    <button onclick="abrirNavTrafo('waze')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a3a8c,#0d2e6e);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Waze
+    </button>
+  </div>
 </div>
 
 <!-- FAB: apontar anomalia (fiscal) -->
@@ -1003,7 +1013,17 @@
             <div class="popup-row">Poste: <span>${p.id}</span></div>
             <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>
             <div class="popup-row">Potência: <span>${potencia} kVA</span></div>
-            <div class="popup-row">Clientes: <span>${clientes}</span></div>`;
+            <div class="popup-row">Clientes: <span>${clientes}</span></div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="popup-btn popup-btn-nav" style="flex:1" onclick="abrirNavegacao(${p.lat},${p.lng},'maps')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                Google Maps
+              </button>
+              <button class="popup-btn popup-btn-nav" style="flex:1;background:linear-gradient(135deg,#1a3a8c,#0d2e6e)" onclick="abrirNavegacao(${p.lat},${p.lng},'waze')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Waze
+              </button>
+            </div>`;
           trafoData = { ...p, potencia, clientes: String(clientes), gnNome };
         } else {
           html = `<div class="popup-title">📍 Poste: ${p.id}</div>
@@ -1024,6 +1044,11 @@
         document.getElementById('trafoPotencia').textContent = trafoData.potencia;
         document.getElementById('trafoClientes').textContent = trafoData.clientes;
         document.getElementById('trafoCard').classList.remove('hidden');
+        // guarda coords para botoes de rota do card
+        const rb = document.getElementById('trafoRotaBtns');
+        rb.style.display = 'flex';
+        rb.dataset.lat = trafoData.lat;
+        rb.dataset.lng = trafoData.lng;
       }
 
       // zoom no circuito
@@ -1422,6 +1447,14 @@
   };
 
   // ── navegação (Google Maps / Waze) ──
+  window.abrirNavTrafo = function(app) {
+    const rb  = document.getElementById('trafoRotaBtns');
+    const lat = rb.dataset.lat;
+    const lng = rb.dataset.lng;
+    if (!lat || !lng) return;
+    abrirNavegacao(parseFloat(lat), parseFloat(lng), app);
+  };
+
   window.abrirNavegacao = function(lat, lng, app) {
     const url = app === 'waze'
       ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
