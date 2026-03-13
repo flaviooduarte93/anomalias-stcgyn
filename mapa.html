@@ -561,7 +561,7 @@
       </button>
     </div>
     <div id="anelObsWrap" style="display:none;margin-bottom:12px">
-      <div class="modal-label">Observação <span style="color:var(--eq-error)">*</span></div>
+      <div class="modal-label">Observação <span style="color:var(--eq-error)">*</span> <span style="color:var(--eq-gray);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(obrigatória quando Não)</span></div>
       <textarea id="anelObs"
         placeholder="Descreva as características do anel (obrigatório)"
         style="width:100%;margin-top:6px;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:80px;box-sizing:border-box"
@@ -2093,21 +2093,21 @@
     anelSelecionado = val;
     document.getElementById('btnAnelSim').style.opacity = val ? '1' : '0.4';
     document.getElementById('btnAnelNao').style.opacity = !val ? '1' : '0.4';
-    document.getElementById('anelObsWrap').style.display = val ? 'block' : 'none';
-    // se Não, pode salvar direto; se Sim, precisa de observação
-    document.getElementById('btnSalvarAnel').disabled = val ? true : false;
-    if (!val) document.getElementById('anelObs').value = '';
+    // observação obrigatória apenas quando Não
+    document.getElementById('anelObsWrap').style.display = !val ? 'block' : 'none';
+    document.getElementById('btnSalvarAnel').disabled = !val ? true : false;
+    if (val) document.getElementById('anelObs').value = '';
   };
 
   window.checkAnelSalvar = function() {
     const obs = document.getElementById('anelObs').value.trim();
-    document.getElementById('btnSalvarAnel').disabled = anelSelecionado && !obs;
+    document.getElementById('btnSalvarAnel').disabled = !anelSelecionado && !obs;
   };
 
   window.salvarAnel = async function() {
     if (anelSelecionado === null) return;
     const obs = document.getElementById('anelObs').value.trim();
-    if (anelSelecionado && !obs) return showToast('Observação obrigatória.', true);
+    if (!anelSelecionado && !obs) return showToast('Observação obrigatória quando não é anel.', true);
     const btn = document.getElementById('btnSalvarAnel');
     btn.disabled = true; btn.textContent = 'Salvando...';
     try {
