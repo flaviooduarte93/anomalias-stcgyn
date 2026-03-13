@@ -567,7 +567,7 @@
         </button>
         <button class="tipo-btn" id="tipoMux" onclick="selectTipo('mux')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          Multiplexação
+          MBX
         </button>
       </div>
     </div>
@@ -1098,7 +1098,7 @@
     anomaliaMarkers.push(m);
 
     let html = `<div class="popup-title">Anomalia</div>
-      <span class="popup-badge ${data.tipo}">${data.tipo === 'poda' ? '🌳 Poda' : data.tipo === 'mux' ? '🔄 Multiplexação' : '⊕ Espaçador'}</span><br>
+      <span class="popup-badge ${data.tipo}">${data.tipo === 'poda' ? '🌳 Poda' : data.tipo === 'mux' ? '🔄 MBX' : '⊕ Espaçador'}</span><br>
       <div class="popup-row">Endereço: <span>${data.endereco || '—'}</span></div>
       <div class="popup-row">Entre postes: <span>${data.postes || '—'}</span></div>
       ${data.quantidade ? `<div class="popup-row">Quantidade: <span>${data.quantidade}</span></div>` : ''}
@@ -1247,7 +1247,7 @@
     const acao   = selectedTipo === 'poda'
       ? `Realizar ${qty} poda${qty > 1 ? 's' : ''} de árvore`
       : selectedTipo === 'mux'
-      ? `Realizar multiplexação (troca de cabo) em ${qty} trecho${qty > 1 ? 's' : ''}`
+      ? `Realizar MBX (troca de cabo) em ${qty} trecho${qty > 1 ? 's' : ''}`
       : `Instalar ${qty} espaçador${qty > 1 ? 'es' : ''}`;
     const texto  = `${trafo} - ${acao} entre os postes ${postes}`;
     document.getElementById('textoOS').textContent = texto;

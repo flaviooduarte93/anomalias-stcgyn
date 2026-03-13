@@ -224,11 +224,30 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL NOVA INSPEÇÃO -->
+<div class="mover" id="mNovaInsp">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <div class="mttl">Nova Inspecao</div>
+    <div class="msub" id="mNovaInspSub">Solicitar nova inspecao para este circuito.</div>
+    <label class="mobs-lbl">Selecione o fiscal</label>
+    <select class="obs" id="selectFiscalNova" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--wh);font-family:inherit;font-size:14px;appearance:none;width:100%">
+      <option value="">-- Selecione um fiscal --</option>
+    </select>
+    <label class="mobs-lbl" style="margin-top:14px">Observacoes (opcional)</label>
+    <textarea class="obs" id="obsNovaInsp" placeholder="Instrucoes para o fiscal..."></textarea>
+    <div class="macts">
+      <button class="bcnl" onclick="fechaMNovaInsp()">Cancelar</button>
+      <button class="bsav" id="btnNovaInsp" onclick="confirmNovaInsp()">Solicitar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, collection, getDocs,
+  getFirestore, doc, getDoc, collection, getDocs, addDoc,
   updateDoc, deleteDoc, query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -329,7 +348,19 @@ async function carregar() {
       dados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       const tot  = dados.length;
       const pend = dados.filter(x => x.status === 'pendente').length;
-      const conc = dados.filter(x => x.status === 'concluido').length;
+      // carrega anomalias agrupadas por circuito para exibir no historico
+    try {
+      const snapAnom = await getDocs(collection(db, 'anomalias'));
+      const byCirc = {};
+      snapAnom.forEach(d => {
+        const a = { id: d.id, ...d.data() };
+        if (!byCirc[a.circuitoId]) byCirc[a.circuitoId] = [];
+        byCirc[a.circuitoId].push(a);
+      });
+      window._anomaliasPorCircuito = byCirc;
+    } catch(_) { window._anomaliasPorCircuito = {}; }
+
+    const conc = dados.filter(x => x.status === 'concluido').length;
       updSum(tot, pend, conc);
       renderLista();
     }
@@ -424,12 +455,48 @@ function renderLista() {
     } else if (insp.status === 'pendente' && cPerf === 'admin') {
       btnAcao = '<button class="bsm b-dan" data-id="' + iid + '" data-nome="' + iNome.replace(/"/g,"&quot;") + '" onclick="aMCancBtn(this)">'
               + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancelar</button>';
+    } else if (insp.status === 'concluido' && cPerf === 'admin') {
+      btnAcao = '<button class="bsm b-out" data-id="' + cid + '" data-nome="' + iNome.replace(/"/g,"&quot;") + '" onclick="abreNovaInspBtn(this)" style="border-color:rgba(0,170,255,.4);color:var(--cy)">'
+              + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova inspecao</button>';
     }
 
     let concInfo = '';
     if (insp.status === 'concluido') {
-      const dtC = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '-';
-      concInfo = '<div class="mi" style="padding:6px 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span style="color:var(--su);font-size:12px">Concluido em ' + dtC + '</span></div>';
+      const dtC  = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '-';
+      const obs  = insp.observacoes ? insp.observacoes : '';
+      const idsAnom = insp.anomaliasIds || [];
+      // contagem por tipo das anomalias desta inspecao (carregadas no carregar())
+      const anomInsp = (window._anomaliasPorCircuito || {})[insp.circuitoId] || [];
+      const nPoda = anomInsp.filter(a => a.tipo === 'poda').length;
+      const nEsp  = anomInsp.filter(a => a.tipo === 'espacador').length;
+      const nMux  = anomInsp.filter(a => a.tipo === 'mux').length;
+      const temAnom = nPoda + nEsp + nMux > 0;
+
+      concInfo = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
+        + '<div class="mi" style="padding:0 0 6px 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span style="color:var(--su);font-size:12px;font-weight:600">Concluido em ' + dtC + '</span></div>';
+
+      if (temAnom) {
+        concInfo += '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Anomalias encontradas</div>';
+        concInfo += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">';
+        if (nPoda) concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(255,179,0,.12);color:var(--wa);border:1px solid rgba(255,179,0,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M17 8C8 10 5.9 16.17 3.82 19.34a1 1 0 0 0 1.38 1.38C8.55 18.9 14.8 16 17 8z"/></svg>' + nPoda + ' poda' + (nPoda>1?'s':'') + '</span>';
+        if (nEsp)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(0,170,255,.12);color:var(--cy);border:1px solid rgba(0,170,255,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>' + nEsp + ' espacador' + (nEsp>1?'es':'') + '</span>';
+        if (nMux)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(124,63,192,.12);color:#b57bee;border:1px solid rgba(124,63,192,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' + nMux + ' trecho MBX</span>';
+        concInfo += '</div>';
+      } else {
+        concInfo += '<div style="font-size:12px;color:var(--gr);margin-bottom:8px">'
+          + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2" style="margin-right:4px;vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>'
+          + 'Nenhuma anomalia encontrada</div>';
+      }
+
+      if (obs) {
+        concInfo += '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Observacao do fiscal</div>'
+          + '<div style="font-size:12px;color:var(--wh);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;line-height:1.5">' + obs + '</div>';
+      }
+
+      concInfo += '</div>';
     }
 
     h += '<div class="card ' + insp.status + (urgente ? ' urgente' : '') + '" data-id="' + cid + '" onclick="goMapaBtn(this)">'
@@ -463,6 +530,7 @@ function showErr(msg) {
 
 // ---- wrappers data-attribute (evita escaping de parametros no onclick) ----
 window.goMapaBtn   = function(el) { goMapa(el.dataset.id); };
+window.abreNovaInspBtn = function(el) { abreNovaInsp(el.dataset.id, el.dataset.nome); };
 window.abreMConcBtn = function(el) { abreMConc(el.dataset.id, el.dataset.nome); };
 window.aMCancBtn   = function(el) { abreMCanc(el.dataset.id, el.dataset.nome); };
 
@@ -472,6 +540,58 @@ window.setFiltro = function(f, btn) {
   document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderLista();
+};
+
+// ---- modal nova inspecao ----
+let idNovaInspCircuito = '';
+window.abreNovaInsp = async function(circuitoId, circuitoNome) {
+  idNovaInspCircuito = circuitoId;
+  document.getElementById('mNovaInspSub').textContent = 'Circuito: ' + circuitoNome;
+  document.getElementById('obsNovaInsp').value = '';
+  // carrega fiscais
+  const sel = document.getElementById('selectFiscalNova');
+  sel.innerHTML = '<option value="">-- Selecione um fiscal --</option>';
+  try {
+    const snap = await getDocs(query(collection(db,'usuarios'), where('perfil','==','fiscal')));
+    snap.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.data().nome;
+      sel.appendChild(opt);
+    });
+  } catch(_) {}
+  document.getElementById('mNovaInsp').classList.add('open');
+};
+window.fechaMNovaInsp = function() { document.getElementById('mNovaInsp').classList.remove('open'); };
+window.confirmNovaInsp = async function() {
+  const fiscalId = document.getElementById('selectFiscalNova').value;
+  if (!fiscalId) { showToast('Selecione um fiscal.', true); return; }
+  const obs = document.getElementById('obsNovaInsp').value.trim();
+  const btn = document.getElementById('btnNovaInsp');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    // busca nome do fiscal
+    const fSnap = await getDocs(query(collection(db,'usuarios'), where('__name__','==',fiscalId)));
+    const fiscalNome = fSnap.empty ? '?' : fSnap.docs[0].data().nome;
+    // busca nome do circuito
+    const cSnap = await getDocs(query(collection(db,'circuitos'), where('__name__','==',idNovaInspCircuito)));
+    const circNome = cSnap.empty ? idNovaInspCircuito : cSnap.docs[0].data().nome;
+    await addDoc(collection(db,'inspecoes'), {
+      circuitoId:   idNovaInspCircuito,
+      circuitoNome: circNome,
+      fiscalId:     fiscalId,
+      fiscalNome:   fiscalNome,
+      status:       'pendente',
+      observacoes:  obs,
+      delegadoEm:   serverTimestamp(),
+      adminId:      cUser.uid
+    });
+    fechaMNovaInsp();
+    showToast('Nova inspecao solicitada!');
+    pronto = false;
+    await carregar();
+  } catch(e) { console.error(e); showToast('Erro ao solicitar.', true); }
+  finally { btn.disabled = false; btn.textContent = 'Solicitar'; }
 };
 
 window.goMapa = function(id) {
