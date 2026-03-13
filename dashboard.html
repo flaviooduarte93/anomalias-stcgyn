@@ -485,18 +485,28 @@
 
   // ── KPIs ──
   function renderKPIs() {
-    const trafoInsp  = inspecoes.length;
+    // Inspecionados = apenas inspeções CONCLUÍDAS (não pendentes)
+    const trafoInsp  = inspecoes.filter(i => i.status === 'concluido').length;
     const trafoConc  = inspecoes.filter(i => i.status === 'concluido').length;
     const podas      = anomalias.filter(a => a.tipo === 'poda' && a.status === 'concluido').length;
     const espacadores= anomalias.filter(a => a.tipo === 'espacador' && a.status === 'concluido').length;
     const pendentes  = anomalias.filter(a => a.status === 'pendente').length;
     const concluidos = anomalias.filter(a => a.status === 'concluido').length;
 
-    // trafo finalizados = inspecionados E sem anomalias pendentes
+    // Trafo finalizado = inspeção concluída E:
+    //   - todas anomalias de poda/espacador estão concluídas (ignora ramal e mux)
+    //   - OU não teve nenhuma anomalia de poda/espacador
     const trafoFinaliz = circuitos.filter(c => {
       const insp = inspecoes.find(i => i.circuitoId === c.id && i.status === 'concluido');
-      const temPendente = anomalias.some(a => a.circuitoId === c.id && a.status === 'pendente');
-      return insp && !temPendente;
+      if (!insp) return false;
+      // filtra apenas poda e espacador (ignora ramal e mux)
+      const anomPodsEsp = anomalias.filter(a =>
+        a.circuitoId === c.id && (a.tipo === 'poda' || a.tipo === 'espacador')
+      );
+      // se nenhuma poda/espacador, considera finalizado
+      if (!anomPodsEsp.length) return true;
+      // se todas poda/espacador estão concluídas, considera finalizado
+      return anomPodsEsp.every(a => a.status === 'concluido');
     }).length;
 
     document.getElementById('kpiGrid').innerHTML = `

@@ -267,7 +267,7 @@
     .modal-value.loading { color: var(--eq-gray); font-style: italic; }
 
     /* tipo serviço */
-    .tipo-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .tipo-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .tipo-btn {
       padding: 12px 6px;
       background: rgba(255,255,255,0.05);
@@ -569,7 +569,29 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
           MBX
         </button>
+        <button class="tipo-btn" id="tipoRamal" onclick="selectTipo('ramal')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Ramal
+        </button>
       </div>
+    </div>
+
+    <div class="modal-field" id="ramalFieldWrap" style="display:none">
+      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Dados do Ramal</span>
+        <span style="font-size:10px;color:var(--eq-gray);font-weight:400">UC preenchida automaticamente</span>
+      </div>
+      <input type="text" id="ramalMedidor" placeholder="Numero do medidor"
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:8px"
+        oninput="onMedidorInput()"
+        onfocus="this.style.borderColor='var(--eq-cyan)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+      />
+      <input type="text" id="ramalUC" placeholder="UC (preenchida automaticamente)"
+        readonly
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default"
+      />
+      <div id="ramalUCMsg" style="font-size:11px;color:#8a9bbf;margin-top:4px"></div>
     </div>
 
     <div class="modal-field">
@@ -975,9 +997,31 @@
           const freq = ocs3m.length;
           const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
           let cls, label;
-          if (!freq) { cls='ok'; label='✓ 0 desarmes (3m)'; }
-          else { cls=chi>500?'critico':chi>100?'alerta':'ok'; label=`⚡ ${freq} desarme${freq>1?'s':''} · CHI ${chi.toFixed(1)} (3m)`; }
-          decoDiv.innerHTML = `<span class="deco-badge ${cls}">${label}</span>`;
+          if (!freq) { cls='ok'; label='0 desarmes nos ultimos 3 meses'; }
+          else { cls=chi>500?'critico':chi>100?'alerta':'ok'; label=freq+' desarme'+(freq>1?'s':'')+' · CHI '+chi.toFixed(1); }
+          const chiCor = cls==='critico'?'#ff4d6d':cls==='alerta'?'#ffb300':'#00e5a0';
+          // Monta resumo das ocorrências por tipo de causa
+          const causasUnicas = ocs3m.map(function(o){return o.causa||'—';})
+            .filter(function(v,i,a){return a.indexOf(v)===i;}).slice(0,3);
+          const linhasOcs = freq > 0 ? ocs3m.slice(0,5).map(function(o){
+            const dtStr = o.inicio ? String(o.inicio).split(' ')[0] : '—';
+            const chiO  = parseFloat(o.chi) || 0;
+            const corO  = chiO > 500 ? '#ff4d6d' : chiO > 100 ? '#ffb300' : '#8a9bbf';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+              + '<span style="font-size:11px;color:#8a9bbf">' + dtStr + ' — ' + (o.causa||'—') + '</span>'
+              + '<span style="font-size:11px;font-weight:700;color:'+corO+'">CHI '+chiO.toFixed(1)+'</span>'
+              + '</div>';
+          }).join('') : '';
+          const maisLabel = freq > 5 ? '<div style="font-size:10px;color:#8a9bbf;margin-top:4px;text-align:right">+'+(freq-5)+' mais ocorrencia'+(freq-5>1?'s':'')+'</div>' : '';
+
+          decoDiv.innerHTML = ''
+            + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — ultimos 3 meses</div>'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:' + (freq>0?'8':'0') + 'px">'
+            + '<span class="deco-badge '+cls+'" style="font-size:12px;padding:4px 12px">'+label+'</span>'
+            + (freq>0 ? '<span style="font-size:11px;color:'+chiCor+';font-weight:700">CHI '+chi.toFixed(1)+'</span>' : '')
+            + '</div>'
+            + (freq>0 ? linhasOcs + maisLabel : '')
+            + '</div>';
           decoDiv.style.display = 'block';
         }
       } catch(e) { console.warn('Deco load:', e); }
@@ -1021,16 +1065,7 @@
             <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>
             <div class="popup-row">Potência: <span>${potencia} kVA</span></div>
             <div class="popup-row">Clientes: <span>${clientes}</span></div>
-            <div style="display:flex;gap:8px;margin-top:10px">
-              <button class="popup-btn popup-btn-nav" style="flex:1" onclick="abrirNavegacao(${p.lat},${p.lng},'maps')">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                Google Maps
-              </button>
-              <button class="popup-btn popup-btn-nav" style="flex:1;background:linear-gradient(135deg,#1a3a8c,#0d2e6e)" onclick="abrirNavegacao(${p.lat},${p.lng},'waze')">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                Waze
-              </button>
-            </div>`;
+`;
           trafoData = { ...p, potencia, clientes: String(clientes), gnNome };
         } else {
           html = `<div class="popup-title">📍 Poste: ${p.id}</div>
@@ -1173,6 +1208,10 @@
     document.getElementById('qtyValor').textContent = '1';
     document.getElementById('textoOrdemWrap').style.display = 'none';
     document.getElementById('textoOS').textContent = '';
+    if (document.getElementById('ramalFieldWrap')) document.getElementById('ramalFieldWrap').style.display = 'none';
+    if (document.getElementById('ramalMedidor')) document.getElementById('ramalMedidor').value = '';
+    if (document.getElementById('ramalUC'))  document.getElementById('ramalUC').value = '';
+    if (document.getElementById('ramalUCMsg')) document.getElementById('ramalUCMsg').textContent = '';
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const lat = pos.coords.latitude;
@@ -1219,6 +1258,17 @@
     document.getElementById('tipoPoda').classList.toggle('selected', tipo === 'poda');
     document.getElementById('tipoEspacador').classList.toggle('selected', tipo === 'espacador');
     document.getElementById('tipoMux').classList.toggle('selected', tipo === 'mux');
+    document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
+    // mostrar/esconder campos de ramal
+    const ramalWrap = document.getElementById('ramalFieldWrap');
+    if (ramalWrap) {
+      ramalWrap.style.display = tipo === 'ramal' ? 'block' : 'none';
+      if (tipo !== 'ramal') {
+        document.getElementById('ramalMedidor').value = '';
+        document.getElementById('ramalUC').value = '';
+        document.getElementById('ramalUCMsg').textContent = '';
+      }
+    }
     gerarTextoOS();
     checkSalvarEnabled();
   };
@@ -1231,25 +1281,69 @@
     gerarTextoOS();
   };
 
+  // ── busca UC pelo número do medidor nos postes carregados ──
+  window.onMedidorInput = function() {
+    const med = document.getElementById('ramalMedidor').value.trim().toUpperCase();
+    const ucEl  = document.getElementById('ramalUC');
+    const msg   = document.getElementById('ramalUCMsg');
+    ucEl.value  = '';
+    if (!med) { msg.textContent = ''; gerarTextoOS(); return; }
+    // percorre todos os postes ativos buscando o medidor
+    const postes = window._postesAtivos || [];
+    let found = null;
+    for (const p of postes) {
+      const ucs = p.ucs || [];
+      for (const u of ucs) {
+        const mStr = String(u.medidor || u.m || '').toUpperCase();
+        if (mStr === med || mStr.includes(med)) { found = u; break; }
+      }
+      if (found) break;
+    }
+    if (found) {
+      const ucVal = found.uc || found.u || found.codigo || '';
+      ucEl.value = ucVal;
+      msg.textContent = 'UC encontrada no circuito.';
+      msg.style.color = 'var(--eq-success, #00e5a0)';
+    } else {
+      msg.textContent = 'Medidor nao encontrado no circuito.';
+      msg.style.color = 'var(--eq-warning, #ffb300)';
+    }
+    gerarTextoOS();
+  };
+
   window.onPostesInput = function() {
     currentAnomaliaPostes = document.getElementById('modalPostes').value.trim();
     gerarTextoOS();
   };
 
   function gerarTextoOS() {
-    if (!selectedTipo || !currentAnomaliaPostes) {
+    const isRamal = selectedTipo === 'ramal';
+    if (!selectedTipo || (!currentAnomaliaPostes && !isRamal)) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
     const qty    = parseInt(document.getElementById('qtyValor').textContent) || 1;
     const trafo  = currentTrafoNome || currentCircuitoId || '—';
     const postes = currentAnomaliaPostes; // ex: "12345 — 12346"
-    const acao   = selectedTipo === 'poda'
-      ? `Realizar ${qty} poda${qty > 1 ? 's' : ''} de árvore`
-      : selectedTipo === 'mux'
-      ? `Realizar MBX (troca de cabo) em ${qty} trecho${qty > 1 ? 's' : ''}`
-      : `Instalar ${qty} espaçador${qty > 1 ? 'es' : ''}`;
-    const texto  = `${trafo} - ${acao} entre os postes ${postes}`;
+    let acao, texto;
+    if (selectedTipo === 'poda') {
+      acao  = 'Realizar ' + qty + ' poda' + (qty > 1 ? 's' : '') + ' de arvore';
+      texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
+    } else if (selectedTipo === 'mux') {
+      acao  = 'Realizar MBX (troca de cabo) em ' + qty + ' trecho' + (qty > 1 ? 's' : '');
+      texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
+    } else if (selectedTipo === 'ramal') {
+      const med = document.getElementById('ramalMedidor') ? document.getElementById('ramalMedidor').value.trim() : '';
+      const uc  = document.getElementById('ramalUC') ? document.getElementById('ramalUC').value.trim() : '';
+      acao  = 'Revitalizacao de ramal';
+      texto = trafo + ' - ' + acao
+            + (med ? ' - Medidor: ' + med : '')
+            + (uc  ? ' - UC: '      + uc  : '')
+            + ' - Poste: ' + postes;
+    } else {
+      acao  = 'Instalar ' + qty + ' espacador' + (qty > 1 ? 'es' : '');
+      texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
+    }
     document.getElementById('textoOS').textContent = texto;
     document.getElementById('textoOrdemWrap').style.display = 'block';
   }
@@ -1304,8 +1398,11 @@
       // salvar Firestore
       const qty     = parseInt(document.getElementById('qtyValor').textContent) || 1;
       const textoOS = document.getElementById('textoOS').textContent || '';
-      await addDoc(collection(db, 'anomalias'), {
+      const ramalMed = selectedTipo === 'ramal' ? (document.getElementById('ramalMedidor').value.trim() || '') : '';
+      const ramalUC  = selectedTipo === 'ramal' ? (document.getElementById('ramalUC').value.trim() || '') : '';
+      const docData = {
         circuitoId:  currentCircuitoId,
+        circuitoNome: currentTrafoNome || currentCircuitoId || '',
         tipo:        selectedTipo,
         lat:         currentAnomaliaPos.lat,
         lng:         currentAnomaliaPos.lng,
@@ -1318,7 +1415,10 @@
         fiscalNome:  currentUser.nome,
         status:      'pendente',
         criadoEm:    serverTimestamp()
-      });
+      };
+      if (ramalMed) docData.ramalMedidor = ramalMed;
+      if (ramalUC)  docData.ramalUC = ramalUC;
+      await addDoc(collection(db, 'anomalias'), docData);
 
       closeModalAnomalia();
       showToast('Anomalia registrada com sucesso!');
