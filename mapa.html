@@ -1016,7 +1016,7 @@
           // Monta resumo das ocorrências por tipo de causa
           const causasUnicas = ocs3m.map(function(o){return o.causa||'—';})
             .filter(function(v,i,a){return a.indexOf(v)===i;}).slice(0,3);
-          const linhasOcs = freq > 0 ? ocs3m.slice(0,5).map(function(o){
+          const linhasOcs = freq > 0 ? ocs3m.map(function(o){
             const dtStr = o.inicio ? String(o.inicio).split(' ')[0] : '—';
             const chiO  = parseFloat(o.chi) || 0;
             const corO  = chiO > 500 ? '#ff4d6d' : chiO > 100 ? '#ffb300' : '#8a9bbf';
@@ -1025,7 +1025,7 @@
               + '<span style="font-size:11px;font-weight:700;color:'+corO+'">CHI '+chiO.toFixed(1)+'</span>'
               + '</div>';
           }).join('') : '';
-          const maisLabel = freq > 5 ? '<div style="font-size:10px;color:#8a9bbf;margin-top:4px;text-align:right">+'+(freq-5)+' mais ocorrencia'+(freq-5>1?'s':'')+'</div>' : '';
+          const maisLabel = '';
 
           decoDiv.innerHTML = ''
             + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — ultimos 3 meses</div>'
