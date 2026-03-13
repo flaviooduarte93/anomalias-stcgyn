@@ -626,7 +626,7 @@
       <img class="foto-preview" id="fotoPreview" src="" alt="Preview" style="margin-top:8px"/>
     </div>
 
-    <div class="modal-field">
+    <div class="modal-field" id="qtyFieldWrap">
       <div class="modal-label">Quantidade de serviços</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="qty-btn" onclick="alterarQty(-1)">−</button>
@@ -1316,6 +1316,16 @@
         document.getElementById('ramalUCMsg').textContent = '';
       }
     }
+    // ramal: quantidade sempre 1, esconde controle
+    const qtyWrap = document.getElementById('qtyFieldWrap');
+    if (qtyWrap) {
+      if (tipo === 'ramal') {
+        document.getElementById('qtyValor').textContent = '1';
+        qtyWrap.style.display = 'none';
+      } else {
+        qtyWrap.style.display = 'block';
+      }
+    }
     gerarTextoOS();
     checkSalvarEnabled();
   };
@@ -1382,11 +1392,9 @@
     } else if (selectedTipo === 'ramal') {
       const med = document.getElementById('ramalMedidor') ? document.getElementById('ramalMedidor').value.trim() : '';
       const uc  = document.getElementById('ramalUC') ? document.getElementById('ramalUC').value.trim() : '';
-      acao  = 'Revitalizacao de ramal';
-      texto = trafo + ' - ' + acao
-            + (med ? ' - Medidor: ' + med : '')
-            + (uc  ? ' - UC: '      + uc  : '')
-            + ' - Poste: ' + postes;
+      texto = (uc  ? 'UC ' + uc  : '—')
+            + ' - Revitalizar o ramal do Medidor '
+            + (med ? med : '—');
     } else {
       acao  = 'Instalar ' + qty + ' espacador' + (qty > 1 ? 'es' : '');
       texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
