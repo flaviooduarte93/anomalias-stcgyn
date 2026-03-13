@@ -120,6 +120,10 @@
     }
     .filtro-btn.poda.active    { background: rgba(255,179,0,0.12); border-color: rgba(255,179,0,0.35); color: var(--eq-warning); }
     .filtro-btn.espacador.active { background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35); color: var(--eq-cyan); }
+    .filtro-btn.ramal   { border-color: rgba(0,229,160,0.3); color: var(--eq-success); }
+    .filtro-btn.ramal.active { background: rgba(0,229,160,0.15); border-color: rgba(0,229,160,0.6); }
+    .filtro-btn.mux   { border-color: rgba(181,123,238,0.3); color: #b57bee; }
+    .filtro-btn.mux.active { background: rgba(181,123,238,0.15); border-color: rgba(181,123,238,0.6); }
     .filtro-btn.pendente.active  { background: rgba(255,179,0,0.12); border-color: rgba(255,179,0,0.35); color: var(--eq-warning); }
     .filtro-btn.programado.active{ background: rgba(124,63,192,0.12); border-color: rgba(124,63,192,0.35); color: #bf7fff; }
     .filtro-btn.concluido.active { background: rgba(0,229,160,0.12); border-color: rgba(0,229,160,0.35); color: var(--eq-success); }
@@ -142,6 +146,8 @@
     .sum-card.concluido  .sum-val { color: var(--eq-success); }
     .sum-card.poda       .sum-val { color: var(--eq-warning); }
     .sum-card.espacador  .sum-val { color: var(--eq-cyan); }
+    .sum-card.ramal .sum-val    { color: var(--eq-success); }
+    .sum-card.mux .sum-val      { color: #b57bee; }
 
     /* ── SECTION HEADER ── */
     .section-header {
@@ -186,6 +192,8 @@
     }
     .card-tipo-badge.poda      { background: rgba(255,179,0,0.85); color: #000; }
     .card-tipo-badge.espacador { background: rgba(0,170,255,0.85); color: #fff; }
+    .card-tipo-badge.ramal     { background: rgba(0,229,160,0.12); color: var(--eq-success); border-color: rgba(0,229,160,0.3); }
+    .card-tipo-badge.mux       { background: rgba(181,123,238,0.12); color: #b57bee; border-color: rgba(181,123,238,0.3); }
 
     .card-status-badge {
       position: absolute; top: 10px; right: 10px;
@@ -374,6 +382,8 @@
     <button class="filtro-btn active" onclick="setFiltroTipo('todos', this)">Todos</button>
     <button class="filtro-btn poda" onclick="setFiltroTipo('poda', this)">✂ Poda</button>
     <button class="filtro-btn espacador" onclick="setFiltroTipo('espacador', this)">⊕ Espaçador</button>
+    <button class="filtro-btn ramal" onclick="setFiltroTipo('ramal', this)">🏠 Ramal</button>
+    <button class="filtro-btn mux" onclick="setFiltroTipo('mux', this)">🔄 MBX</button>
   </div>
 
   <!-- filtros status -->
@@ -409,6 +419,14 @@
     <div class="sum-card espacador">
       <div class="sum-val" id="sumEspacador">—</div>
       <div class="sum-label">Espaçadores</div>
+    </div>
+    <div class="sum-card ramal">
+      <div class="sum-val" id="sumRamal">—</div>
+      <div class="sum-label">Ramais</div>
+    </div>
+    <div class="sum-card mux">
+      <div class="sum-val" id="sumMux">—</div>
+      <div class="sum-label">MBX</div>
     </div>
   </div>
 
@@ -579,6 +597,8 @@
     document.getElementById('sumConcluido').textContent = todasAnomalias.filter(a => a.status === 'concluido').length;
     document.getElementById('sumPoda').textContent      = todasAnomalias.filter(a => a.tipo === 'poda').length;
     document.getElementById('sumEspacador').textContent = todasAnomalias.filter(a => a.tipo === 'espacador').length;
+    document.getElementById('sumRamal').textContent     = todasAnomalias.filter(a => a.tipo === 'ramal').length;
+    document.getElementById('sumMux').textContent       = todasAnomalias.filter(a => a.tipo === 'mux').length;
   }
 
   window.renderLista = function() {
@@ -598,7 +618,9 @@
 
     document.getElementById('countPill').textContent = itens.length;
     document.getElementById('sectionTitle').textContent =
-      filtroTipo !== 'todos' ? `${filtroTipo === 'poda' ? '✂ Podas' : '⊕ Espaçadores'}` : 'Todos os registros';
+      filtroTipo !== 'todos' ? ({
+        poda: '✂ Podas', espacador: '⊕ Espaçadores', ramal: '🏠 Ramais', mux: '🔄 MBX'
+      }[filtroTipo] || filtroTipo) : 'Todos os registros';
 
     const lista = document.getElementById('listaAnomalias');
     if (itens.length === 0) {
@@ -612,7 +634,7 @@
     lista.innerHTML = '';
     itens.forEach(a => {
       const dataStr = a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-      const tipoLabel = a.tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador';
+      const tipoLabel = { poda: '✂ Poda', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', mux: '🔄 MBX' }[a.tipo] || a.tipo;
       const statusLabel = { pendente: '⏳ Pendente', programado: '📋 Programado', concluido: '✓ Concluído' }[a.status] || a.status;
 
       const fotoHtml = a.fotoUrl
