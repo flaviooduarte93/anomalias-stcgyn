@@ -19,6 +19,7 @@
     .topbar{position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--top-h);background:rgba(10,22,40,.97);border-bottom:1px solid rgba(0,170,255,.15);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:space-between;padding:0 16px}
     .tlogo{display:flex;align-items:center;gap:8px}
     .ticon{width:32px;height:32px;background:linear-gradient(135deg,var(--bm),var(--pm));border-radius:8px;display:flex;align-items:center;justify-content:center}
+    .ticon svg{width:16px;height:16px}
     .tname{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .tright{display:flex;align-items:center;gap:8px}
     .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--bm),var(--pm));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
@@ -115,7 +116,7 @@
 
 <div class="topbar">
   <div class="tlogo">
-    <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <span class="tname">STCGYN</span>
   </div>
   <div class="tright">
@@ -131,9 +132,9 @@
         <path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
         <path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
       </svg>
-      MBX — RECONDUTORAMENTO DE BT
+      MBX — MBX
     </div>
-    <div class="page-sub" id="pageSub">Transformadores com trechos solicitados para recondutoramento</div>
+    <div class="page-sub" id="pageSub">Transformadores com trechos solicitados para MBX</div>
   </div>
 
   <div class="sumrow">
@@ -182,10 +183,6 @@
   <button class="ni" onclick="location.href='dashboard.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span class="nlbl">Dashboard</span>
-  </button>
-  <button class="ni" onclick="location.href='circuitos.html'">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-    <span class="nlbl">Circuitos</span>
   </button>
 </nav>
 
