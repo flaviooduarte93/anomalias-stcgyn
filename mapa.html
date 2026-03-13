@@ -297,6 +297,16 @@
     .foto-area svg { color: var(--eq-gray); }
     .foto-area span { font-size: 13px; color: var(--eq-gray); }
     .foto-preview { width: 100%; border-radius: 8px; display: none; }
+    .foto-picker-btns { display:flex; gap:8px; margin-top:4px; }
+    .foto-picker-btn {
+      flex:1; padding:10px 8px; background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:rgba(138,155,191,0.8);
+      font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:600;
+      letter-spacing:.6px; text-transform:uppercase; cursor:pointer; display:flex;
+      align-items:center; justify-content:center; gap:5px; transition:border-color .2s,color .2s;
+    }
+    .foto-picker-btn:hover { border-color:var(--eq-cyan); color:var(--eq-cyan); }
+    .foto-picker-btn.selected { border-color:var(--eq-success); color:var(--eq-success); background:rgba(0,229,160,0.08); }
 
     .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
     .qty-btn {
@@ -603,12 +613,17 @@
 
     <div class="modal-field">
       <div class="modal-label">Foto da anomalia</div>
-      <div class="foto-area" id="fotoArea">
-        <input type="file" accept="image/*" capture="environment" id="fotoInput" onchange="previewFoto(event)"/>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span id="fotoLabel">Toque para tirar foto</span>
-        <img class="foto-preview" id="fotoPreview" src="" alt="Preview"/>
+      <div class="foto-picker-btns">
+        <button class="foto-picker-btn" id="btnCameraAnomalia" onclick="abrirFotoAnomalia('camera')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Câmera
+        </button>
+        <button class="foto-picker-btn" id="btnGaleriaAnomalia" onclick="abrirFotoAnomalia('galeria')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Galeria
+        </button>
       </div>
+      <img class="foto-preview" id="fotoPreview" src="" alt="Preview" style="margin-top:8px"/>
     </div>
 
     <div class="modal-field">
@@ -961,15 +976,7 @@
       // formato novo: dados já extraídos
       postesData   = (data.geodata.postes   || []).map(p => ({
         id: p.id, lat: p.lat, lng: p.lng,
-        esforco: p.e || '', temTransformador: p.t === 1,
-        ucs: (p.ucs || []).map(u => ({
-          uc: u.uc,
-          medidor: u.m || '',
-          nome: u.n || '',
-          fase: u.f || '',
-          pot: u.p || '0',
-          potgd: u.g || '0'
-        }))
+        esforco: p.e || '', temTransformador: p.t === 1
       }));
       conexoesData = (data.geodata.conexoes || []).map(c => ({
         de: c.d, para: c.p, fase: c.f, condutor: c.c,
@@ -1236,7 +1243,8 @@
     selectedTipo = null;
     fotoFile = null;
     document.getElementById('fotoPreview').style.display = 'none';
-    document.getElementById('fotoLabel').style.display = 'block';
+    document.getElementById('btnCameraAnomalia').classList.remove('selected');
+    document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
     document.getElementById('btnSalvarAnomalia').disabled = true;
     document.getElementById('tipoPoda').classList.remove('selected');
     document.getElementById('tipoEspacador').classList.remove('selected');
@@ -1403,15 +1411,23 @@
     });
   };
 
-  window.previewFoto = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    fotoFile = file;
-    const url = URL.createObjectURL(file);
-    const prev = document.getElementById('fotoPreview');
-    prev.src = url; prev.style.display = 'block';
-    document.getElementById('fotoLabel').style.display = 'none';
-    checkSalvarEnabled();
+  window.abrirFotoAnomalia = function(origem) {
+    const input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = 'image/*';
+    if (origem === 'camera') input.capture = 'environment';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      fotoFile = file;
+      const prev = document.getElementById('fotoPreview');
+      prev.src = URL.createObjectURL(file);
+      prev.style.display = 'block';
+      document.getElementById('btnCameraAnomalia').classList.toggle('selected', origem === 'camera');
+      document.getElementById('btnGaleriaAnomalia').classList.toggle('selected', origem === 'galeria');
+      checkSalvarEnabled();
+    };
+    input.click();
   };
 
   function checkSalvarEnabled() {
@@ -1565,32 +1581,60 @@
 
   // ── concluir serviço (equipe) ──
   window.concluirServico = function(anomaliaId) {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
-    input.onchange = async e => {
-      const file = e.target.files[0];
-      if (!file) return showToast('É obrigatório tirar uma foto para concluir.', true);
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:#0d1f3c;border:1px solid rgba(0,170,255,0.2);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:480px">
+        <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px"></div>
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px">Foto de conclusão</div>
+        <div style="font-size:13px;color:#8a9bbf;margin-bottom:20px">Obrigatório para concluir o serviço.</div>
+        <div style="display:flex;gap:10px">
+          <button id="btnConcCamera" style="flex:1;padding:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#8a9bbf;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Câmera
+          </button>
+          <button id="btnConcGaleria" style="flex:1;padding:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#8a9bbf;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Galeria
+          </button>
+        </div>
+        <button id="btnConcCancelar" style="width:100%;margin-top:10px;padding:11px;background:transparent;border:none;color:#8a9bbf;font-size:13px;cursor:pointer">Cancelar</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#btnConcCancelar').onclick = () => document.body.removeChild(overlay);
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'anomalias-stcgyn');
-      try {
-        const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
-        const json = await res.json();
-        await updateDoc(doc(db, 'anomalias', anomaliaId), {
-          status: 'concluido',
-          fotoConcluidoUrl: cldSave(json.secure_url),
-          concluidoEm: serverTimestamp(),
-          equipeConcluidoId: currentUser.uid
-        });
-        showToast('Serviço concluído!');
-        map.closePopup();
-        await loadAnomaliasNoMapa(currentCircuitoId);
-      } catch {
-        showToast('Erro ao concluir.', true);
-      }
+    const pickFoto = (origem) => {
+      document.body.removeChild(overlay);
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      if (origem === 'camera') input.capture = 'environment';
+      input.onchange = async e => {
+        const file = e.target.files[0];
+        if (!file) return showToast('É obrigatório tirar uma foto para concluir.', true);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'anomalias-stcgyn');
+        try {
+          const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
+          const json = await res.json();
+          await updateDoc(doc(db, 'anomalias', anomaliaId), {
+            status: 'concluido',
+            fotoConcluidoUrl: cldSave(json.secure_url),
+            concluidoEm: serverTimestamp(),
+            equipeConcluidoId: currentUser.uid
+          });
+          showToast('Serviço concluído!');
+          map.closePopup();
+          await loadAnomaliasNoMapa(currentCircuitoId);
+        } catch {
+          showToast('Erro ao concluir.', true);
+        }
+      };
+      input.click();
     };
-    input.click();
+
+    overlay.querySelector('#btnConcCamera').onclick  = () => pickFoto('camera');
+    overlay.querySelector('#btnConcGaleria').onclick = () => pickFoto('galeria');
   };
 
   // ── navegação (Google Maps / Waze) ──
