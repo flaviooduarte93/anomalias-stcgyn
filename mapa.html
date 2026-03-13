@@ -1016,7 +1016,11 @@
           // Monta resumo das ocorrências por tipo de causa
           const causasUnicas = ocs3m.map(function(o){return o.causa||'—';})
             .filter(function(v,i,a){return a.indexOf(v)===i;}).slice(0,3);
-          const linhasOcs = freq > 0 ? ocs3m.map(function(o){
+          const ocs3mOrdenado = ocs3m.slice().sort(function(a,b){
+            const pa = parseDt(a.inicio), pb = parseDt(b.inicio);
+            return (pa||0) - (pb||0);
+          });
+          const linhasOcs = freq > 0 ? ocs3mOrdenado.map(function(o){
             const dtStr = o.inicio ? String(o.inicio).split(' ')[0] : '—';
             const chiO  = parseFloat(o.chi) || 0;
             const corO  = chiO > 500 ? '#ff4d6d' : chiO > 100 ? '#ffb300' : '#8a9bbf';
