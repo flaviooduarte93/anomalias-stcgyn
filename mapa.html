@@ -461,7 +461,14 @@
       </div>
     </div>
   </div>
-  <div id="trafoDecoBadge" style="display:none"></div>
+  <div id="trafoDecoWrap" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">
+    <button id="trafoDecoBtn" onclick="toggleDeco()"
+      style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;padding:0">
+      <span style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px">Decometro — ultimos 3 meses</span>
+      <span id="trafoDecoBtnResume" style="font-size:11px;font-weight:700;color:#8a9bbf"></span>
+    </button>
+    <div id="trafoDecoBadge" style="display:none;margin-top:8px"></div>
+  </div>
   <div id="trafoRotaBtns" style="display:none;gap:8px;margin-top:10px">
     <button onclick="abrirNavTrafo('maps')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a8c4e,#0d6e3b);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
@@ -868,6 +875,8 @@
       map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
       anomaliaMarkers = [];
       document.getElementById('trafoCard').classList.add('hidden');
+      document.getElementById('trafoDecoWrap').style.display = 'none';
+      document.getElementById('trafoDecoBadge').style.display = 'none';
       reposicionarFAB();
     }
   };
@@ -883,6 +892,10 @@
 
     if (origem === 'circuitos') {
       window.location.href = 'circuitos.html';
+      return;
+    }
+    if (origem === 'pendencias') {
+      window.location.href = 'pendencias.html';
       return;
     }
 
@@ -1022,7 +1035,21 @@
             + '</div>'
             + (freq>0 ? linhasOcs + maisLabel : '')
             + '</div>';
-          decoDiv.style.display = 'block';
+          // mostra o wrapper (botão colapsável), começa fechado
+          document.getElementById('trafoDecoWrap').style.display = 'block';
+          document.getElementById('trafoDecoBadge').style.display = 'none'; // começa colapsado
+          // resumo no botão: frequência + CHI total
+          const resumoBtn = freq > 0
+            ? freq + ' desarme' + (freq > 1 ? 's' : '') + ' · CHI ' + chi.toFixed(1)
+            : '0 desarmes';
+          const corResumo = cls === 'critico' ? '#ff4d6d' : cls === 'alerta' ? '#ffb300' : '#00e5a0';
+          document.getElementById('trafoDecoBtnResume').textContent = resumoBtn;
+          document.getElementById('trafoDecoBtnResume').style.color = corResumo;
+        } else {
+          // sem dados: mostra wrap com botão indicando sem dados
+          document.getElementById('trafoDecoWrap').style.display = 'block';
+          document.getElementById('trafoDecoBtnResume').textContent = 'sem dados';
+          document.getElementById('trafoDecoBtnResume').style.color = '#8a9bbf';
         }
       } catch(e) { console.warn('Deco load:', e); }
     }
@@ -1580,6 +1607,17 @@
     const mo = new MutationObserver(reposicionarFAB);
     mo.observe(card, { attributes: true, attributeFilter: ['class'] });
   })();
+
+  window.toggleDeco = function() {
+    const badge = document.getElementById('trafoDecoBadge');
+    const btn   = document.getElementById('trafoDecoBtn');
+    const open  = badge.style.display !== 'none';
+    badge.style.display = open ? 'none' : 'block';
+    btn.style.borderBottom = open ? 'none' : '1px solid rgba(255,255,255,.06)';
+    btn.style.paddingBottom = open ? '0' : '6px';
+    btn.style.marginBottom  = open ? '0' : '2px';
+    reposicionarFAB();
+  };
 
   window.abrirNavTrafo = function(app) {
     const rb  = document.getElementById('trafoRotaBtns');
