@@ -1721,22 +1721,33 @@
   }
 
   function extrairPostes(html) {
-    // extrai offset se existir
     const offsetLat = parseFloat((html.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
     const offsetLng = parseFloat((html.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
-
     const postes = [];
-    // regex preciso: captura id, lat, lng, esforco, temTransformador de cada poste
-    const re = /\{\s*id:\s*'([^']+)',\s*lat:\s*(-?[\d.]+),\s*lng:\s*(-?[\d.]+),\s*esforco:\s*'([^']*)',\s*temTransformador:\s*(\d)/g;
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      postes.push({
-        id:               m[1],
-        lat:              parseFloat(m[2]) + offsetLat,
-        lng:              parseFloat(m[3]) + offsetLng,
-        esforco:          m[4],
-        temTransformador: parseInt(m[5]) === 1
-      });
+    // Extrai o array completo contando colchetes para não parar cedo
+    const startIdx = html.search(/var postes\s*=\s*\[/);
+    if (startIdx !== -1) {
+      const arrStart = html.indexOf('[', startIdx);
+      let depth = 0, i = arrStart;
+      for (; i < html.length; i++) {
+        if (html[i] === '[') depth++;
+        else if (html[i] === ']') { depth--; if (depth === 0) { i++; break; } }
+      }
+      try {
+        const raw = eval(html.slice(arrStart, i));
+        raw.forEach(p => postes.push({
+          id:               p.id,
+          lat:              p.lat + offsetLat,
+          lng:              p.lng + offsetLng,
+          esforco:          p.esforco || '',
+          temTransformador: p.temTransformador === 1,
+          ucs: (p.ucs || []).map(u => ({
+            uc: String(u.uc), medidor: u.medidor || '',
+            nome: u.nome || '', fase: u.fase || '',
+            pot: u.pot || '0', potgd: u.potgd || '0'
+          }))
+        }));
+      } catch(e) { console.error('extrairPostes eval error:', e); }
     }
     return postes;
   }
