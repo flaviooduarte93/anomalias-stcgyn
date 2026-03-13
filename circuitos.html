@@ -882,16 +882,30 @@
       const offsetLat = parseFloat((htmlContent.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
       const offsetLng = parseFloat((htmlContent.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
       const postes = [];
-      const reP = /\{\s*id:\s*'([^']+)',\s*lat:\s*(-?[\d.]+),\s*lng:\s*(-?[\d.]+),\s*esforco:\s*'([^']*)',\s*temTransformador:\s*(\d)/g;
-      let mp;
-      while ((mp = reP.exec(htmlContent)) !== null) {
-        postes.push({
-          id: mp[1],
-          lat: Math.round((parseFloat(mp[2]) + offsetLat) * 1e7) / 1e7,
-          lng: Math.round((parseFloat(mp[3]) + offsetLng) * 1e7) / 1e7,
-          e: mp[4],   // esforco abreviado
-          t: parseInt(mp[5]) === 1 ? 1 : 0  // temTransformador
-        });
+      const matchPostes = htmlContent.match(/var postes\s*=\s*(\[[\s\S]*?\])\s*;?\s*postes\.forEach/);
+      if (matchPostes) {
+        try {
+          const postesRaw = eval(matchPostes[1]);
+          postesRaw.forEach(p => {
+            postes.push({
+              id: p.id,
+              lat: Math.round((p.lat + offsetLat) * 1e7) / 1e7,
+              lng: Math.round((p.lng + offsetLng) * 1e7) / 1e7,
+              e: p.esforco || '',
+              t: p.temTransformador === 1 ? 1 : 0,
+              ucs: (p.ucs || []).map(u => ({
+                uc: String(u.uc),
+                m: u.medidor || '',
+                n: u.nome || '',
+                f: u.fase || '',
+                p: u.pot || '0',
+                g: u.potgd || '0'
+              }))
+            });
+          });
+        } catch(e) {
+          console.error('Erro ao extrair postes via eval:', e);
+        }
       }
 
       // ── extrai conexões ──
