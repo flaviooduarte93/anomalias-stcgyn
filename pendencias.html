@@ -460,6 +460,83 @@ function renderLista() {
               + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova inspecao</button>';
     }
 
+    // ── Easy Trafo + Anel + Clientes Fora do Padrão (visível sempre que preenchido) ──
+    let inspExtra = '';
+    if (insp.easyTrafo !== undefined || insp.fechadoEmAnel !== undefined) {
+      inspExtra += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
+        + '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Informações do transformador</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
+      if (insp.easyTrafo !== undefined) {
+        const etOk  = insp.easyTrafo === true;
+        const etClr = etOk ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)';
+        const etBrd = etOk ? 'rgba(0,229,160,.3)' : 'rgba(255,77,109,.3)';
+        const etTxt = etOk ? 'var(--su)' : 'var(--er)';
+        const etLbl = etOk ? '✓ Easy Trafo' : '✗ Sem Easy Trafo';
+        inspExtra += '<span style="padding:3px 10px;border-radius:12px;background:' + etClr + ';color:' + etTxt + ';border:1px solid ' + etBrd + ';font-size:12px;font-weight:600">' + etLbl + '</span>';
+        if (etOk && insp.easyTrafoFotoUrl) {
+          inspExtra += '<a href="' + insp.easyTrafoFotoUrl + '" target="_blank" onclick="event.stopPropagation()" '
+            + 'style="padding:3px 10px;border-radius:12px;background:rgba(0,170,255,.1);color:var(--cy);border:1px solid rgba(0,170,255,.25);font-size:12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px">'
+            + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Ver foto</a>';
+        }
+      }
+      if (insp.fechadoEmAnel !== undefined) {
+        const anOk  = insp.fechadoEmAnel === true;
+        const anClr = anOk ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)';
+        const anBrd = anOk ? 'rgba(0,229,160,.3)' : 'rgba(255,77,109,.3)';
+        const anTxt = anOk ? 'var(--su)' : 'var(--er)';
+        const anLbl = anOk ? '✓ Fechado em anel' : '✗ Não em anel';
+        inspExtra += '<span style="padding:3px 10px;border-radius:12px;background:' + anClr + ';color:' + anTxt + ';border:1px solid ' + anBrd + ';font-size:12px;font-weight:600">' + anLbl + '</span>';
+      }
+      inspExtra += '</div>';
+      if (insp.anelObservacao) {
+        inspExtra += '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Observação — Anel</div>'
+          + '<div style="font-size:12px;color:var(--wh);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;line-height:1.5;margin-bottom:6px">' + insp.anelObservacao + '</div>';
+      }
+      inspExtra += '</div>';
+    }
+
+    // ── Clientes fora do padrão (anomalias tipo 'fora') — colapsável ──
+    const anomInspAll = (window._anomaliasPorCircuito || {})[insp.circuitoId] || [];
+    const foraList = anomInspAll.filter(a => a.tipo === 'fora');
+    if (foraList.length > 0) {
+      const foraId = 'fora-' + iid;
+      inspExtra += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
+        // header colapsável
+        + '<button onclick="event.stopPropagation();toggleForaList('' + foraId + '',this)" '
+        + 'style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;padding:0;margin-bottom:0">'
+        + '<span style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px">Clientes fora do padrão</span>'
+        + '<span style="display:flex;align-items:center;gap:6px">'
+        + '<span style="padding:2px 8px;border-radius:10px;background:rgba(255,77,109,.15);color:var(--er);border:1px solid rgba(255,77,109,.3);font-size:11px;font-weight:700">' + foraList.length + '</span>'
+        + '<svg id="chevron-' + foraId + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gr)" stroke-width="2" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</span></button>'
+        // lista (começa colapsada)
+        + '<div id="' + foraId + '" style="display:none;margin-top:8px">';
+
+      foraList.forEach(function(a, idx) {
+        inspExtra += '<div style="background:rgba(255,179,0,.05);border:1px solid rgba(255,179,0,.18);border-radius:8px;padding:9px 10px;margin-bottom:6px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+          + '<div style="flex:1;min-width:0">';
+        if (a.foraUC || a.foraMedidor) {
+          inspExtra += '<div style="font-size:12px;color:var(--wh);font-weight:600;margin-bottom:3px">'
+            + (a.foraUC ? 'UC ' + a.foraUC : '')
+            + (a.foraMedidor ? '<span style="color:var(--gr);font-weight:400"> — ' + a.foraMedidor + '</span>' : '')
+            + '</div>';
+        }
+        if (a.foraObs) {
+          inspExtra += '<div style="font-size:12px;color:var(--gr);line-height:1.4">' + a.foraObs + '</div>';
+        }
+        inspExtra += '</div>';
+        // ícone de foto (se houver)
+        if (a.fotoUrl) {
+          inspExtra += '<a href="' + a.fotoUrl + '" target="_blank" onclick="event.stopPropagation()" '
+            + 'title="Ver foto" style="flex-shrink:0;width:32px;height:32px;border-radius:8px;background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.25);display:flex;align-items:center;justify-content:center;text-decoration:none">'
+            + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cy)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></a>';
+        }
+        inspExtra += '</div>';
+      });
+
+      inspExtra += '</div></div>';
+    }
+
     let concInfo = '';
     if (insp.status === 'concluido') {
       const dtC  = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '-';
@@ -467,10 +544,12 @@ function renderLista() {
       const idsAnom = insp.anomaliasIds || [];
       // contagem por tipo das anomalias desta inspecao (carregadas no carregar())
       const anomInsp = (window._anomaliasPorCircuito || {})[insp.circuitoId] || [];
-      const nPoda = anomInsp.filter(a => a.tipo === 'poda').length;
-      const nEsp  = anomInsp.filter(a => a.tipo === 'espacador').length;
-      const nMux  = anomInsp.filter(a => a.tipo === 'mux').length;
-      const temAnom = nPoda + nEsp + nMux > 0;
+      const nPoda  = anomInsp.filter(a => a.tipo === 'poda').length;
+      const nEsp   = anomInsp.filter(a => a.tipo === 'espacador').length;
+      const nMux   = anomInsp.filter(a => a.tipo === 'mux').length;
+      const nRamal = anomInsp.filter(a => a.tipo === 'ramal').length;
+      const nFora  = anomInsp.filter(a => a.tipo === 'fora').length;
+      const temAnom = nPoda + nEsp + nMux + nRamal + nFora > 0;
 
       concInfo = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
         + '<div class="mi" style="padding:0 0 6px 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span style="color:var(--su);font-size:12px;font-weight:600">Concluido em ' + dtC + '</span></div>';
@@ -482,8 +561,12 @@ function renderLista() {
           + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M17 8C8 10 5.9 16.17 3.82 19.34a1 1 0 0 0 1.38 1.38C8.55 18.9 14.8 16 17 8z"/></svg>' + nPoda + ' poda' + (nPoda>1?'s':'') + '</span>';
         if (nEsp)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(0,170,255,.12);color:var(--cy);border:1px solid rgba(0,170,255,.25);font-size:12px;font-weight:600">'
           + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>' + nEsp + ' espacador' + (nEsp>1?'es':'') + '</span>';
-        if (nMux)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(124,63,192,.12);color:#b57bee;border:1px solid rgba(124,63,192,.25);font-size:12px;font-weight:600">'
+        if (nMux)   concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(124,63,192,.12);color:#b57bee;border:1px solid rgba(124,63,192,.25);font-size:12px;font-weight:600">'
           + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' + nMux + ' trecho MBX</span>';
+        if (nRamal) concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--su);border:1px solid rgba(0,229,160,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' + nRamal + ' ramal' + (nRamal>1?'s':'') + '</span>';
+        if (nFora)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(255,77,109,.12);color:var(--er);border:1px solid rgba(255,77,109,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' + nFora + ' fora do padrão</span>';
         concInfo += '</div>';
       } else {
         concInfo += '<div style="font-size:12px;color:var(--gr);margin-bottom:8px">'
@@ -499,16 +582,16 @@ function renderLista() {
       concInfo += '</div>';
     }
 
-    h += '<div class="card ' + insp.status + (urgente ? ' urgente' : '') + '" data-id="' + cid + '" onclick="goMapaBtn(this)">'
+    h += '<div class="card ' + insp.status + (urgente ? ' urgente' : '') + '" data-id="' + cid + '" data-iid="' + iid + '" onclick="goMapaBtn(this)">'
        + '<div class="ctop"><div class="cnome">' + nome + '</div><span class="spill ' + insp.status + '">' + stLbl + '</span></div>'
        + '<div class="cmeta">'
        + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Delegado: <span>' + dtStr + '</span></div>'
        + fiscMeta + dBadge
        + '</div>'
        + '<div class="cacts" onclick="event.stopPropagation()">'
-       + '<button class="bsm b-out" data-id="' + cid + '" onclick="goMapaBtn(this)">'
+       + '<button class="bsm b-out" data-id="' + cid + '" data-iid="' + iid + '" onclick="goMapaBtn(this)">'
        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>'
-       + btnAcao + concInfo
+       + btnAcao + inspExtra + concInfo
        + '</div></div>';
   });
 
@@ -529,7 +612,16 @@ function showErr(msg) {
 }
 
 // ---- wrappers data-attribute (evita escaping de parametros no onclick) ----
-window.goMapaBtn   = function(el) { goMapa(el.dataset.id); };
+window.goMapaBtn   = function(el) { goMapa(el.dataset.id, el.dataset.iid); };
+
+window.toggleForaList = function(id, btn) {
+  const list    = document.getElementById(id);
+  const chevron = document.getElementById('chevron-' + id);
+  if (!list) return;
+  const open = list.style.display !== 'none';
+  list.style.display   = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+};
 window.abreNovaInspBtn = function(el) { abreNovaInsp(el.dataset.id, el.dataset.nome); };
 window.abreMConcBtn = function(el) { abreMConc(el.dataset.id, el.dataset.nome); };
 window.aMCancBtn   = function(el) { abreMCanc(el.dataset.id, el.dataset.nome); };
@@ -594,8 +686,9 @@ window.confirmNovaInsp = async function() {
   finally { btn.disabled = false; btn.textContent = 'Solicitar'; }
 };
 
-window.goMapa = function(id) {
-  if (id) sessionStorage.setItem('circuitoSelecionado', id);
+window.goMapa = function(id, iid) {
+  if (id)  sessionStorage.setItem('circuitoSelecionado', id);
+  if (iid) sessionStorage.setItem('inspecaoAtiva', iid);
   sessionStorage.setItem('mapaOrigem', 'pendencias');
   location.href = 'mapa.html';
 };
