@@ -596,6 +596,7 @@ window.confirmNovaInsp = async function() {
 
 window.goMapa = function(id) {
   if (id) sessionStorage.setItem('circuitoSelecionado', id);
+  sessionStorage.setItem('mapaOrigem', 'pendencias');
   location.href = 'mapa.html';
 };
 
