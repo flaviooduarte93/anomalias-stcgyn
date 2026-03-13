@@ -976,7 +976,12 @@
       // formato novo: dados já extraídos
       postesData   = (data.geodata.postes   || []).map(p => ({
         id: p.id, lat: p.lat, lng: p.lng,
-        esforco: p.e || '', temTransformador: p.t === 1
+        esforco: p.e || '', temTransformador: p.t === 1,
+        ucs: (p.ucs || []).map(u => ({
+          uc: u.uc, medidor: u.m || '',
+          nome: u.n || '', fase: u.f || '',
+          pot: u.p || '0', potgd: u.g || '0'
+        }))
       }));
       conexoesData = (data.geodata.conexoes || []).map(c => ({
         de: c.d, para: c.p, fase: c.f, condutor: c.c,
@@ -1348,11 +1353,14 @@
     // percorre todos os postes ativos buscando o medidor
     const postes = window._postesAtivos || [];
     let found = null;
+    // normaliza: remove hífen e espaços, uppercase
+    const medNorm = med.replace(/[-\s]/g, '');
     for (const p of postes) {
       const ucs = p.ucs || [];
       for (const u of ucs) {
-        const mStr = String(u.medidor || u.m || '').toUpperCase();
-        if (mStr === med || mStr.includes(med)) { found = u; break; }
+        const mRaw  = String(u.medidor || u.m || '');
+        const mNorm = mRaw.replace(/[-\s]/g, '').toUpperCase();
+        if (mNorm === medNorm || mRaw.toUpperCase() === med) { found = u; break; }
       }
       if (found) break;
     }
@@ -1362,7 +1370,12 @@
       msg.textContent = 'UC encontrada no circuito.';
       msg.style.color = 'var(--eq-success, #00e5a0)';
     } else {
-      msg.textContent = 'Medidor nao encontrado no circuito.';
+      const totalUcs = postes.reduce((acc, p) => acc + (p.ucs || []).length, 0);
+      if (totalUcs === 0) {
+        msg.textContent = 'Circuito sem dados de UC — re-suba o arquivo do circuito.';
+      } else {
+        msg.textContent = 'Medidor não encontrado no circuito.';
+      }
       msg.style.color = 'var(--eq-warning, #ffb300)';
     }
     gerarTextoOS();
