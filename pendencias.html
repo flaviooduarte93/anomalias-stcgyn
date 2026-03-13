@@ -502,7 +502,7 @@ function renderLista() {
       const foraId = 'fora-' + iid;
       inspExtra += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
         // header colapsável
-        + '<button onclick="event.stopPropagation();toggleForaList('' + foraId + '',this)" '
+        + '<button onclick="event.stopPropagation();toggleForaList(&quot;' + foraId + '&quot;,this)" '
         + 'style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;padding:0;margin-bottom:0">'
         + '<span style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px">Clientes fora do padrão</span>'
         + '<span style="display:flex;align-items:center;gap:6px">'
