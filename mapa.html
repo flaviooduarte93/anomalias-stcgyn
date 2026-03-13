@@ -489,6 +489,92 @@
       Waze
     </button>
   </div>
+  <!-- Easy Trafo e Anel — visível apenas para fiscal com inspeção ativa -->
+  <div id="trafoInspBtns" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">
+    <div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Informações do transformador</div>
+    <div style="display:flex;gap:8px">
+      <button id="btnEasyTrafo" onclick="openModalEasyTrafo()"
+        style="flex:1;padding:9px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#8a9bbf;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;text-transform:uppercase">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        <span id="btnEasyTrafoLbl">Easy Trafo</span>
+      </button>
+      <button id="btnAnel" onclick="openModalAnel()"
+        style="flex:1;padding:9px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#8a9bbf;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;text-transform:uppercase">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+        <span id="btnAnelLbl">Anel</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Easy Trafo -->
+<div class="modal-overlay" id="modalEasyTrafo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Easy Trafo</div>
+    <div class="modal-sub">O transformador possui Easy Trafo instalado?</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button id="btnEasyTrafoSim" onclick="selectEasyTrafo(true)"
+        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(0,229,160,.3);background:rgba(0,229,160,.08);color:#00e5a0;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
+        ✓ Sim
+      </button>
+      <button id="btnEasyTrafoNao" onclick="selectEasyTrafo(false)"
+        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.08);color:#ff4d6d;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
+        ✗ Não
+      </button>
+    </div>
+    <div id="easyTrafoFotoWrap" style="display:none">
+      <div class="modal-label">Foto do Easy Trafo <span style="color:var(--eq-error)">*</span></div>
+      <div class="foto-picker-btns" style="margin-top:6px">
+        <button class="foto-picker-btn" id="btnCameraEasy" onclick="abrirFotoEasy('camera')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Câmera
+        </button>
+        <button class="foto-picker-btn" id="btnGaleriaEasy" onclick="abrirFotoEasy('galeria')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Galeria
+        </button>
+      </div>
+      <img id="fotoEasyPreview" src="" alt="" style="display:none;width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:cover"/>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeModalEasyTrafo()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarEasyTrafo" onclick="salvarEasyTrafo()" disabled>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Anel -->
+<div class="modal-overlay" id="modalAnel">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Fechado em Anel</div>
+    <div class="modal-sub">O transformador é fechado em anel?</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button id="btnAnelSim" onclick="selectAnel(true)"
+        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(0,229,160,.3);background:rgba(0,229,160,.08);color:#00e5a0;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
+        ✓ Sim
+      </button>
+      <button id="btnAnelNao" onclick="selectAnel(false)"
+        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.08);color:#ff4d6d;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
+        ✗ Não
+      </button>
+    </div>
+    <div id="anelObsWrap" style="display:none;margin-bottom:12px">
+      <div class="modal-label">Observação <span style="color:var(--eq-error)">*</span></div>
+      <textarea id="anelObs"
+        placeholder="Descreva as características do anel (obrigatório)"
+        style="width:100%;margin-top:6px;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:80px;box-sizing:border-box"
+        oninput="checkAnelSalvar()"
+        onfocus="this.style.borderColor='var(--eq-cyan)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+      ></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalAnel()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarAnel" onclick="salvarAnel()" disabled>Salvar</button>
+    </div>
+  </div>
 </div>
 
 <!-- FAB: apontar anomalia (fiscal) -->
@@ -590,6 +676,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Ramal
         </button>
+        <button class="tipo-btn" id="tipoFora" onclick="selectTipo('fora')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Fora Padrão
+        </button>
       </div>
     </div>
 
@@ -609,6 +699,31 @@
         style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default"
       />
       <div id="ramalUCMsg" style="font-size:11px;color:#8a9bbf;margin-top:4px"></div>
+    </div>
+
+    <!-- Campos: Fora do Padrão -->
+    <div class="modal-field" id="foraFieldWrap" style="display:none">
+      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Cliente fora do padrão</span>
+        <span style="font-size:10px;color:var(--eq-gray);font-weight:400">UC preenchida automaticamente</span>
+      </div>
+      <input type="text" id="foraMedidor" placeholder="Número do medidor"
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:8px;box-sizing:border-box"
+        oninput="onForaMedidorInput()"
+        onfocus="this.style.borderColor='var(--eq-cyan)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+      />
+      <input type="text" id="foraUC" placeholder="UC (preenchida automaticamente)"
+        readonly
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default;margin-bottom:4px"
+      />
+      <div id="foraUCMsg" style="font-size:11px;color:#8a9bbf;margin-bottom:8px"></div>
+      <textarea id="foraObs" placeholder="Descrição da irregularidade (obrigatório) *"
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:72px;box-sizing:border-box"
+        oninput="checkSalvarEnabled()"
+        onfocus="this.style.borderColor='var(--eq-cyan)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+      ></textarea>
     </div>
 
     <div class="modal-field">
@@ -726,6 +841,7 @@
   let currentPerfil = null;
   let currentCircuitoId = null;
   let currentTrafoNome = null;
+  let currentInspecaoId = null; // ID da inspeção ativa (vinda de pendencias)
   let anomaliaMarkers = [];
   let currentAnomaliaPos = null;
   let currentAnomaliaPostes = null;
@@ -849,6 +965,8 @@
 
     // se veio de outra tela via sessionStorage, carrega automaticamente
     const presel = sessionStorage.getItem('circuitoSelecionado');
+    const preInsp = sessionStorage.getItem('inspecaoAtiva');
+    if (preInsp) { currentInspecaoId = preInsp; sessionStorage.removeItem('inspecaoAtiva'); }
     if (presel) {
       sessionStorage.removeItem('circuitoSelecionado');
       const circ = todosCircuitos.find(c => c.id === presel);
@@ -1143,6 +1261,8 @@
         rb.style.display = 'flex';
         rb.dataset.lat = trafoData.lat;
         rb.dataset.lng = trafoData.lng;
+        // botões de inspeção (easy trafo / anel) — apenas fiscal com inspeção ativa
+        atualizarBotoesInspTrafo();
       }
 
       // zoom no circuito
@@ -1183,8 +1303,9 @@
     m._anomaliaId = id;
     anomaliaMarkers.push(m);
 
+    const tipoLabel = { poda: '🌳 Poda', mux: '🔄 MBX', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', fora: '⚠️ Fora do Padrão' };
     let html = `<div class="popup-title">Anomalia</div>
-      <span class="popup-badge ${data.tipo}">${data.tipo === 'poda' ? '🌳 Poda' : data.tipo === 'mux' ? '🔄 MBX' : '⊕ Espaçador'}</span><br>
+      <span class="popup-badge ${data.tipo}">${tipoLabel[data.tipo] || data.tipo}</span><br>
       <div class="popup-row">Endereço: <span>${data.endereco || '—'}</span></div>
       <div class="popup-row">Entre postes: <span>${data.postes || '—'}</span></div>
       ${data.quantidade ? `<div class="popup-row">Quantidade: <span>${data.quantidade}</span></div>` : ''}
@@ -1251,19 +1372,26 @@
     document.getElementById('btnCameraAnomalia').classList.remove('selected');
     document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
     document.getElementById('btnSalvarAnomalia').disabled = true;
-    document.getElementById('tipoPoda').classList.remove('selected');
-    document.getElementById('tipoEspacador').classList.remove('selected');
+    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora'].forEach(id => {
+      document.getElementById(id)?.classList.remove('selected');
+    });
     document.getElementById('modalEndereco').textContent = 'Obtendo localização...';
     document.getElementById('modalEndereco').classList.add('loading');
     document.getElementById('modalCoords').textContent = '—';
     document.getElementById('modalPostes').value = '';
     document.getElementById('qtyValor').textContent = '1';
+    document.getElementById('qtyFieldWrap').style.display = 'block';
     document.getElementById('textoOrdemWrap').style.display = 'none';
     document.getElementById('textoOS').textContent = '';
     if (document.getElementById('ramalFieldWrap')) document.getElementById('ramalFieldWrap').style.display = 'none';
     if (document.getElementById('ramalMedidor')) document.getElementById('ramalMedidor').value = '';
     if (document.getElementById('ramalUC'))  document.getElementById('ramalUC').value = '';
     if (document.getElementById('ramalUCMsg')) document.getElementById('ramalUCMsg').textContent = '';
+    if (document.getElementById('foraFieldWrap')) document.getElementById('foraFieldWrap').style.display = 'none';
+    if (document.getElementById('foraMedidor')) document.getElementById('foraMedidor').value = '';
+    if (document.getElementById('foraUC'))  document.getElementById('foraUC').value = '';
+    if (document.getElementById('foraUCMsg')) document.getElementById('foraUCMsg').textContent = '';
+    if (document.getElementById('foraObs')) document.getElementById('foraObs').value = '';
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const lat = pos.coords.latitude;
@@ -1311,7 +1439,8 @@
     document.getElementById('tipoEspacador').classList.toggle('selected', tipo === 'espacador');
     document.getElementById('tipoMux').classList.toggle('selected', tipo === 'mux');
     document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
-    // mostrar/esconder campos de ramal
+    document.getElementById('tipoFora').classList.toggle('selected', tipo === 'fora');
+    // ramal
     const ramalWrap = document.getElementById('ramalFieldWrap');
     if (ramalWrap) {
       ramalWrap.style.display = tipo === 'ramal' ? 'block' : 'none';
@@ -1321,10 +1450,21 @@
         document.getElementById('ramalUCMsg').textContent = '';
       }
     }
-    // ramal: quantidade sempre 1, esconde controle
+    // fora do padrão
+    const foraWrap = document.getElementById('foraFieldWrap');
+    if (foraWrap) {
+      foraWrap.style.display = tipo === 'fora' ? 'block' : 'none';
+      if (tipo !== 'fora') {
+        document.getElementById('foraMedidor').value = '';
+        document.getElementById('foraUC').value = '';
+        document.getElementById('foraUCMsg').textContent = '';
+        document.getElementById('foraObs').value = '';
+      }
+    }
+    // ramal e fora: quantidade sempre 1, esconde controle
     const qtyWrap = document.getElementById('qtyFieldWrap');
     if (qtyWrap) {
-      if (tipo === 'ramal') {
+      if (tipo === 'ramal' || tipo === 'fora') {
         document.getElementById('qtyValor').textContent = '1';
         qtyWrap.style.display = 'none';
       } else {
@@ -1388,29 +1528,30 @@
 
   function gerarTextoOS() {
     const isRamal = selectedTipo === 'ramal';
+    const isFora  = selectedTipo === 'fora';
+    // fora do padrão: sem texto automático
+    if (isFora) {
+      document.getElementById('textoOrdemWrap').style.display = 'none';
+      return;
+    }
     if (!selectedTipo || (!currentAnomaliaPostes && !isRamal)) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
     const qty    = parseInt(document.getElementById('qtyValor').textContent) || 1;
     const trafo  = currentTrafoNome || currentCircuitoId || '—';
-    const postes = currentAnomaliaPostes; // ex: "12345 — 12346"
-    let acao, texto;
+    const postes = currentAnomaliaPostes;
+    let texto;
     if (selectedTipo === 'poda') {
-      acao  = 'Realizar ' + qty + ' poda' + (qty > 1 ? 's' : '') + ' de arvore';
-      texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
+      texto = trafo + ' - Realizar ' + qty + ' poda' + (qty > 1 ? 's' : '') + ' de arvore entre os postes ' + postes;
     } else if (selectedTipo === 'mux') {
-      acao  = 'Realizar MBX (troca de cabo) em ' + qty + ' trecho' + (qty > 1 ? 's' : '');
-      texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
+      texto = trafo + ' - Realizar MBX (troca de cabo) em ' + qty + ' trecho' + (qty > 1 ? 's' : '') + ' entre os postes ' + postes;
     } else if (selectedTipo === 'ramal') {
-      const med = document.getElementById('ramalMedidor') ? document.getElementById('ramalMedidor').value.trim() : '';
-      const uc  = document.getElementById('ramalUC') ? document.getElementById('ramalUC').value.trim() : '';
-      texto = (uc  ? 'UC ' + uc  : '—')
-            + ' - Instalar e retirar o ramal do Medidor '
-            + (med ? med : '—');
+      const med = document.getElementById('ramalMedidor')?.value.trim() || '';
+      const uc  = document.getElementById('ramalUC')?.value.trim() || '';
+      texto = (uc ? 'UC ' + uc : '—') + ' - Instalar e retirar o ramal do Medidor ' + (med || '—');
     } else {
-      acao  = 'Instalar ' + qty + ' espacador' + (qty > 1 ? 'es' : '');
-      texto = trafo + ' - ' + acao + ' entre os postes ' + postes;
+      texto = trafo + ' - Instalar ' + qty + ' espacador' + (qty > 1 ? 'es' : '') + ' entre os postes ' + postes;
     }
     document.getElementById('textoOS').textContent = texto;
     document.getElementById('textoOrdemWrap').style.display = 'block';
@@ -1452,12 +1593,22 @@
   };
 
   function checkSalvarEnabled() {
-    document.getElementById('btnSalvarAnomalia').disabled = !(selectedTipo && fotoFile);
+    if (!selectedTipo || !fotoFile) {
+      document.getElementById('btnSalvarAnomalia').disabled = true;
+      return;
+    }
+    if (selectedTipo === 'fora') {
+      const obs = document.getElementById('foraObs')?.value.trim() || '';
+      document.getElementById('btnSalvarAnomalia').disabled = !obs;
+      return;
+    }
+    document.getElementById('btnSalvarAnomalia').disabled = false;
   }
 
   // ── salvar anomalia ──
   window.salvarAnomalia = async function() {
     if (!selectedTipo || !fotoFile || !currentAnomaliaPos) return;
+    if (selectedTipo === 'fora' && !document.getElementById('foraObs')?.value.trim()) return;
     const btn = document.getElementById('btnSalvarAnomalia');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
@@ -1472,10 +1623,13 @@
       const fotoUrl = cldSave(json.secure_url);
 
       // salvar Firestore
-      const qty     = parseInt(document.getElementById('qtyValor').textContent) || 1;
-      const textoOS = document.getElementById('textoOS').textContent || '';
+      const qty      = parseInt(document.getElementById('qtyValor').textContent) || 1;
+      const textoOS  = document.getElementById('textoOS').textContent || '';
       const ramalMed = selectedTipo === 'ramal' ? (document.getElementById('ramalMedidor').value.trim() || '') : '';
       const ramalUC  = selectedTipo === 'ramal' ? (document.getElementById('ramalUC').value.trim() || '') : '';
+      const foraMed  = selectedTipo === 'fora'  ? (document.getElementById('foraMedidor').value.trim() || '') : '';
+      const foraUC   = selectedTipo === 'fora'  ? (document.getElementById('foraUC').value.trim() || '') : '';
+      const foraObs  = selectedTipo === 'fora'  ? (document.getElementById('foraObs').value.trim() || '') : '';
       const docData = {
         circuitoId:  currentCircuitoId,
         circuitoNome: currentTrafoNome || currentCircuitoId || '',
@@ -1493,7 +1647,10 @@
         criadoEm:    serverTimestamp()
       };
       if (ramalMed) docData.ramalMedidor = ramalMed;
-      if (ramalUC)  docData.ramalUC = ramalUC;
+      if (ramalUC)  docData.ramalUC  = ramalUC;
+      if (foraMed)  docData.foraMedidor = foraMed;
+      if (foraUC)   docData.foraUC   = foraUC;
+      if (foraObs)  docData.foraObs  = foraObs;
       await addDoc(collection(db, 'anomalias'), docData);
 
       closeModalAnomalia();
@@ -1811,6 +1968,188 @@
   };
 
   // service worker
+
+  // ── Mostrar botões inspeção no card do trafo (apenas fiscal com inspeção ativa) ──
+  function atualizarBotoesInspTrafo() {
+    const wrap = document.getElementById('trafoInspBtns');
+    if (!wrap) return;
+    if (currentPerfil === 'fiscal' && currentInspecaoId) {
+      wrap.style.display = 'block';
+      // carrega estado atual da inspeção para atualizar labels
+      carregarEstadoInspTrafo();
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  async function carregarEstadoInspTrafo() {
+    if (!currentInspecaoId) return;
+    try {
+      const snap = await getDoc(doc(db, 'inspecoes', currentInspecaoId));
+      if (!snap.exists()) return;
+      const d = snap.data();
+      // Easy Trafo
+      const lblET = document.getElementById('btnEasyTrafoLbl');
+      if (lblET) {
+        if (d.easyTrafo === true)  lblET.textContent = '✓ Easy Trafo';
+        else if (d.easyTrafo === false) lblET.textContent = '✗ Sem Easy Trafo';
+        else lblET.textContent = 'Easy Trafo';
+      }
+      // Anel
+      const lblA = document.getElementById('btnAnelLbl');
+      if (lblA) {
+        if (d.fechadoEmAnel === true)  lblA.textContent = '✓ Anel: Sim';
+        else if (d.fechadoEmAnel === false) lblA.textContent = '✗ Anel: Não';
+        else lblA.textContent = 'Anel';
+      }
+    } catch(e) { console.error('carregarEstadoInspTrafo:', e); }
+  }
+
+  // ── Easy Trafo ──
+  let easyTrafoSelecionado = null;
+  let fotoEasyFile = null;
+
+  window.openModalEasyTrafo = function() {
+    easyTrafoSelecionado = null;
+    fotoEasyFile = null;
+    document.getElementById('easyTrafoFotoWrap').style.display = 'none';
+    document.getElementById('fotoEasyPreview').style.display = 'none';
+    document.getElementById('fotoEasyPreview').src = '';
+    document.getElementById('btnSalvarEasyTrafo').disabled = true;
+    document.getElementById('btnCameraEasy').classList.remove('selected');
+    document.getElementById('btnGaleriaEasy').classList.remove('selected');
+    document.getElementById('modalEasyTrafo').classList.add('open');
+  };
+  window.closeModalEasyTrafo = function() {
+    document.getElementById('modalEasyTrafo').classList.remove('open');
+  };
+
+  window.selectEasyTrafo = function(val) {
+    easyTrafoSelecionado = val;
+    document.getElementById('btnEasyTrafoSim').style.opacity = val ? '1' : '0.4';
+    document.getElementById('btnEasyTrafoNao').style.opacity = !val ? '1' : '0.4';
+    document.getElementById('easyTrafoFotoWrap').style.display = val ? 'block' : 'none';
+    // se Não, pode salvar direto
+    document.getElementById('btnSalvarEasyTrafo').disabled = val ? true : false;
+    if (!val) { fotoEasyFile = null; }
+  };
+
+  window.abrirFotoEasy = function(origem) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    if (origem === 'camera') input.capture = 'environment';
+    input.onchange = e => {
+      const file = e.target.files[0]; if (!file) return;
+      fotoEasyFile = file;
+      const prev = document.getElementById('fotoEasyPreview');
+      prev.src = URL.createObjectURL(file); prev.style.display = 'block';
+      document.getElementById('btnCameraEasy').classList.toggle('selected', origem === 'camera');
+      document.getElementById('btnGaleriaEasy').classList.toggle('selected', origem === 'galeria');
+      document.getElementById('btnSalvarEasyTrafo').disabled = false;
+    };
+    input.click();
+  };
+
+  window.salvarEasyTrafo = async function() {
+    if (easyTrafoSelecionado === null) return;
+    if (easyTrafoSelecionado && !fotoEasyFile) return showToast('Foto obrigatória para Easy Trafo.', true);
+    const btn = document.getElementById('btnSalvarEasyTrafo');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      let fotoUrl = null;
+      if (fotoEasyFile) {
+        const fd = new FormData();
+        fd.append('file', fotoEasyFile);
+        fd.append('upload_preset', 'anomalias-stcgyn');
+        const res = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: fd });
+        const json = await res.json();
+        fotoUrl = cldSave(json.secure_url);
+      }
+      const update = { easyTrafo: easyTrafoSelecionado, easyTrafoAtualizadoEm: serverTimestamp() };
+      if (fotoUrl) update.easyTrafoFotoUrl = fotoUrl;
+      await updateDoc(doc(db, 'inspecoes', currentInspecaoId), update);
+      closeModalEasyTrafo();
+      await carregarEstadoInspTrafo();
+      showToast('✓ Easy Trafo registrado!');
+    } catch(e) { console.error(e); showToast('Erro ao salvar.', true); }
+    finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+  };
+
+  // ── Anel ──
+  let anelSelecionado = null;
+
+  window.openModalAnel = function() {
+    anelSelecionado = null;
+    document.getElementById('anelObsWrap').style.display = 'none';
+    document.getElementById('anelObs').value = '';
+    document.getElementById('btnSalvarAnel').disabled = true;
+    document.getElementById('modalAnel').classList.add('open');
+  };
+  window.closeModalAnel = function() {
+    document.getElementById('modalAnel').classList.remove('open');
+  };
+
+  window.selectAnel = function(val) {
+    anelSelecionado = val;
+    document.getElementById('btnAnelSim').style.opacity = val ? '1' : '0.4';
+    document.getElementById('btnAnelNao').style.opacity = !val ? '1' : '0.4';
+    document.getElementById('anelObsWrap').style.display = val ? 'block' : 'none';
+    // se Não, pode salvar direto; se Sim, precisa de observação
+    document.getElementById('btnSalvarAnel').disabled = val ? true : false;
+    if (!val) document.getElementById('anelObs').value = '';
+  };
+
+  window.checkAnelSalvar = function() {
+    const obs = document.getElementById('anelObs').value.trim();
+    document.getElementById('btnSalvarAnel').disabled = anelSelecionado && !obs;
+  };
+
+  window.salvarAnel = async function() {
+    if (anelSelecionado === null) return;
+    const obs = document.getElementById('anelObs').value.trim();
+    if (anelSelecionado && !obs) return showToast('Observação obrigatória.', true);
+    const btn = document.getElementById('btnSalvarAnel');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      const update = { fechadoEmAnel: anelSelecionado, anelAtualizadoEm: serverTimestamp() };
+      if (obs) update.anelObservacao = obs;
+      await updateDoc(doc(db, 'inspecoes', currentInspecaoId), update);
+      closeModalAnel();
+      await carregarEstadoInspTrafo();
+      showToast('✓ Informação de anel registrada!');
+    } catch(e) { console.error(e); showToast('Erro ao salvar.', true); }
+    finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+  };
+
+  // ── Fora do Padrão: busca UC pelo medidor ──
+  window.onForaMedidorInput = function() {
+    const med   = document.getElementById('foraMedidor').value.trim().toUpperCase();
+    const ucEl  = document.getElementById('foraUC');
+    const msg   = document.getElementById('foraUCMsg');
+    ucEl.value  = '';
+    if (!med) { msg.textContent = ''; checkSalvarEnabled(); return; }
+    const postes  = window._postesAtivos || [];
+    const medNorm = med.replace(/[-\s]/g, '');
+    let found = null;
+    for (const p of postes) {
+      for (const u of (p.ucs || [])) {
+        const mNorm = String(u.medidor || u.m || '').replace(/[-\s]/g, '').toUpperCase();
+        if (mNorm === medNorm) { found = u; break; }
+      }
+      if (found) break;
+    }
+    if (found) {
+      ucEl.value = found.uc || '';
+      msg.textContent = 'UC encontrada.';
+      msg.style.color = 'var(--eq-success, #00e5a0)';
+    } else {
+      const totalUcs = postes.reduce((a, p) => a + (p.ucs || []).length, 0);
+      msg.textContent = totalUcs === 0 ? 'Circuito sem dados de UC — re-suba o arquivo.' : 'Medidor não encontrado.';
+      msg.style.color = 'var(--eq-warning, #ffb300)';
+    }
+    checkSalvarEnabled();
+  };
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
