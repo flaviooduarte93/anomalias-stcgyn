@@ -238,7 +238,6 @@
     .btn-primary-sm { background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid)); color: #fff; }
     .btn-outline-sm { background: transparent; border: 1px solid rgba(0,170,255,0.3); color: var(--eq-cyan); }
     .btn-danger-sm  { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--eq-error); }
-    .btn-success-sm { background: linear-gradient(135deg,#00a86b,#00e5a0); color:#000; border:none; }
     .btn-sm:hover { opacity: .85; }
 
     /* ── BOTTOM NAV ── */
@@ -343,37 +342,28 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
 
+    .btn-exportar {
+      display: none;
+      align-items: center; gap: 6px;
+      padding: 9px 14px; border-radius: 8px;
+      background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3);
+      color: var(--eq-success); font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 600; letter-spacing: .5px;
+      cursor: pointer; text-transform: uppercase;
+    }
+    .btn-exportar:hover { background: rgba(0,229,160,0.18); }
+    .btn-exportar {
+      display: none;
+      align-items: center; gap: 6px;
+      padding: 9px 14px; border-radius: 8px;
+      background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3);
+      color: var(--eq-success); font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 600; letter-spacing: .5px;
+      cursor: pointer; margin-bottom: 4px; text-transform: uppercase;
+    }
+    .btn-exportar:hover { background: rgba(0,229,160,0.18); }
     .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
     @keyframes spin { to { transform:rotate(360deg); } }
-
-    /* ── MODAL CONCLUIR ── */
-    .modal-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-    .modal-info-item { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; }
-    .modal-info-item .info-label { font-size:10px; font-weight:600; letter-spacing:.8px; color:var(--eq-gray); text-transform:uppercase; margin-bottom:3px; }
-    .modal-info-item .info-val { font-size:13px; color:var(--eq-white); font-weight:500; }
-    .modal-info-item.full { grid-column:1/-1; }
-    .modal-textarea {
-      width:100%; padding:11px 13px; box-sizing:border-box;
-      background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
-      border-radius:8px; color:var(--eq-white); font-family:'Barlow',sans-serif; font-size:14px;
-      outline:none; resize:vertical; min-height:72px;
-    }
-    .modal-textarea:focus { border-color:var(--eq-cyan); }
-    .modal-textarea::placeholder { color:rgba(138,155,191,0.5); }
-    .foto-picker-wrap { margin-bottom:16px; }
-    .foto-picker-btns { display:flex; gap:8px; margin-top:6px; }
-    .foto-picker-btn {
-      flex:1; padding:11px 8px; background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:var(--eq-gray);
-      font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600;
-      letter-spacing:.6px; text-transform:uppercase; cursor:pointer; display:flex;
-      align-items:center; justify-content:center; gap:6px; transition:border-color .2s,color .2s;
-    }
-    .foto-picker-btn:hover { border-color:var(--eq-cyan); color:var(--eq-cyan); }
-    .foto-picker-btn.selected { border-color:var(--eq-success); color:var(--eq-success); background:rgba(0,229,160,0.08); }
-    .foto-preview-conc { width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-top:8px; display:none; }
-    .modal-field-wrap { margin-bottom:14px; }
-    .btn-save.green { background:linear-gradient(135deg,#00a86b,#00e5a0); color:#000; }
   </style>
 </head>
 <body>
@@ -528,51 +518,6 @@
   </div>
 </div>
 
-<!-- MODAL: concluir serviço (admin / equipe) -->
-<div class="modal-overlay" id="modalConcluir">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Concluir Serviço</div>
-    <div class="modal-sub" id="modalConcluirSub"></div>
-
-    <div class="modal-info-grid" id="modalConcluirInfoGrid">
-      <!-- preenchido dinamicamente -->
-    </div>
-
-    <div class="modal-field-wrap" id="modalConcluirEquipeWrap">
-      <label class="modal-label">Equipe executora</label>
-      <select class="modal-select" id="selectEquipeConc">
-        <option value="">Carregando equipes...</option>
-      </select>
-    </div>
-
-    <div class="foto-picker-wrap">
-      <label class="modal-label">Foto de conclusão <span style="color:var(--eq-error)">*</span></label>
-      <div class="foto-picker-btns">
-        <button class="foto-picker-btn" id="btnCameraConc" onclick="abrirFotoConc('camera')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Câmera
-        </button>
-        <button class="foto-picker-btn" id="btnGaleriaConc" onclick="abrirFotoConc('galeria')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Galeria
-        </button>
-      </div>
-      <img class="foto-preview-conc" id="fotoPreviewConc" src="" alt="Preview conclusão"/>
-    </div>
-
-    <div class="modal-field-wrap">
-      <label class="modal-label">Observação <span style="color:var(--eq-gray);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-      <textarea class="modal-textarea" id="obsConc" placeholder="Descreva o que foi executado..."></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModalConcluir()">Cancelar</button>
-      <button class="btn-save green" id="btnConcluirConfirmar" onclick="confirmarConcluir()">✓ Concluir</button>
-    </div>
-  </div>
-</div>
-
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -620,6 +565,8 @@
       document.getElementById('nav-dashboard').classList.remove('hidden');
       document.getElementById('nav-circuitos').classList.remove('hidden');
       document.getElementById('pageSub').textContent = 'Todas as anomalias registradas';
+      const btnExp = document.getElementById('btnExportarPendentes');
+      if (btnExp) btnExp.style.display = 'flex';
     } else {
       document.getElementById('pageSub').textContent = 'Anomalias que você registrou';
     }
@@ -735,12 +682,6 @@
         botoesHtml += `<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${a.id}', '${a.tipo}', '${(a.postes||'').replace(/'/g,"\\'")}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           Programar
-        </button>`;
-      }
-      if (currentPerfil === 'admin' && a.status !== 'concluido') {
-        botoesHtml += `<button class="btn-sm btn-success-sm" onclick="openModalConcluir('${a.id}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          Concluir
         </button>`;
       }
       if ((currentPerfil === 'admin' || (currentPerfil === 'fiscal' && a.fiscalId === currentUser.uid))
@@ -896,148 +837,37 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   };
 
-  // ── MODAL CONCLUIR ──
-  let concluirId       = null;
-  let fotoConcluirFile = null;
+  // ── Exportar anomalias pendentes (CSV) ──
+  window.exportarPendentes = function() {
+    const pendentes = todasAnomalias.filter(a => a.status === 'pendente');
+    if (!pendentes.length) return showToast('Nenhuma anomalia pendente para exportar.', true);
 
-  window.openModalConcluir = async function(anomaliaId) {
-    concluirId       = anomaliaId;
-    fotoConcluirFile = null;
+    const tipoLabel = { poda: 'Poda', espacador: 'Espacador', ramal: 'Ramal', mux: 'MBX' };
+    const linhas = [
+      ['Circuito', 'Tipo', 'Endereço', 'Entre Postes', 'Quantidade', 'Fiscal', 'Registrado em']
+    ];
+    pendentes.forEach(a => {
+      const data = a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
+      linhas.push([
+        a.circuitoNome || a.circuitoId || '—',
+        tipoLabel[a.tipo] || a.tipo || '—',
+        (a.endereco || '—').replace(/,/g, ';'),
+        (a.postes   || '—').replace(/,/g, ';'),
+        a.quantidade || 1,
+        (a.fiscalNome || '—').replace(/,/g, ';'),
+        data
+      ]);
+    });
 
-    // reset UI
-    document.getElementById('fotoPreviewConc').style.display = 'none';
-    document.getElementById('fotoPreviewConc').src = '';
-    document.getElementById('obsConc').value = '';
-    document.getElementById('btnCameraConc').classList.remove('selected');
-    document.getElementById('btnGaleriaConc').classList.remove('selected');
-
-    // busca dados da anomalia
-    const snap = await getDoc(doc(db, 'anomalias', anomaliaId));
-    const a    = snap.data();
-
-    const tipoLabel = { poda: '✂ Poda', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', mux: '🔄 MBX' }[a.tipo] || a.tipo;
-    const dataHoje  = new Date().toLocaleDateString('pt-BR');
-
-    document.getElementById('modalConcluirSub').textContent = 'Preencha os dados para registrar a conclusão.';
-    document.getElementById('modalConcluirInfoGrid').innerHTML = `
-      <div class="modal-info-item full">
-        <div class="info-label">Endereço</div>
-        <div class="info-val">${a.endereco || '—'}</div>
-      </div>
-      <div class="modal-info-item">
-        <div class="info-label">Tipo de serviço</div>
-        <div class="info-val">${tipoLabel}</div>
-      </div>
-      <div class="modal-info-item">
-        <div class="info-label">Quantidade</div>
-        <div class="info-val">${a.quantidade || '—'}</div>
-      </div>
-      <div class="modal-info-item">
-        <div class="info-label">Data de conclusão</div>
-        <div class="info-val">${dataHoje}</div>
-      </div>
-      <div class="modal-info-item">
-        <div class="info-label">Postes</div>
-        <div class="info-val">${a.postes || '—'}</div>
-      </div>
-    `;
-
-    // equipe: admin escolhe, equipe usa a própria
-    const equipeWrap = document.getElementById('modalConcluirEquipeWrap');
-    if (currentPerfil === 'admin') {
-      equipeWrap.style.display = 'block';
-      const sel = document.getElementById('selectEquipeConc');
-      sel.innerHTML = '<option value="">Carregando equipes...</option>';
-      const eSnap = await getDocs(query(collection(db, 'usuarios'), where('perfil', '==', 'equipe')));
-      sel.innerHTML = eSnap.empty ? '<option value="">Nenhuma equipe cadastrada</option>' : '<option value="">Selecione a equipe...</option>';
-      eSnap.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.id; opt.textContent = d.data().nome;
-        // pré-seleciona equipe já programada se houver
-        if (d.id === a.equipeId) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    } else {
-      equipeWrap.style.display = 'none';
-    }
-
-    document.getElementById('modalConcluir').classList.add('open');
-  };
-
-  window.closeModalConcluir = function() {
-    document.getElementById('modalConcluir').classList.remove('open');
-    concluirId = null; fotoConcluirFile = null;
-  };
-
-  window.abrirFotoConc = function(origem) {
-    const input = document.createElement('input');
-    input.type   = 'file';
-    input.accept = 'image/*';
-    if (origem === 'camera') input.capture = 'environment';
-    input.onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      fotoConcluirFile = file;
-      const preview = document.getElementById('fotoPreviewConc');
-      preview.src = URL.createObjectURL(file);
-      preview.style.display = 'block';
-      document.getElementById('btnCameraConc').classList.toggle('selected', origem === 'camera');
-      document.getElementById('btnGaleriaConc').classList.toggle('selected', origem === 'galeria');
-    };
-    input.click();
-  };
-
-  window.confirmarConcluir = async function() {
-    if (!fotoConcluirFile) return showToast('Foto de conclusão é obrigatória.', true);
-
-    let equipeId   = null;
-    let equipeNome = null;
-    if (currentPerfil === 'admin') {
-      equipeId = document.getElementById('selectEquipeConc').value;
-      if (!equipeId) return showToast('Selecione a equipe executora.', true);
-      const eSnap = await getDoc(doc(db, 'usuarios', equipeId));
-      equipeNome = eSnap.data()?.nome || '—';
-    } else {
-      equipeId   = currentUser.uid;
-      const eSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
-      equipeNome = eSnap.data()?.nome || '—';
-    }
-
-    const btn = document.getElementById('btnConcluirConfirmar');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Salvando...';
-
-    try {
-      // upload Cloudinary
-      const formData = new FormData();
-      formData.append('file', fotoConcluirFile);
-      formData.append('upload_preset', 'anomalias-stcgyn');
-      const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
-      const json = await res.json();
-      const fotoConcluidoUrl = json.secure_url
-        ? json.secure_url.replace('/upload/', '/upload/w_1200,q_75,f_auto/')
-        : null;
-      if (!fotoConcluidoUrl) throw new Error('Falha no upload da foto.');
-
-      const obs = document.getElementById('obsConc').value.trim();
-      await updateDoc(doc(db, 'anomalias', concluirId), {
-        status: 'concluido',
-        fotoConcluidoUrl,
-        equipeId,
-        equipeNome,
-        concluidoEm: serverTimestamp(),
-        concluidoPor: currentUser.uid,
-        ...(obs ? { observacaoConclusao: obs } : {})
-      });
-
-      closeModalConcluir();
-      showToast('✓ Serviço concluído com sucesso!');
-      await carregarAnomalias();
-    } catch(err) {
-      console.error(err);
-      showToast('Erro ao concluir serviço.', true);
-    } finally {
-      btn.disabled = false; btn.textContent = '✓ Concluir';
-    }
+    const csv = linhas.map(r => r.map(c => `"${c}"`).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `anomalias_pendentes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`✓ ${pendentes.length} anomalias exportadas.`);
   };
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
