@@ -918,10 +918,21 @@
       const offsetLat = parseFloat((htmlContent.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
       const offsetLng = parseFloat((htmlContent.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
       const postes = [];
-      const matchPostes = htmlContent.match(/var postes\s*=\s*(\[[\s\S]*?\])\s*;?\s*postes\.forEach/);
-      if (matchPostes) {
+      // Extrai o array completo de postes contando colchetes para não parar cedo
+      let postesRawStr = null;
+      const startIdx = htmlContent.search(/var postes\s*=\s*\[/);
+      if (startIdx !== -1) {
+        const arrStart = htmlContent.indexOf('[', startIdx);
+        let depth = 0, i = arrStart;
+        for (; i < htmlContent.length; i++) {
+          if (htmlContent[i] === '[') depth++;
+          else if (htmlContent[i] === ']') { depth--; if (depth === 0) { i++; break; } }
+        }
+        postesRawStr = htmlContent.slice(arrStart, i);
+      }
+      if (postesRawStr) {
         try {
-          const postesRaw = eval(matchPostes[1]);
+          const postesRaw = eval(postesRawStr);
           postesRaw.forEach(p => {
             postes.push({
               id: p.id,
