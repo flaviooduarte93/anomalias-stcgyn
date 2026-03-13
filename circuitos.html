@@ -468,6 +468,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span class="nav-label">Dashboard</span>
   </button>
+  <button class="nav-item" onclick="window.location.href='mbx.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    <span class="nav-label">MBX</span>
+  </button>
   <button class="nav-item active" onclick="window.location.href='circuitos.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     <span class="nav-label">Circuitos</span>
@@ -873,43 +877,7 @@
       onProgress?.(40, 'Verificando duplicata…');
       const existSnap = await getDocs(query(collection(db,'circuitos'), where('nome','==',nomeCircuito)));
       if (!existSnap.empty) {
-        const existDoc = existSnap.docs[0];
-        // 'manterHistorico' = true preserva histórico, false apaga tudo e recria, null = cancelou
-        const manterHistorico = await new Promise(resolve => {
-          const overlay = document.createElement('div');
-          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center';
-          overlay.innerHTML = `
-            <div style="background:#1e1e2e;border:1px solid #444;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;color:#e0e0e0;font-family:inherit">
-              <div style="font-size:1.1rem;font-weight:600;margin-bottom:10px">⚠️ Circuito já cadastrado</div>
-              <div style="color:#aaa;margin-bottom:20px;font-size:.93rem">
-                <strong style="color:#e0e0e0">${nomeCircuito}</strong> já existe no sistema.<br><br>
-                Como deseja prosseguir com o novo arquivo?
-              </div>
-              <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
-                <button id="btnManterHistorico" style="padding:12px 16px;border-radius:8px;border:1px solid #3a7bd5;background:rgba(74,158,255,.1);color:#7ec8ff;cursor:pointer;text-align:left;font-size:.9rem">
-                  <strong>Atualizar e manter histórico</strong><br>
-                  <span style="color:#888;font-size:.82rem">Atualiza postes, UCs e conexões. Anomalias, inspeções, pendências e anotações são preservadas.</span>
-                </button>
-                <button id="btnSubstituirTudo" style="padding:12px 16px;border-radius:8px;border:1px solid #c0392b;background:rgba(192,57,43,.1);color:#e07070;cursor:pointer;text-align:left;font-size:.9rem">
-                  <strong>Substituir tudo</strong><br>
-                  <span style="color:#888;font-size:.82rem">Remove o circuito atual e todo o seu histórico, e cadastra como novo.</span>
-                </button>
-              </div>
-              <div style="display:flex;justify-content:flex-end">
-                <button id="btnCancelarUpdate" style="padding:8px 18px;border-radius:8px;border:1px solid #555;background:transparent;color:#ccc;cursor:pointer">Cancelar</button>
-              </div>
-            </div>`;
-          document.body.appendChild(overlay);
-          overlay.querySelector('#btnManterHistorico').onclick = () => { document.body.removeChild(overlay); resolve(true); };
-          overlay.querySelector('#btnSubstituirTudo').onclick  = () => { document.body.removeChild(overlay); resolve(false); };
-          overlay.querySelector('#btnCancelarUpdate').onclick  = () => { document.body.removeChild(overlay); resolve(null); };
-        });
-        if (manterHistorico === null) { onProgress?.(0, ''); return; }
-        // Prossegue a extração e atualiza ao final
-        window._updateCircuitoId   = existDoc.id;
-        window._manterHistorico    = manterHistorico;
-      } else {
-        window._updateCircuitoId = null;
+        showToast(`"${nomeCircuito}" já cadastrado — ignorado.`, true); return;
       }
 
       onProgress?.(60, 'Extraindo dados do circuito…');
@@ -918,41 +886,16 @@
       const offsetLat = parseFloat((htmlContent.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
       const offsetLng = parseFloat((htmlContent.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
       const postes = [];
-      // Extrai o array completo de postes contando colchetes para não parar cedo
-      let postesRawStr = null;
-      const startIdx = htmlContent.search(/var postes\s*=\s*\[/);
-      if (startIdx !== -1) {
-        const arrStart = htmlContent.indexOf('[', startIdx);
-        let depth = 0, i = arrStart;
-        for (; i < htmlContent.length; i++) {
-          if (htmlContent[i] === '[') depth++;
-          else if (htmlContent[i] === ']') { depth--; if (depth === 0) { i++; break; } }
-        }
-        postesRawStr = htmlContent.slice(arrStart, i);
-      }
-      if (postesRawStr) {
-        try {
-          const postesRaw = eval(postesRawStr);
-          postesRaw.forEach(p => {
-            postes.push({
-              id: p.id,
-              lat: Math.round((p.lat + offsetLat) * 1e7) / 1e7,
-              lng: Math.round((p.lng + offsetLng) * 1e7) / 1e7,
-              e: p.esforco || '',
-              t: p.temTransformador === 1 ? 1 : 0,
-              ucs: (p.ucs || []).map(u => ({
-                uc: String(u.uc),
-                m: u.medidor || '',
-                n: u.nome || '',
-                f: u.fase || '',
-                p: u.pot || '0',
-                g: u.potgd || '0'
-              }))
-            });
-          });
-        } catch(e) {
-          console.error('Erro ao extrair postes via eval:', e);
-        }
+      const reP = /\{\s*id:\s*'([^']+)',\s*lat:\s*(-?[\d.]+),\s*lng:\s*(-?[\d.]+),\s*esforco:\s*'([^']*)',\s*temTransformador:\s*(\d)/g;
+      let mp;
+      while ((mp = reP.exec(htmlContent)) !== null) {
+        postes.push({
+          id: mp[1],
+          lat: Math.round((parseFloat(mp[2]) + offsetLat) * 1e7) / 1e7,
+          lng: Math.round((parseFloat(mp[3]) + offsetLng) * 1e7) / 1e7,
+          e: mp[4],   // esforco abreviado
+          t: parseInt(mp[5]) === 1 ? 1 : 0  // temTransformador
+        });
       }
 
       // ── extrai conexões ──
@@ -970,47 +913,16 @@
       const clientes  = mCli ? parseInt(mCli[1]) : 0;
 
       onProgress?.(85, `Salvando ${nomeCircuito}…`);
-      if (window._updateCircuitoId) {
-        if (window._manterHistorico) {
-          // Atualiza apenas dados geográficos — histórico preservado
-          await updateDoc(doc(db, 'circuitos', window._updateCircuitoId), {
-            postes:  postes.length,
-            clientes,
-            potencia,
-            geodata: { postes, conexoes },
-            atualizadoEm: serverTimestamp(),
-            atualizadoPor: currentUser.uid
-          });
-          onProgress?.(100, 'Concluído!');
-          showToast(`✓ "${nomeCircuito}" atualizado! Histórico preservado.`);
-        } else {
-          // Substitui tudo: apaga o documento antigo e recria
-          await deleteDoc(doc(db, 'circuitos', window._updateCircuitoId));
-          await addDoc(collection(db,'circuitos'), {
-            nome:    nomeCircuito,
-            postes:  postes.length,
-            clientes,
-            potencia,
-            geodata: { postes, conexoes },
-            ativo: true, criadoEm: serverTimestamp(), adminId: currentUser.uid
-          });
-          onProgress?.(100, 'Concluído!');
-          showToast(`✓ "${nomeCircuito}" substituído com sucesso.`);
-        }
-        window._updateCircuitoId = null;
-        window._manterHistorico  = null;
-      } else {
-        await addDoc(collection(db,'circuitos'), {
-          nome:    nomeCircuito,
-          postes:  postes.length,
-          clientes,
-          potencia,
-          geodata: { postes, conexoes },   // JSON compacto — sem HTML
-          ativo: true, criadoEm: serverTimestamp(), adminId: currentUser.uid
-        });
-        onProgress?.(100, 'Concluído!');
-        showToast(`✓ "${nomeCircuito}" adicionado!`);
-      }
+      await addDoc(collection(db,'circuitos'), {
+        nome:    nomeCircuito,
+        postes:  postes.length,
+        clientes,
+        potencia,
+        geodata: { postes, conexoes },   // JSON compacto — sem HTML
+        ativo: true, criadoEm: serverTimestamp(), adminId: currentUser.uid
+      });
+      onProgress?.(100, 'Concluído!');
+      showToast(`✓ "${nomeCircuito}" adicionado!`);
     } catch(err) {
       showToast(`Erro ao processar "${file.name}".`, true);
       console.error(err);
