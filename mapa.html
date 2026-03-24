@@ -680,6 +680,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Fora Padrão
         </button>
+        <button class="tipo-btn" id="tipoPoste" onclick="selectTipo('poste')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg>
+          Sub. Poste
+        </button>
       </div>
     </div>
 
@@ -1316,7 +1320,7 @@
     m._anomaliaId = id;
     anomaliaMarkers.push(m);
 
-    const tipoLabel = { poda: '🌳 Poda', mux: '🔄 MBX', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', fora: '⚠️ Fora do Padrão' };
+    const tipoLabel = { poda: '🌳 Poda', mux: '🔄 MBX', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', fora: '⚠️ Fora do Padrão', poste: '🪵 Sub. Poste' };
     let html = `<div class="popup-title">Anomalia</div>
       <span class="popup-badge ${data.tipo}">${tipoLabel[data.tipo] || data.tipo}</span><br>
       <div class="popup-row">Endereço: <span>${data.endereco || '—'}</span></div>
@@ -1385,7 +1389,7 @@
     document.getElementById('btnCameraAnomalia').classList.remove('selected');
     document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
     document.getElementById('btnSalvarAnomalia').disabled = true;
-    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora'].forEach(id => {
+    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste'].forEach(id => {
       document.getElementById(id)?.classList.remove('selected');
     });
     document.getElementById('modalEndereco').textContent = 'Obtendo localização...';
@@ -1407,6 +1411,9 @@
     if (document.getElementById('foraObs')) document.getElementById('foraObs').value = '';
     if (document.getElementById('muxTodoWrap')) document.getElementById('muxTodoWrap').style.display = 'none';
     window._muxTodo = false;
+    // reset label do campo postes
+    const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
+    if (postesLabel) postesLabel.textContent = 'Entre os postes';
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const lat = pos.coords.latitude;
@@ -1455,6 +1462,7 @@
     document.getElementById('tipoMux').classList.toggle('selected', tipo === 'mux');
     document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
     document.getElementById('tipoFora').classList.toggle('selected', tipo === 'fora');
+    document.getElementById('tipoPoste').classList.toggle('selected', tipo === 'poste');
     // mux: mostra opção de circuito todo; reseta ao sair do mux
     const muxWrap = document.getElementById('muxTodoWrap');
     if (muxWrap) {
@@ -1488,15 +1496,20 @@
         document.getElementById('foraObs').value = '';
       }
     }
-    // ramal e fora: quantidade sempre 1, esconde controle
+    // ramal e fora: quantidade sempre 1, esconde controle; poste: também 1
     const qtyWrap = document.getElementById('qtyFieldWrap');
     if (qtyWrap) {
-      if (tipo === 'ramal' || tipo === 'fora') {
+      if (tipo === 'ramal' || tipo === 'fora' || tipo === 'poste') {
         document.getElementById('qtyValor').textContent = '1';
         qtyWrap.style.display = 'none';
       } else {
         qtyWrap.style.display = 'block';
       }
+    }
+    // label do campo postes: muda para "Poste a substituir" quando tipo=poste
+    const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
+    if (postesLabel) {
+      postesLabel.textContent = tipo === 'poste' ? 'Poste a substituir' : 'Entre os postes';
     }
     gerarTextoOS();
     checkSalvarEnabled();
@@ -1554,9 +1567,10 @@
   };
 
   function gerarTextoOS() {
-    const isRamal = selectedTipo === 'ramal';
-    const isFora  = selectedTipo === 'fora';
+    const isRamal   = selectedTipo === 'ramal';
+    const isFora    = selectedTipo === 'fora';
     const isMuxTodo = selectedTipo === 'mux' && window._muxTodo;
+    const isPoste   = selectedTipo === 'poste';
     // fora do padrão: sem texto automático
     if (isFora) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
@@ -1582,6 +1596,8 @@
       const med = document.getElementById('ramalMedidor')?.value.trim() || '';
       const uc  = document.getElementById('ramalUC')?.value.trim() || '';
       texto = (uc ? 'UC ' + uc : '—') + ' - Instalar e retirar o ramal do Medidor ' + (med || '—');
+    } else if (selectedTipo === 'poste') {
+      texto = trafo + ' - Substituir o poste ' + postes;
     } else {
       texto = trafo + ' - Instalar ' + qty + ' espacador' + (qty > 1 ? 'es' : '') + ' entre os postes ' + postes;
     }
