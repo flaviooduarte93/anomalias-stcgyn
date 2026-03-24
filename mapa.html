@@ -701,6 +701,18 @@
       <div id="ramalUCMsg" style="font-size:11px;color:#8a9bbf;margin-top:4px"></div>
     </div>
 
+    <!-- Opção: Multiplexar circuito todo (só MBX) -->
+    <div class="modal-field" id="muxTodoWrap" style="display:none">
+      <button id="btnMuxTodo" onclick="toggleMuxTodo()"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid rgba(181,123,238,.3);background:rgba(181,123,238,.07);color:#b57bee;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;transition:all .2s">
+        <span style="display:flex;align-items:center;gap:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          Multiplexar circuito todo
+        </span>
+        <span id="muxTodoCheck" style="width:20px;height:20px;border-radius:6px;border:2px solid rgba(181,123,238,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+      </button>
+    </div>
+
     <!-- Campos: Fora do Padrão -->
     <div class="modal-field" id="foraFieldWrap" style="display:none">
       <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
@@ -1393,6 +1405,8 @@
     if (document.getElementById('foraUC'))  document.getElementById('foraUC').value = '';
     if (document.getElementById('foraUCMsg')) document.getElementById('foraUCMsg').textContent = '';
     if (document.getElementById('foraObs')) document.getElementById('foraObs').value = '';
+    if (document.getElementById('muxTodoWrap')) document.getElementById('muxTodoWrap').style.display = 'none';
+    window._muxTodo = false;
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const lat = pos.coords.latitude;
@@ -1441,6 +1455,18 @@
     document.getElementById('tipoMux').classList.toggle('selected', tipo === 'mux');
     document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
     document.getElementById('tipoFora').classList.toggle('selected', tipo === 'fora');
+    // mux: mostra opção de circuito todo; reseta ao sair do mux
+    const muxWrap = document.getElementById('muxTodoWrap');
+    if (muxWrap) {
+      muxWrap.style.display = tipo === 'mux' ? 'block' : 'none';
+      if (tipo !== 'mux') {
+        window._muxTodo = false;
+        const chk = document.getElementById('muxTodoCheck');
+        if (chk) { chk.innerHTML = ''; chk.style.background = 'transparent'; }
+        const btn = document.getElementById('btnMuxTodo');
+        if (btn) { btn.style.background = 'rgba(181,123,238,.07)'; btn.style.borderColor = 'rgba(181,123,238,.3)'; btn.style.color = '#b57bee'; }
+      }
+    }
     // ramal
     const ramalWrap = document.getElementById('ramalFieldWrap');
     if (ramalWrap) {
@@ -1530,12 +1556,13 @@
   function gerarTextoOS() {
     const isRamal = selectedTipo === 'ramal';
     const isFora  = selectedTipo === 'fora';
+    const isMuxTodo = selectedTipo === 'mux' && window._muxTodo;
     // fora do padrão: sem texto automático
     if (isFora) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
-    if (!selectedTipo || (!currentAnomaliaPostes && !isRamal)) {
+    if (!selectedTipo || (!currentAnomaliaPostes && !isRamal && !isMuxTodo)) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
@@ -1546,7 +1573,11 @@
     if (selectedTipo === 'poda') {
       texto = trafo + ' - Realizar ' + qty + ' poda' + (qty > 1 ? 's' : '') + ' de arvore entre os postes ' + postes;
     } else if (selectedTipo === 'mux') {
-      texto = trafo + ' - Realizar MBX (troca de cabo) em ' + qty + ' trecho' + (qty > 1 ? 's' : '') + ' entre os postes ' + postes;
+      if (window._muxTodo) {
+        texto = trafo + ' - Realizar MBX (troca de cabo) em todo o circuito';
+      } else {
+        texto = trafo + ' - Realizar MBX (troca de cabo) em ' + qty + ' trecho' + (qty > 1 ? 's' : '') + ' entre os postes ' + postes;
+      }
     } else if (selectedTipo === 'ramal') {
       const med = document.getElementById('ramalMedidor')?.value.trim() || '';
       const uc  = document.getElementById('ramalUC')?.value.trim() || '';
@@ -1652,6 +1683,7 @@
       if (foraMed)  docData.foraMedidor = foraMed;
       if (foraUC)   docData.foraUC   = foraUC;
       if (foraObs)  docData.foraObs  = foraObs;
+      if (selectedTipo === 'mux' && window._muxTodo) docData.muxCircuitoTodo = true;
       await addDoc(collection(db, 'anomalias'), docData);
 
       closeModalAnomalia();
@@ -2149,6 +2181,29 @@
       msg.style.color = 'var(--eq-warning, #ffb300)';
     }
     checkSalvarEnabled();
+  };
+
+  // ── Multiplexar circuito todo (MBX) ──
+  window._muxTodo = false;
+  window.toggleMuxTodo = function() {
+    window._muxTodo = !window._muxTodo;
+    const chk = document.getElementById('muxTodoCheck');
+    const btn = document.getElementById('btnMuxTodo');
+    if (window._muxTodo) {
+      chk.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      chk.style.background = '#b57bee';
+      btn.style.background = 'rgba(181,123,238,.2)';
+      btn.style.borderColor = '#b57bee';
+      // oculta campo entre postes — não necessário para circuito todo
+      document.getElementById('modalPostes').value = '';
+      currentAnomaliaPostes = '';
+    } else {
+      chk.innerHTML = '';
+      chk.style.background = 'transparent';
+      btn.style.background = 'rgba(181,123,238,.07)';
+      btn.style.borderColor = 'rgba(181,123,238,.3)';
+    }
+    gerarTextoOS();
   };
 
   if ('serviceWorker' in navigator) {
