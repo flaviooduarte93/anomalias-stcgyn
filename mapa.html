@@ -6,2226 +6,761 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
-  <title>Anomalias STCGYN — Mapa</title>
+  <title>Anomalias STCGYN - Pendencias</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --eq-blue-dark:  #0a1628;
-      --eq-blue:       #0d3b8e;
-      --eq-blue-mid:   #1a56c4;
-      --eq-cyan:       #00aaff;
-      --eq-purple:     #5b2d8e;
-      --eq-purple-mid: #7c3fc0;
-      --eq-white:      #f0f4ff;
-      --eq-gray:       #8a9bbf;
-      --eq-error:      #ff4d6d;
-      --eq-success:    #00e5a0;
-      --eq-warning:    #ffb300;
-      --nav-h:         64px;
-      --top-h:         56px;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bd:#0a1628;--bm:#1a56c4;--cy:#00aaff;--pm:#7c3fc0;
+      --wh:#f0f4ff;--gr:#8a9bbf;--er:#ff4d6d;--su:#00e5a0;--wa:#ffb300;
+      --nh:64px;--th:56px;
     }
-
-    html, body { height: 100%; font-family: 'Barlow', sans-serif; background: var(--eq-blue-dark); color: var(--eq-white); overflow: hidden; }
-
-    /* ── TOP BAR ── */
-    .topbar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-      height: var(--top-h);
-      background: rgba(10,22,40,0.95);
-      border-bottom: 1px solid rgba(0,170,255,0.15);
-      backdrop-filter: blur(16px);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px; gap: 10px;
-    }
-    .topbar-logo {
-      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-    }
-    .topbar-logo .icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    }
-    .topbar-logo .icon svg { width: 16px; height: 16px; }
-    .topbar-logo span {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 15px; font-weight: 700; letter-spacing: 1px;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    /* circuito selector */
-    .circuit-select-wrap {
-      flex: 1; max-width: 280px; position: relative;
-    }
-    .circuit-select-wrap input {
-      width: 100%; padding: 8px 32px 8px 12px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 8px; color: var(--eq-white);
-      font-family: 'Barlow', sans-serif; font-size: 13px;
-      outline: none; cursor: text;
-    }
-    .circuit-select-wrap input::placeholder { color: var(--eq-gray); }
-    .circuit-select-wrap input:focus { border-color: rgba(0,170,255,0.5); }
-    .circuit-select-wrap .arr {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      pointer-events: none; color: var(--eq-cyan); transition: opacity .15s;
-    }
-    .circuit-select-wrap .btn-clear {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      display: none; align-items: center; justify-content: center;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: rgba(255,255,255,0.15); border: none; cursor: pointer;
-      color: var(--eq-white); font-size: 13px; line-height: 1;
-      transition: background .15s;
-    }
-    .circuit-select-wrap .btn-clear:hover { background: rgba(255,77,109,0.4); }
-    .circuit-select-wrap.has-value .arr { display: none; }
-    .circuit-select-wrap.has-value .btn-clear { display: flex; }
-    /* dropdown de sugestões */
-    .circuit-dropdown {
-      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2000;
-      background: #0d1f3c; border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 8px; max-height: 220px; overflow-y: auto;
-      display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    }
-    .circuit-dropdown.open { display: block; }
-    .circuit-opt {
-      padding: 10px 14px; font-size: 13px; cursor: pointer;
-      border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--eq-white);
-    }
-    .circuit-opt:last-child { border-bottom: none; }
-    .circuit-opt:hover, .circuit-opt.selected { background: rgba(0,170,255,0.12); color: var(--eq-cyan); }
-    .circuit-opt .match { color: var(--eq-cyan); font-weight: 700; }
-
-    .topbar-user {
-      display: flex; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer;
-    }
-    .avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
-    }
-    .user-info { display: none; }
-    @media(min-width: 480px) {
-      .user-info { display: flex; flex-direction: column; }
-      .user-info .uname { font-size: 12px; font-weight: 600; }
-      .user-info .uperfil { font-size: 10px; color: var(--eq-cyan); text-transform: uppercase; letter-spacing: .8px; }
-    }
-
-    /* logout btn */
-    .btn-logout {
-      background: none; border: 1px solid rgba(255,77,109,0.3);
-      border-radius: 7px; padding: 6px 8px; color: var(--eq-error);
-      cursor: pointer; font-size: 11px; font-weight: 600;
-      transition: background .2s;
-    }
-    .btn-logout:hover { background: rgba(255,77,109,0.1); }
-
-    /* ── MAP ── */
-    #map {
-      position: fixed;
-      top: var(--top-h); left: 0; right: 0;
-      bottom: var(--nav-h);
-      z-index: 1;
-    }
-
-    /* ── TRANSFORMER CARD ── */
-    .trafo-card {
-      position: fixed; bottom: calc(var(--nav-h) + 12px); left: 12px; right: 12px;
-      z-index: 900;
-      background: rgba(10,22,40,0.92);
-      border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 14px; padding: 12px 16px;
-      backdrop-filter: blur(16px);
-      display: flex; flex-direction: column; gap: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      transition: transform .3s, opacity .3s;
-    }
-    .trafo-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .trafo-card.hidden { transform: translateY(20px); opacity: 0; pointer-events: none; }
-
-    .trafo-info { display: flex; flex-direction: column; gap: 2px; }
-    .trafo-id {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 16px; font-weight: 700;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .trafo-label { font-size: 11px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .8px; }
-    .trafo-poste { font-size: 11px; color: var(--eq-gray); margin-top: 1px; }
-
-    .trafo-stats { display: flex; gap: 16px; }
-    .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-    .stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--eq-cyan); }
-    .stat-label { font-size: 10px; color: var(--eq-gray); text-transform: uppercase; letter-spacing: .6px; }
-
-    .trafo-actions { display: flex; flex-direction: column; gap: 6px; }
-
-    /* badge decômetro inline */
-    .deco-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
-    }
-    .deco-badge.ok     { background: rgba(0,229,160,0.1); color: #00e5a0; border: 1px solid rgba(0,229,160,0.2); }
-    .deco-badge.alerta { background: rgba(255,179,0,0.1); color: #ffb300; border: 1px solid rgba(255,179,0,0.2); }
-    .deco-badge.critico { background: rgba(255,77,109,0.1); color: #ff4d6d; border: 1px solid rgba(255,77,109,0.2); }
-    .deco-badge.sem    { background: rgba(255,255,255,0.05); color: #8a9bbf; border: 1px solid rgba(255,255,255,0.1); }
-
-    /* ── FAB — botão apontar anomalia (fiscal) ── */
-    .fab {
-      position: fixed;
-      bottom: calc(var(--nav-h) + 16px);
-      right: 16px; z-index: 950;
-      width: 52px; height: 52px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      border: none; cursor: pointer; color: #fff;
-      box-shadow: 0 6px 20px rgba(0,170,255,0.35);
-      display: flex; align-items: center; justify-content: center;
-      transition: transform .2s, box-shadow .2s;
-    }
-    .fab:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(0,170,255,0.5); }
-    .fab:active { transform: scale(.95); }
-    .fab.hidden { display: none; }
-
-    /* ── BOTTOM NAV ── */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
-      height: var(--nav-h);
-      background: rgba(10,22,40,0.97);
-      border-top: 1px solid rgba(0,170,255,0.15);
-      backdrop-filter: blur(16px);
-      display: flex; align-items: center;
-    }
-    .nav-item {
-      min-height: 44px;
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 4px; padding: 8px 4px;
-      cursor: pointer; border: none; background: none;
-      color: var(--eq-gray); text-decoration: none;
-      transition: color .2s; position: relative;
-    }
-    .nav-item.active { color: var(--eq-cyan); }
-    .nav-item svg { width: 22px; height: 22px; }
-    .nav-label { font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
-    .nav-item.active::after {
-      content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px;
-      background: var(--eq-cyan); border-radius: 0 0 4px 4px;
-    }
-    .nav-item.hidden { display: none; }
-
-    /* badge pendências */
-    .badge {
-      position: absolute; top: 6px; right: calc(50% - 18px);
-      background: var(--eq-error); color: #fff;
-      font-size: 9px; font-weight: 700; min-width: 16px; height: 16px;
-      border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      padding: 0 4px;
-    }
-
-    /* ── MODAL ANOMALIA ── */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 2000;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-      display: flex; align-items: flex-end; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .3s;
-    }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
-
-    .modal {
-      width: 100%; max-width: 520px;
-      background: #0d1f3c;
-      border: 1px solid rgba(0,170,255,0.2);
-      border-radius: 20px 20px 0 0;
-      padding: 24px 20px 36px;
-      transform: translateY(100%); transition: transform .35s cubic-bezier(.16,1,.3,1);
-      max-height: 85vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
-
-    .modal-handle {
-      width: 40px; height: 4px; background: rgba(255,255,255,0.15);
-      border-radius: 2px; margin: 0 auto 20px;
-    }
-    .modal-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 20px; font-weight: 700; margin-bottom: 20px;
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-    .modal-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; color: var(--eq-gray); text-transform: uppercase; }
-    .modal-value {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px; padding: 11px 14px; font-size: 14px; color: var(--eq-white);
-    }
-    .modal-value.loading { color: var(--eq-gray); font-style: italic; }
-
-    /* tipo serviço */
-    .tipo-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .tipo-btn {
-      padding: 12px 6px;
-      background: rgba(255,255,255,0.05);
-      border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 10px; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      color: var(--eq-gray); font-family: 'Barlow', sans-serif;
-      font-size: 13px; font-weight: 600; transition: all .2s;
-    }
-    .tipo-btn:hover { border-color: rgba(0,170,255,0.4); color: var(--eq-white); }
-    .tipo-btn.selected {
-      border-color: var(--eq-cyan);
-      background: rgba(0,170,255,0.1);
-      color: var(--eq-cyan);
-    }
-    .tipo-btn svg { width: 28px; height: 28px; }
-
-    /* foto */
-    .foto-area {
-      border: 2px dashed rgba(0,170,255,0.3);
-      border-radius: 10px; padding: 20px;
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      cursor: pointer; transition: border-color .2s; position: relative; overflow: hidden;
-    }
-    .foto-area:hover { border-color: var(--eq-cyan); }
-    .foto-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .foto-area svg { color: var(--eq-gray); }
-    .foto-area span { font-size: 13px; color: var(--eq-gray); }
-    .foto-preview { width: 100%; border-radius: 8px; display: none; }
-    .foto-picker-btns { display:flex; gap:8px; margin-top:4px; }
-    .foto-picker-btn {
-      flex:1; padding:10px 8px; background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:rgba(138,155,191,0.8);
-      font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:600;
-      letter-spacing:.6px; text-transform:uppercase; cursor:pointer; display:flex;
-      align-items:center; justify-content:center; gap:5px; transition:border-color .2s,color .2s;
-    }
-    .foto-picker-btn:hover { border-color:var(--eq-cyan); color:var(--eq-cyan); }
-    .foto-picker-btn.selected { border-color:var(--eq-success); color:var(--eq-success); background:rgba(0,229,160,0.08); }
-
-    .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
-    .qty-btn {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(0,170,255,0.15); border: 1px solid rgba(0,170,255,0.3);
-      color: var(--eq-cyan); font-size: 20px; line-height: 1;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: background .15s;
-    }
-    .qty-btn:hover { background: rgba(0,170,255,0.3); }
-    .btn-cancel {
-      flex: 1; padding: 13px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; color: var(--eq-gray);
-      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
-      transition: background .2s;
-    }
-    .btn-cancel:hover { background: rgba(255,255,255,0.1); }
-    .btn-save {
-      flex: 2; padding: 13px;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      border: none; border-radius: 10px; color: #fff;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0,170,255,0.2);
-      transition: opacity .2s;
-    }
-    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
-
-    /* ── POPUP customizado no mapa ── */
-    .leaflet-popup-content-wrapper {
-      background: rgba(10,22,40,0.97) !important;
-      border: 1px solid rgba(0,170,255,0.25) !important;
-      border-radius: 12px !important; color: var(--eq-white) !important;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-    }
-    .leaflet-popup-tip { background: rgba(10,22,40,0.97) !important; }
-    .leaflet-popup-content { margin: 14px 16px !important; font-family: 'Barlow', sans-serif !important; }
-
-    .popup-title {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
-      color: var(--eq-cyan); margin-bottom: 8px;
-    }
-    .popup-row { font-size: 13px; margin-bottom: 4px; color: var(--eq-gray); }
-    .popup-row span { color: var(--eq-white); font-weight: 500; }
-    .popup-foto { width: 100%; border-radius: 8px; margin: 10px 0; max-height: 180px; object-fit: cover; }
-    .popup-badge {
-      display: inline-block; padding: 3px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .popup-badge.poda { background: rgba(255,179,0,0.15); color: var(--eq-warning); border: 1px solid rgba(255,179,0,0.3); }
-    .popup-badge.espacador { background: rgba(0,170,255,0.15); color: var(--eq-cyan); border: 1px solid rgba(0,170,255,0.3); }
-    .popup-badge.mux { background: rgba(124,63,192,0.15); color: #b57bee; border: 1px solid rgba(124,63,192,0.3); }
-    .popup-btn {
-      width: 100%; padding: 9px; border-radius: 8px; border: none;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase; cursor: pointer; margin-top: 6px;
-      transition: opacity .2s;
-    }
-    .popup-btn:hover { opacity: .85; }
-    .popup-btn-nav {
-      background: linear-gradient(135deg, #1a8c4e, #0d6e3b);
-      color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .popup-btn-prog {
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      color: #fff;
-    }
-    .popup-btn-conc {
-      background: linear-gradient(135deg, #1a8c4e, #0d6e3b);
-      color: #fff;
-    }
-    .popup-btn-del {
-      background: linear-gradient(135deg, #8c1a1a, #6e0d0d);
-      color: #fff; display: flex; align-items: center; justify-content: center;
-    }
-    .popup-btn-del:hover { background: linear-gradient(135deg, #a32020, #8c1212); }
-
-    /* ── MODAL PROGRAMAR (admin) ── */
-    .modal-select {
-      width: 100%; padding: 12px 14px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px; color: var(--eq-white);
-      font-family: 'Barlow', sans-serif; font-size: 14px;
-      outline: none; appearance: none; cursor: pointer;
-    }
-    .modal-select:focus { border-color: var(--eq-cyan); }
-    .modal-select option { background: #0d1f3c; }
-
-    /* spinner */
-    .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-
-    /* toast */
-    .toast {
-      position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px);
-      z-index: 3000; background: rgba(10,22,40,0.97); border-radius: 10px;
-      padding: 12px 20px; font-size: 14px; font-weight: 500;
-      border: 1px solid rgba(0,229,160,0.3); color: var(--eq-success);
-      opacity: 0; transition: all .3s; white-space: nowrap;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
+    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--bd);color:var(--wh);-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+    .topbar{position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--th);background:rgba(10,22,40,.97);border-bottom:1px solid rgba(0,170,255,.15);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:10px}
+    .tlogo{display:flex;align-items:center;gap:8px}
+    .ticon{width:32px;height:32px;background:linear-gradient(135deg,var(--bm),var(--pm));border-radius:8px;display:flex;align-items:center;justify-content:center}
+    .ticon svg{width:16px;height:16px}
+    .tname{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .tright{display:flex;align-items:center;gap:8px}
+    .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--bm),var(--pm));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
+    .btn-sair{background:none;border:1px solid rgba(255,77,109,.3);border-radius:7px;padding:6px 8px;color:var(--er);cursor:pointer;font-size:11px;font-weight:600}
+    .content{margin-top:var(--th);margin-bottom:var(--nh);padding:20px 16px}
+    .page-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .page-sub{font-size:13px;color:var(--gr);margin-top:2px;margin-bottom:20px}
+    .filtros{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+    .filtros::-webkit-scrollbar{display:none}
+    .filtros.hidden{display:none}
+    .fbtn{padding:7px 14px;border-radius:20px;white-space:nowrap;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:var(--gr);transition:all .2s}
+    .fbtn.active{background:rgba(0,170,255,.12);border-color:rgba(0,170,255,.35);color:var(--cy)}
+    .sumrow{display:flex;gap:10px;margin-bottom:20px}
+    .sumcard{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .sumcard.p{border-color:rgba(255,179,0,.2)}
+    .sumcard.c{border-color:rgba(0,229,160,.2)}
+    .sumval{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700}
+    .sumcard.t .sumval{color:var(--cy)}
+    .sumcard.p .sumval{color:var(--wa)}
+    .sumcard.c .sumval{color:var(--su)}
+    .sumlbl{font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;text-align:center}
+    .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .sec-ttl{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.8px;color:var(--gr);text-transform:uppercase}
+    .pill{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.2);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;color:var(--cy)}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+    .card:hover{border-color:rgba(0,170,255,.25);transform:translateY(-1px)}
+    .card.pendente{border-left:3px solid var(--wa)}
+    .card.concluido{border-left:3px solid var(--su)}
+    .card.urgente::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 20px 20px 0;border-color:transparent var(--er) transparent transparent}
+    .ctop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .cnome{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;line-height:1.2;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .spill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+    .spill.pendente{background:rgba(255,179,0,.12);color:var(--wa);border:1px solid rgba(255,179,0,.25)}
+    .spill.concluido{background:rgba(0,229,160,.12);color:var(--su);border:1px solid rgba(0,229,160,.25)}
+    .cmeta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+    .mi{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gr)}
+    .mi svg{width:13px;height:13px;flex-shrink:0}
+    .mi span{color:var(--wh)}
+    .dbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
+    .dbadge.ok{background:rgba(0,229,160,.1);color:var(--su)}
+    .dbadge.alerta{background:rgba(255,179,0,.12);color:var(--wa)}
+    .dbadge.critico{background:rgba(255,77,109,.12);color:var(--er)}
+    .cacts{display:flex;gap:8px;flex-wrap:wrap}
+    .bsm{padding:8px 14px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;border:none;transition:opacity .2s,transform .15s;display:flex;align-items:center;gap:6px}
+    .bsm:active{transform:scale(.97)}
+    .bsm:hover{opacity:.85}
+    .b-out{background:transparent;border:1px solid rgba(0,170,255,.3);color:var(--cy)}
+    .b-suc{background:linear-gradient(135deg,#1a8c4e,#0d6e3b);color:#fff}
+    .b-dan{background:transparent;border:1px solid rgba(255,77,109,.3);color:var(--er)}
+    .empty{text-align:center;padding:60px 20px;color:var(--gr)}
+    .empty-icon{font-size:48px;margin-bottom:12px}
+    .empty p{font-size:14px;line-height:1.6}
+    .mover{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+    .mover.open{opacity:1;pointer-events:all}
+    .modal{width:100%;max-width:520px;background:#0d1f3c;border:1px solid rgba(0,170,255,.2);border-radius:20px 20px 0 0;padding:24px 20px 36px;transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1);max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .mover.open .modal{transform:translateY(0)}
+    .mhdl{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
+    .mttl{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .mttl.danger{background:none;-webkit-text-fill-color:var(--er)}
+    .msub{font-size:13px;color:var(--gr);margin-bottom:20px;line-height:1.5}
+    .mobs-lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--gr);text-transform:uppercase;margin-bottom:6px;display:block}
+    .obs{width:100%;padding:12px 14px;min-height:80px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--wh);font-family:'Barlow',sans-serif;font-size:14px;resize:none;outline:none}
+    .obs:focus{border-color:var(--cy)}
+    .obs::placeholder{color:rgba(138,155,191,.5)}
+    .chklist{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+    .chi{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
+    .chi.checked{background:rgba(0,229,160,.06);border-color:rgba(0,229,160,.2)}
+    .chbox{width:20px;height:20px;border-radius:6px;flex-shrink:0;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .chi.checked .chbox{background:var(--su);border-color:var(--su)}
+    .chtxt{font-size:14px;font-weight:500}
+    .macts{display:flex;gap:10px;margin-top:16px}
+    .bcnl{flex:1;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--gr);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+    .bsav{flex:2;padding:13px;background:linear-gradient(135deg,#1a8c4e,#0d6e3b);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+    .bsav:disabled{opacity:.5;cursor:not-allowed}
+    .botnav{position:fixed;bottom:0;left:0;right:0;z-index:1000;height:var(--nh);background:rgba(10,22,40,.97);border-top:1px solid rgba(0,170,255,.15);backdrop-filter:blur(16px);display:flex;align-items:center}
+    .ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;min-height:44px;cursor:pointer;border:none;background:none;color:var(--gr);transition:color .2s;position:relative}
+    .ni.active{color:var(--cy)}
+    .ni svg{width:22px;height:22px}
+    .nlbl{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+    .ni.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--cy);border-radius:0 0 4px 4px}
+    .ni.hidden{display:none}
+    .sk{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:sh 1.5s infinite;border-radius:14px}
+    @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .toast{position:fixed;bottom:calc(var(--nh) + 16px);left:50%;transform:translateX(-50%) translateY(20px);z-index:3000;background:rgba(10,22,40,.97);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:500;border:1px solid rgba(0,229,160,.3);color:var(--su);opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.error{border-color:rgba(255,77,109,.3);color:var(--er)}
+    .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
+    @keyframes sp{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-logo">
-    <div class="icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-      </svg>
-    </div>
-    <span>STCGYN</span>
+  <div class="tlogo">
+    <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="tname">STCGYN</span>
   </div>
-
-  <div class="circuit-select-wrap" id="circuitWrap">
-    <input type="text" id="circuitInput" placeholder="Buscar transformador..." autocomplete="off"
-      oninput="filtrarCircuitos(); toggleClearBtn();" onfocus="abrirDropdown()" />
-    <span class="arr">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-    </span>
-    <button class="btn-clear" id="btnClearInput" onmousedown="event.preventDefault(); limparBusca();" tabindex="-1">×</button>
-    <div class="circuit-dropdown" id="circuitDropdown"></div>
-  </div>
-
-  <div class="topbar-user">
+  <div class="tright">
     <div class="avatar" id="avatarEl">?</div>
-    <div class="user-info">
-      <span class="uname" id="unameEl">—</span>
-      <span class="uperfil" id="uperfilEl">—</span>
-    </div>
-    <button class="btn-logout" onclick="logout()">Sair</button>
+    <button class="btn-sair" onclick="doLogout()">Sair</button>
   </div>
 </div>
 
-<!-- MAPA -->
-<div id="map"></div>
+<div class="content">
+  <div class="page-title">Pendencias</div>
+  <div class="page-sub" id="pageSub">Carregando...</div>
 
-<!-- CARD TRANSFORMADOR -->
-<div class="trafo-card hidden" id="trafoCard">
-  <div class="trafo-card-top">
-    <div class="trafo-info">
-      <div class="trafo-label">⚡ Transformador</div>
-      <div class="trafo-id" id="trafoId">—</div>
-      <div class="trafo-poste" id="trafoCircuito">—</div>
-    </div>
-    <div class="trafo-stats">
-      <div class="stat">
-        <div class="stat-val" id="trafoPotencia">—</div>
-        <div class="stat-label">kVA</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val" id="trafoClientes">—</div>
-        <div class="stat-label">Clientes</div>
-      </div>
-    </div>
+  <div class="filtros hidden" id="filtrosWrap">
+    <button class="fbtn active" onclick="setFiltro('todos',this)">Todos</button>
+    <button class="fbtn" onclick="setFiltro('pendente',this)">Pendentes</button>
+    <button class="fbtn" onclick="setFiltro('concluido',this)">Concluidos</button>
   </div>
-  <div id="trafoDecoWrap" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">
-    <button id="trafoDecoBtn" onclick="toggleDeco()"
-      style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;padding:0">
-      <span style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px">Decômetro — 3 meses + atual</span>
-      <span id="trafoDecoBtnResume" style="font-size:11px;font-weight:700;color:#8a9bbf"></span>
-    </button>
-    <div id="trafoDecoBadge" style="display:none;margin-top:8px"></div>
+
+  <div class="sumrow">
+    <div class="sumcard t"><div class="sumval" id="sTotal">-</div><div class="sumlbl">Total</div></div>
+    <div class="sumcard p"><div class="sumval" id="sPend">-</div><div class="sumlbl">Pendentes</div></div>
+    <div class="sumcard c"><div class="sumval" id="sConc">-</div><div class="sumlbl">Concluidos</div></div>
   </div>
-  <div id="trafoRotaBtns" style="display:none;gap:8px;margin-top:10px">
-    <button onclick="abrirNavTrafo('maps')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a8c4e,#0d6e3b);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-      Google Maps
-    </button>
-    <button onclick="abrirNavTrafo('waze')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#1a3a8c,#0d2e6e);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-      Waze
-    </button>
+
+  <div class="sec-hdr">
+    <div class="sec-ttl" id="secTtl">Inspecoes</div>
+    <div class="pill" id="cntPill">-</div>
   </div>
-  <!-- Easy Trafo e Anel — visível apenas para fiscal com inspeção ativa -->
-  <div id="trafoInspBtns" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">
-    <div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Informações do transformador</div>
-    <div style="display:flex;gap:8px">
-      <button id="btnEasyTrafo" onclick="openModalEasyTrafo()"
-        style="flex:1;padding:9px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#8a9bbf;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;text-transform:uppercase">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-        <span id="btnEasyTrafoLbl">Easy Trafo</span>
-      </button>
-      <button id="btnAnel" onclick="openModalAnel()"
-        style="flex:1;padding:9px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#8a9bbf;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;text-transform:uppercase">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
-        <span id="btnAnelLbl">Anel</span>
-      </button>
-    </div>
+
+  <div id="lista">
+    <div class="sk" style="height:130px;margin-bottom:10px"></div>
+    <div class="sk" style="height:130px;margin-bottom:10px"></div>
+    <div class="sk" style="height:130px"></div>
   </div>
 </div>
 
-<!-- MODAL: Easy Trafo -->
-<div class="modal-overlay" id="modalEasyTrafo">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Easy Trafo</div>
-    <div class="modal-sub">O transformador possui Easy Trafo instalado?</div>
-    <div style="display:flex;gap:10px;margin-bottom:16px">
-      <button id="btnEasyTrafoSim" onclick="selectEasyTrafo(true)"
-        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(0,229,160,.3);background:rgba(0,229,160,.08);color:#00e5a0;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
-        ✓ Sim
-      </button>
-      <button id="btnEasyTrafoNao" onclick="selectEasyTrafo(false)"
-        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.08);color:#ff4d6d;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
-        ✗ Não
-      </button>
-    </div>
-    <div id="easyTrafoFotoWrap" style="display:none">
-      <div class="modal-label">Foto do Easy Trafo <span style="color:var(--eq-error)">*</span></div>
-      <div class="foto-picker-btns" style="margin-top:6px">
-        <button class="foto-picker-btn" id="btnCameraEasy" onclick="abrirFotoEasy('camera')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Câmera
-        </button>
-        <button class="foto-picker-btn" id="btnGaleriaEasy" onclick="abrirFotoEasy('galeria')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Galeria
-        </button>
-      </div>
-      <img id="fotoEasyPreview" src="" alt="" style="display:none;width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:cover"/>
-    </div>
-    <div class="modal-actions" style="margin-top:16px">
-      <button class="btn-cancel" onclick="closeModalEasyTrafo()">Cancelar</button>
-      <button class="btn-save" id="btnSalvarEasyTrafo" onclick="salvarEasyTrafo()" disabled>Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Anel -->
-<div class="modal-overlay" id="modalAnel">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Fechado em Anel</div>
-    <div class="modal-sub">O transformador é fechado em anel?</div>
-    <div style="display:flex;gap:10px;margin-bottom:16px">
-      <button id="btnAnelSim" onclick="selectAnel(true)"
-        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(0,229,160,.3);background:rgba(0,229,160,.08);color:#00e5a0;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
-        ✓ Sim
-      </button>
-      <button id="btnAnelNao" onclick="selectAnel(false)"
-        style="flex:1;padding:13px;border-radius:10px;border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.08);color:#ff4d6d;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;text-transform:uppercase">
-        ✗ Não
-      </button>
-    </div>
-    <div id="anelObsWrap" style="display:none;margin-bottom:12px">
-      <div class="modal-label">Observação <span style="color:var(--eq-error)">*</span> <span style="color:var(--eq-gray);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(obrigatória quando Não)</span></div>
-      <textarea id="anelObs"
-        placeholder="Descreva as características do anel (obrigatório)"
-        style="width:100%;margin-top:6px;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:80px;box-sizing:border-box"
-        oninput="checkAnelSalvar()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      ></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModalAnel()">Cancelar</button>
-      <button class="btn-save" id="btnSalvarAnel" onclick="salvarAnel()" disabled>Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- FAB: apontar anomalia (fiscal) -->
-<button class="fab hidden" id="fabAnomalias" onclick="openModalAnomalia()" title="Apontar anomalia">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-  </svg>
-</button>
-
-<!-- BOTTOM NAV -->
 <script>
-  // Aplica nav ANTES do render — começa tudo visível, esconde conforme perfil
-  (function(){
-    var p = sessionStorage.getItem('userPerfil') || '';
-    // equipe: só vê mapa e pendências
-    // fiscal: vê mapa, anomalias, pendências
-    // admin: vê tudo
-    // Se não tem perfil ainda (primeiro load antes do Firebase), esconde tudo exceto mapa
-    document.write('<style id="navInitStyle">'
-      + (p === 'admin' ? '' :
-         p === 'fiscal' ? '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
-         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
-         '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-      + '</style>');
-  })();
+(function(){
+  var p=sessionStorage.getItem('userPerfil')||'';
+  var css=p==='admin'?'':p==='equipe'?'#ni-anom,#ni-dash,#ni-circ,#ni-mbx{display:none}':'#ni-dash,#ni-circ,#ni-mbx{display:none}';
+  if(css)document.write('<style>'+css+'</style>');
+})();
 </script>
-<nav class="bottom-nav">
-  <button class="nav-item active" id="nav-mapa" onclick="navTo('mapa.html', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-    <span class="nav-label">Mapa</span>
+
+<nav class="botnav">
+  <button class="ni" onclick="location.href='mapa.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+    <span class="nlbl">Mapa</span>
   </button>
-  <button class="nav-item" id="nav-anomalias" onclick="navTo('anomalias.html', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span class="nav-label">Anomalias</span>
+  <button class="ni" id="ni-anom" onclick="location.href='anomalias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="nlbl">Anomalias</span>
   </button>
-  <button class="nav-item" id="nav-pendencias" onclick="navTo('pendencias.html', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span class="nav-label">Pendências</span>
-    <span class="badge" id="badgePendencias" style="display:none"></span>
+  <button class="ni active" onclick="location.href='pendencias.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span class="nlbl">Pendencias</span>
   </button>
-  <button class="nav-item" id="nav-dashboard" onclick="navTo('dashboard.html', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    <span class="nav-label">Dashboard</span>
+  <button class="ni" id="ni-dash" onclick="location.href='dashboard.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span class="nlbl">Dashboard</span>
   </button>
-  <button class="nav-item" id="nav-mbx" onclick="navTo('mbx.html', this)">
+  <button class="ni" id="ni-mbx" onclick="location.href='mbx.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-    <span class="nav-label">MBX</span>
+    <span class="nlbl">MBX</span>
   </button>
-  <button class="nav-item" id="nav-circuitos" onclick="navTo('circuitos.html', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-    <span class="nav-label">Circuitos</span>
+  <button class="ni" id="ni-circ" onclick="location.href='circuitos.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <span class="nlbl">Circuitos</span>
   </button>
 </nav>
 
-<!-- MODAL: apontar anomalia -->
-<div class="modal-overlay" id="modalAnomalia">
+<!-- MODAL CONCLUIR -->
+<div class="mover" id="mConcluir">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nova Anomalia</div>
-
-    <div class="modal-field">
-      <div class="modal-label">Localização (automática)</div>
-      <div class="modal-value loading" id="modalEndereco">Obtendo localização...</div>
+    <div class="mhdl"></div>
+    <div class="mttl">Concluir Inspecao</div>
+    <div class="msub" id="mConcluirSub">Confirme os itens verificados.</div>
+    <div class="chklist">
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Postes inspecionados visualmente</span></div>
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Cabos e conexoes verificados</span></div>
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Transformador avaliado</span></div>
+      <div class="chi" onclick="togCheck(this)"><div class="chbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><span class="chtxt">Anomalias registradas (se houver)</span></div>
     </div>
-    <div class="modal-field">
-      <div class="modal-label">Coordenadas</div>
-      <div class="modal-value" id="modalCoords">—</div>
-    </div>
-    <div class="modal-field">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Entre os postes</span>
-        <span style="font-size:10px;color:var(--eq-gray);font-weight:400;letter-spacing:0">preenchido automaticamente — editável</span>
-      </div>
-      <input type="text" id="modalPostes"
-        placeholder="Ex: 12345 — 12346"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;"
-        oninput="onPostesInput()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
-      />
-    </div>
-
-    <div class="modal-field">
-      <div class="modal-label">Tipo de serviço</div>
-      <div class="tipo-options">
-        <button class="tipo-btn" id="tipoPoda" onclick="selectTipo('poda')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22l10-10"/><path d="M16 8l-4 4"/><path d="M12 4v4"/><path d="M8 8h4"/><circle cx="17" cy="17" r="5"/></svg>
-          Poda
-        </button>
-        <button class="tipo-btn" id="tipoEspacador" onclick="selectTipo('espacador')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
-          Espaçador
-        </button>
-        <button class="tipo-btn" id="tipoMux" onclick="selectTipo('mux')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          MBX
-        </button>
-        <button class="tipo-btn" id="tipoRamal" onclick="selectTipo('ramal')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          Ramal
-        </button>
-        <button class="tipo-btn" id="tipoFora" onclick="selectTipo('fora')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Fora Padrão
-        </button>
-        <button class="tipo-btn" id="tipoPoste" onclick="selectTipo('poste')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg>
-          Sub. Poste
-        </button>
-      </div>
-    </div>
-
-    <div class="modal-field" id="ramalFieldWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Dados do Ramal</span>
-        <span style="font-size:10px;color:var(--eq-gray);font-weight:400">UC preenchida automaticamente</span>
-      </div>
-      <input type="text" id="ramalMedidor" placeholder="Numero do medidor"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:8px"
-        oninput="onMedidorInput()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      />
-      <input type="text" id="ramalUC" placeholder="UC (preenchida automaticamente)"
-        readonly
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default"
-      />
-      <div id="ramalUCMsg" style="font-size:11px;color:#8a9bbf;margin-top:4px"></div>
-    </div>
-
-    <!-- Opção: Multiplexar circuito todo (só MBX) -->
-    <div class="modal-field" id="muxTodoWrap" style="display:none">
-      <button id="btnMuxTodo" onclick="toggleMuxTodo()"
-        style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid rgba(181,123,238,.3);background:rgba(181,123,238,.07);color:#b57bee;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;transition:all .2s">
-        <span style="display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          Multiplexar circuito todo
-        </span>
-        <span id="muxTodoCheck" style="width:20px;height:20px;border-radius:6px;border:2px solid rgba(181,123,238,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>
-      </button>
-    </div>
-
-    <!-- Campos: Fora do Padrão -->
-    <div class="modal-field" id="foraFieldWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Cliente fora do padrão</span>
-        <span style="font-size:10px;color:var(--eq-gray);font-weight:400">UC preenchida automaticamente</span>
-      </div>
-      <input type="text" id="foraMedidor" placeholder="Número do medidor"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:8px;box-sizing:border-box"
-        oninput="onForaMedidorInput()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      />
-      <input type="text" id="foraUC" placeholder="UC (preenchida automaticamente)"
-        readonly
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default;margin-bottom:4px"
-      />
-      <div id="foraUCMsg" style="font-size:11px;color:#8a9bbf;margin-bottom:8px"></div>
-      <textarea id="foraObs" placeholder="Descrição da irregularidade (obrigatório) *"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:72px;box-sizing:border-box"
-        oninput="checkSalvarEnabled()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      ></textarea>
-    </div>
-
-    <div class="modal-field">
-      <div class="modal-label">Foto da anomalia</div>
-      <div class="foto-picker-btns">
-        <button class="foto-picker-btn" id="btnCameraAnomalia" onclick="abrirFotoAnomalia('camera')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Câmera
-        </button>
-        <button class="foto-picker-btn" id="btnGaleriaAnomalia" onclick="abrirFotoAnomalia('galeria')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Galeria
-        </button>
-      </div>
-      <img class="foto-preview" id="fotoPreview" src="" alt="Preview" style="margin-top:8px"/>
-    </div>
-
-    <div class="modal-field" id="qtyFieldWrap">
-      <div class="modal-label">Quantidade de serviços</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="qty-btn" onclick="alterarQty(-1)">−</button>
-        <span id="qtyValor" style="font-size:20px;font-weight:700;color:var(--eq-white);min-width:28px;text-align:center">1</span>
-        <button class="qty-btn" onclick="alterarQty(1)">+</button>
-      </div>
-    </div>
-
-    <div class="modal-field" id="textoOrdemWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Texto para OS</span>
-        <button onclick="copiarTextoOS()" style="background:none;border:1px solid rgba(0,170,255,0.3);border-radius:6px;padding:3px 8px;color:var(--eq-cyan);font-size:11px;cursor:pointer">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
-        </button>
-      </div>
-      <div id="textoOS" style="
-        margin-top:6px; padding:10px 12px;
-        background:rgba(0,170,255,0.06); border:1px solid rgba(0,170,255,0.2);
-        border-radius:8px; font-size:13px; color:var(--eq-white);
-        line-height:1.5; user-select:all; cursor:text;
-      "></div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModalAnomalia()">Cancelar</button>
-      <button class="btn-save" id="btnSalvarAnomalia" onclick="salvarAnomalia()" disabled>Salvar</button>
+    <label class="mobs-lbl">Observacoes (opcional)</label>
+    <textarea class="obs" id="obsConc" placeholder="Observacoes relevantes..."></textarea>
+    <div class="macts">
+      <button class="bcnl" onclick="fechaMConc()">Cancelar</button>
+      <button class="bsav" id="btnConc" onclick="confirmConc()">Concluir</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: programar serviço (admin) -->
-<div class="modal-overlay" id="modalProgramar">
+<!-- MODAL CANCELAR -->
+<div class="mover" id="mCancelar">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Programar Serviço</div>
-    <div id="programarInfo" style="margin-bottom:12px; font-size:14px; color:var(--eq-gray);"></div>
-
-    <div class="modal-field" id="programarTextoOSWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Texto para OS</span>
-        <button onclick="copiarTextoOSProgramar()" style="background:none;border:1px solid rgba(0,170,255,0.3);border-radius:6px;padding:3px 8px;color:var(--eq-cyan);font-size:11px;cursor:pointer">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
-        </button>
-      </div>
-      <div id="programarTextoOS" style="
-        margin-top:6px; padding:10px 12px;
-        background:rgba(0,170,255,0.06); border:1px solid rgba(0,170,255,0.2);
-        border-radius:8px; font-size:13px; color:var(--eq-white);
-        line-height:1.5; user-select:all; cursor:text;
-      "></div>
-    </div>
-
-    <div class="modal-field">
-      <div class="modal-label">Equipe responsável</div>
-      <div style="position:relative;">
-        <select class="modal-select" id="selectEquipe"></select>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModalProgramar()">Cancelar</button>
-      <button class="btn-save" onclick="confirmarProgramar()">Confirmar</button>
+    <div class="mhdl"></div>
+    <div class="mttl danger">Cancelar Inspecao</div>
+    <div class="msub" id="mCancelarSub">Esta acao nao pode ser desfeita.</div>
+    <label class="mobs-lbl">Motivo do cancelamento</label>
+    <textarea class="obs" id="obsCanc" placeholder="Descreva o motivo..."></textarea>
+    <div class="macts">
+      <button class="bcnl" onclick="fechaMCanc()">Voltar</button>
+      <button class="bsav" id="btnCanc" onclick="confirmCanc()" style="background:linear-gradient(135deg,#c0392b,#922b21)">Cancelar inspecao</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- SCRIPTS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- MODAL NOVA INSPEÇÃO -->
+<div class="mover" id="mNovaInsp">
+  <div class="modal">
+    <div class="mhdl"></div>
+    <div class="mttl">Nova Inspecao</div>
+    <div class="msub" id="mNovaInspSub">Solicitar nova inspecao para este circuito.</div>
+    <label class="mobs-lbl">Selecione o fiscal</label>
+    <select class="obs" id="selectFiscalNova" style="padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--wh);font-family:inherit;font-size:14px;appearance:none;width:100%">
+      <option value="">-- Selecione um fiscal --</option>
+    </select>
+    <label class="mobs-lbl" style="margin-top:14px">Observacoes (opcional)</label>
+    <textarea class="obs" id="obsNovaInsp" placeholder="Instrucoes para o fiscal..."></textarea>
+    <div class="macts">
+      <button class="bcnl" onclick="fechaMNovaInsp()">Cancelar</button>
+      <button class="bsav" id="btnNovaInsp" onclick="confirmNovaInsp()">Solicitar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, collection, getDocs, addDoc,
+  updateDoc, deleteDoc, query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
-    authDomain: "anomalias-stcgyn.firebaseapp.com",
-    projectId: "anomalias-stcgyn",
-    storageBucket: "anomalias-stcgyn.firebasestorage.app",
-    messagingSenderId: "247707729519",
-    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
-  };
+const _cfg = {
+  apiKey:"AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
+  authDomain:"anomalias-stcgyn.firebaseapp.com",
+  projectId:"anomalias-stcgyn",
+  storageBucket:"anomalias-stcgyn.firebasestorage.app",
+  messagingSenderId:"247707729519",
+  appId:"1:247707729519:web:c3dcaf6d9e707fee59979a"
+};
+const app  = getApps().length ? getApp() : initializeApp(_cfg);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth  = getAuth(app);
-  const db    = getFirestore(app);
+// ---- estado global ----
+let cUser   = null;   // {uid, nome, perfil}
+let cPerf   = null;   // 'admin' | 'fiscal' | 'equipe'
+let dados   = [];     // array de inspecoes/anomalias carregadas
+let filtro  = 'todos';
+let idConc  = null;
+let idCanc  = null;
+let pronto  = false;  // flag: auth ja resolveu
 
-  // ── estado global ──
-  let currentUser = null;
+// ---- auth ----
+const authTimer = setTimeout(() => { if (!pronto) location.href = 'index.html'; }, 8000);
 
-  // ── Cloudinary: transforma URL original em versão comprimida ──
-  // salvo: w_1200,q_75,f_auto  (≈ 100-200KB para foto de campo)
-  // thumb: w_400,q_65,f_auto   (miniatura para popup/card)
-  function cldSave(url)  { return url ? url.replace('/upload/', '/upload/w_1200,q_75,f_auto/') : url; }
-  function cldThumb(url) { return url ? url.replace('/upload/', '/upload/w_400,q_65,f_auto/')  : url; }
-  let currentPerfil = null;
-  let currentCircuitoId = null;
-  let currentTrafoNome = null;
-  let currentInspecaoId = null; // ID da inspeção ativa (vinda de pendencias)
-  let anomaliaMarkers = [];
-  let currentAnomaliaPos = null;
-  let currentAnomaliaPostes = null;
-  let selectedTipo = null;
-  let fotoFile = null;
-  let programarAnomaliaId = null;
+onAuthStateChanged(auth, async (user) => {
+  clearTimeout(authTimer);
+  if (!user) { location.href = 'index.html'; return; }
+  if (pronto) return;
+  pronto = true;
 
-  // ── mapa — inicializa após DOM completamente pintado ──
-  let map;
-  function initMap() {
-    map = L.map('map', { zoomControl: false }).setView([-16.68, -49.25], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap', maxZoom: 22
-    }).addTo(map);
-    L.control.zoom({ position: 'topright' }).addTo(map);
-    setTimeout(() => map.invalidateSize(), 200);
-    window.addEventListener('resize', () => map.invalidateSize());
-  }
-  // garante que o mapa só inicia quando o CSS já foi aplicado
-  if (document.readyState === 'complete') {
-    initMap();
-  } else {
-    window.addEventListener('load', initMap);
-  }
-
-  // ── ícones ──
-  const iconPoste = L.divIcon({
-    className: '', iconSize: [14,14], iconAnchor: [7,7],
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:#1a56c4;border:2px solid #00aaff;box-shadow:0 0 6px rgba(0,170,255,0.5)"></div>`
-  });
-  const iconTrafo = L.divIcon({
-    className: '', iconSize: [18,18], iconAnchor: [9,9],
-    html: `<div style="width:18px;height:18px;border-radius:50%;background:#7c3fc0;border:2px solid #bf7fff;box-shadow:0 0 8px rgba(124,63,192,0.6)"></div>`
-  });
-  const iconPoda = L.divIcon({
-    className: '', iconSize: [28,28], iconAnchor: [14,14],
-    html: `<div style="width:28px;height:28px;border-radius:50%;background:#ffb300;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12"/><path d="M12 12C12 12 7 9 7 5a5 5 0 0 1 10 0c0 4-5 7-5 7z"/><path d="M12 12C12 12 9 8 6 9s-2 5 1 6"/><path d="M12 12C12 12 15 8 18 9s2 5-1 6"/></svg></div>`
-  });
-  const iconEspacador = L.divIcon({
-    className: '', iconSize: [28,28], iconAnchor: [14,14],
-    html: `<div style="width:28px;height:28px;border-radius:50%;background:#00aaff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.4)">⊕</div>`
-  });
-  const iconMux = L.divIcon({
-    className: '', iconSize: [28,28], iconAnchor: [14,14],
-    html: `<div style="width:28px;height:28px;border-radius:50%;background:#7c3fc0;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>`
-  });
-
-  // ── auth ──
-  onAuthStateChanged(auth, async user => {
-    if (!user) { window.location.href = 'index.html'; return; }
+  try {
     const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
-    const data = snap.data();
-    currentUser   = { uid: user.uid, ...data };
-    currentPerfil = data.perfil;
-
-    // UI
-    document.getElementById('avatarEl').textContent  = data.nome.charAt(0).toUpperCase();
-    document.getElementById('unameEl').textContent   = data.nome.split(' ')[0];
-    document.getElementById('uperfilEl').textContent = data.perfil;
-
-    setupNav(data.perfil);
-    await loadCircuitos();
-    await loadPendenciasBadge();
-  });
-
-  // ── nav ──
-  function setupNav(perfil) {
-    sessionStorage.setItem('userPerfil', perfil);
-    if (perfil === 'fiscal' || perfil === 'admin') {
-      document.getElementById('nav-anomalias').classList.remove('hidden');
-      document.getElementById('nav-pendencias').classList.remove('hidden');
+    if (!snap.exists()) {
+      await signOut(auth);
+      sessionStorage.removeItem('userPerfil');
+      location.href = 'index.html';
+      return;
     }
-    if (perfil === 'admin') {
-      document.getElementById('nav-dashboard').classList.remove('hidden');
-      document.getElementById('nav-circuitos').classList.remove('hidden');
-    }
-    if (perfil === 'fiscal') {
-      document.getElementById('fabAnomalias').classList.remove('hidden');
-    }
+    const d = snap.data();
+    cUser = { uid: user.uid, nome: d.nome || '', perfil: d.perfil || '' };
+    cPerf = d.perfil;
+    sessionStorage.setItem('userPerfil', cPerf);
+    document.getElementById('avatarEl').textContent = (d.nome||'?')[0].toUpperCase();
+    setupUI();
+    await carregar();
+  } catch(e) {
+    console.error('init error', e);
+    showErr('Erro ao carregar. Recarregue a pagina.');
   }
+});
 
-  window.navTo = function(page, el) {
-    window.location.href = page;
-  };
+window.doLogout = async () => {
+  await signOut(auth);
+  sessionStorage.removeItem('userPerfil');
+  location.href = 'index.html';
+};
 
-  window.logout = async function() {
-    await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html';
-  };
+// ---- setup por perfil ----
+function setupUI() {
+  const sub = document.getElementById('pageSub');
+  const fw  = document.getElementById('filtrosWrap');
+  const nd  = document.getElementById('ni-dash');
+  const nc  = document.getElementById('ni-circ');
 
-  // ── carregar circuitos do Firestore ──
-  let todosCircuitos = []; // cache local para busca instantânea
+  if (cPerf === 'admin') {
+    sub.textContent = 'Todas as inspecoes delegadas';
+    fw.classList.remove('hidden');
+    if (nd) nd.classList.remove('hidden');
+    if (nc) nc.classList.remove('hidden');
+  } else if (cPerf === 'equipe') {
+    sub.textContent = 'Seus servicos programados';
+  } else {
+    sub.textContent = 'Suas inspecoes pendentes';
+  }
+}
 
-  async function loadCircuitos() {
-    // equipe: só vê circuitos que têm anomalia programada para ela
-    if (currentPerfil === 'equipe') {
-      const anomSnap = await getDocs(
-        query(collection(db, 'anomalias'),
-          where('equipeId', '==', currentUser.uid),
-          where('status', '==', 'programado'))
-      );
-      const idsComPendencia = [...new Set(anomSnap.docs.map(d => d.data().circuitoId).filter(Boolean))];
-      todosCircuitos = [];
-      for (const id of idsComPendencia) {
-        const cSnap = await getDoc(doc(db, 'circuitos', id));
-        if (cSnap.exists()) {
-          const d = cSnap.data();
-          todosCircuitos.push({ id, nome: d.nome, postes: d.postes, clientes: d.clientes });
-        }
-      }
+// ---- carregar dados do Firestore ----
+async function carregar() {
+  showSk();
+  try {
+    if (cPerf === 'equipe') {
+      const snap = await getDocs(query(
+        collection(db, 'anomalias'),
+        where('equipeId', '==', cUser.uid),
+        where('status',   '==', 'programado')
+      ));
+      dados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updSum(dados.length, dados.length, 0);
+      renderEquipe();
     } else {
-      const snap = await getDocs(collection(db, 'circuitos'));
-      // só metadados — htmlContent só é carregado no loadCircuitById
-      todosCircuitos = snap.docs.map(d => {
-        const data = d.data();
-        return { id: d.id, nome: data.nome, postes: data.postes, clientes: data.clientes };
+      const q = cPerf === 'admin'
+        ? collection(db, 'inspecoes')
+        : query(collection(db, 'inspecoes'), where('fiscalId', '==', cUser.uid));
+      const snap = await getDocs(q);
+      dados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const tot  = dados.length;
+      const pend = dados.filter(x => x.status === 'pendente').length;
+      // carrega anomalias agrupadas por circuito para exibir no historico
+    try {
+      const snapAnom = await getDocs(collection(db, 'anomalias'));
+      const byCirc = {};
+      snapAnom.forEach(d => {
+        const a = { id: d.id, ...d.data() };
+        if (!byCirc[a.circuitoId]) byCirc[a.circuitoId] = [];
+        byCirc[a.circuitoId].push(a);
       });
-    }
+      window._anomaliasPorCircuito = byCirc;
+    } catch(_) { window._anomaliasPorCircuito = {}; }
 
-    renderDropdown('');
-
-    // se veio de outra tela via sessionStorage, carrega automaticamente
-    const presel = sessionStorage.getItem('circuitoSelecionado');
-    const preInsp = sessionStorage.getItem('inspecaoAtiva');
-    if (preInsp) { currentInspecaoId = preInsp; sessionStorage.removeItem('inspecaoAtiva'); }
-    if (presel) {
-      sessionStorage.removeItem('circuitoSelecionado');
-      const circ = todosCircuitos.find(c => c.id === presel);
-      if (circ) {
-        document.getElementById('circuitInput').value = circ.nome || circ.id;
-        toggleClearBtn();
-        await loadCircuitById(presel);
-      }
+    const conc = dados.filter(x => x.status === 'concluido').length;
+      updSum(tot, pend, conc);
+      renderLista();
     }
+  } catch(e) {
+    console.error('carregar error', e);
+    showErr('Erro ao buscar dados. Tente recarregar.');
   }
+}
 
-  // ── renderiza o dropdown com filtro de texto ──
-  function renderDropdown(filtro) {
-    const dd = document.getElementById('circuitDropdown');
-    const termo = filtro.toLowerCase().trim();
-    const lista = termo
-      ? todosCircuitos.filter(c => (c.nome || c.id).toLowerCase().includes(termo))
-      : todosCircuitos;
+function updSum(tot, pend, conc) {
+  document.getElementById('sTotal').textContent = tot;
+  document.getElementById('sPend').textContent  = pend;
+  document.getElementById('sConc').textContent  = conc;
+}
 
-    if (!lista.length) {
-      dd.innerHTML = '<div class="circuit-opt" style="color:var(--eq-gray)">Nenhum resultado</div>';
-    } else {
-      dd.innerHTML = lista.map(c => {
-        const nome = c.nome || c.id;
-        const highlighted = termo
-          ? nome.replace(new RegExp(`(${termo})`, 'gi'), '<span class="match">$1</span>')
-          : nome;
-        return `<div class="circuit-opt" onclick="selecionarCircuito('${c.id}','${nome}')">${highlighted}</div>`;
-      }).join('');
-    }
+// ---- render equipe (anomalias programadas) ----
+function renderEquipe() {
+  const el = document.getElementById('lista');
+  document.getElementById('cntPill').textContent = dados.length;
+  document.getElementById('secTtl').textContent  = 'Servicos programados';
+  if (!dados.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">ok</div><p>Nenhum servico programado para voce.</p></div>';
+    return;
   }
-
-  window.filtrarCircuitos = function() {
-    const v = document.getElementById('circuitInput').value;
-    renderDropdown(v);
-    document.getElementById('circuitDropdown').classList.add('open');
-    if (!v) {
-      currentCircuitoId = null;
-      map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
-      anomaliaMarkers = [];
-      document.getElementById('trafoCard').classList.add('hidden');
-      document.getElementById('trafoDecoWrap').style.display = 'none';
-      document.getElementById('trafoDecoBadge').style.display = 'none';
-      reposicionarFAB();
-    }
-  };
-
-  window.toggleClearBtn = function() {
-    const v = document.getElementById('circuitInput').value;
-    document.getElementById('circuitWrap').classList.toggle('has-value', v.length > 0);
-  };
-
-  window.limparBusca = function() {
-    const origem = sessionStorage.getItem('mapaOrigem');
-    sessionStorage.removeItem('mapaOrigem');
-
-    if (origem === 'circuitos') {
-      window.location.href = 'circuitos.html';
-      return;
-    }
-    if (origem === 'pendencias') {
-      window.location.href = 'pendencias.html';
-      return;
-    }
-
-    const input = document.getElementById('circuitInput');
-    input.value = '';
-    document.getElementById('circuitWrap').classList.remove('has-value');
-    document.getElementById('circuitDropdown').classList.remove('open');
-    currentCircuitoId = null;
-    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
-    anomaliaMarkers = [];
-    document.getElementById('trafoCard').classList.add('hidden');
-      reposicionarFAB();
-    input.focus();
-  };
-
-  window.abrirDropdown = function() {
-    renderDropdown(document.getElementById('circuitInput').value);
-    document.getElementById('circuitDropdown').classList.add('open');
-  };
-
-  window.selecionarCircuito = async function(id, nome) {
-    document.getElementById('circuitInput').value = nome;
-    document.getElementById('circuitDropdown').classList.remove('open');
-    toggleClearBtn();
-    await loadCircuitById(id);
-  };
-
-  // fecha dropdown ao clicar fora
-  document.addEventListener('click', e => {
-    if (!document.getElementById('circuitWrap').contains(e.target)) {
-      document.getElementById('circuitDropdown').classList.remove('open');
-    }
+  let h = '';
+  dados.forEach(function(a) {
+    const dt  = ts(a.criadoEm);
+    const tl  = a.tipo === 'poda' ? 'Poda' : a.tipo === 'mux' ? 'Mux' : 'Espacador';
+    const cid = safe(a.circuitoId);
+    h += '<div class="card pendente" data-id="' + cid + '" onclick="goMapaBtn(this)">'
+       + '<div class="ctop"><div class="cnome">' + (a.circuitoId||'-') + '</div>'
+       + '<span class="spill pendente">' + tl + '</span></div>'
+       + '<div class="cmeta">'
+       + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Endereco: <span>' + (a.endereco||'-') + '</span></div>'
+       + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Programado: <span>' + dt + '</span></div>'
+       + '</div></div>';
   });
+  el.innerHTML = h;
+}
 
-  // ── carregar circuito selecionado (pelo select) ──
-  window.loadCircuit = async function() {
-    const id = document.getElementById('circuitSelect')?.value;
-    if (id) await loadCircuitById(id);
-  };
+// ---- render fiscal/admin (inspecoes) ----
+function renderLista() {
+  const el = document.getElementById('lista');
+  let itens = dados.slice();
 
-  async function loadCircuitById(id) {
-    currentCircuitoId = id;
-    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
-    anomaliaMarkers = [];
-    document.getElementById('trafoCard').classList.add('hidden');
-      reposicionarFAB();
-    showToast('Carregando circuito…');
+  if (cPerf === 'fiscal') {
+    itens = itens.filter(function(x) { return x.status === 'pendente'; });
+  } else if (filtro !== 'todos') {
+    itens = itens.filter(function(x) { return x.status === filtro; });
+  }
 
-    const snap = await getDoc(doc(db, 'circuitos', id));
-    if (!snap.exists()) return showToast('Circuito não encontrado.', true);
-    const data = snap.data();
+  document.getElementById('cntPill').textContent = itens.length;
+  document.getElementById('secTtl').textContent  =
+    cPerf === 'fiscal'     ? 'Inspecoes pendentes' :
+    filtro === 'pendente'  ? 'Inspecoes pendentes' :
+    filtro === 'concluido' ? 'Inspecoes concluidas' : 'Todas as inspecoes';
 
-    // yield para não travar a UI antes de renderizar
-    await new Promise(r => setTimeout(r, 0));
+  if (!itens.length) {
+    const msg = cPerf === 'fiscal' ? 'Nenhuma inspecao pendente. Tudo em dia!' : 'Nenhuma inspecao encontrada.';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">ok</div><p>' + msg + '</p></div>';
+    return;
+  }
 
-    // ── suporte a 3 formatos ──
-    // 1. geodata (novo — JSON extraído, sem HTML)
-    // 2. htmlContent legado (Firestore direto)
-    // 3. htmlUrl legado (Storage — não mais usado, mas compatível)
-    let postesData = null, conexoesData = null, trafoInfo = null;
+  let h = '';
+  itens.forEach(function(insp) {
+    const delObj  = insp.delegadoEm && insp.delegadoEm.toDate ? insp.delegadoEm.toDate() : null;
+    const dias    = delObj ? Math.floor((Date.now() - delObj.getTime()) / 86400000) : null;
+    const dtStr   = delObj ? delObj.toLocaleDateString('pt-BR') : '-';
+    const urgente = dias !== null && dias > 7 && insp.status === 'pendente';
+    const nome    = insp.circuitoNome || insp.circuitoId || '-';
+    const stLbl   = insp.status === 'pendente' ? 'Pendente' : 'Concluido';
+    const cid     = safe(insp.circuitoId);
+    const iid     = safe(insp.id);
+    const iNome   = safe(insp.circuitoNome || '');
 
-    if (data.geodata) {
-      // formato novo: dados já extraídos
-      postesData   = (data.geodata.postes   || []).map(p => ({
-        id: p.id, lat: p.lat, lng: p.lng,
-        esforco: p.e || '', temTransformador: p.t === 1,
-        ucs: (p.ucs || []).map(u => ({
-          uc: u.uc, medidor: u.m || '',
-          nome: u.n || '', fase: u.f || '',
-          pot: u.p || '0', potgd: u.g || '0'
-        }))
-      }));
-      conexoesData = (data.geodata.conexoes || []).map(c => ({
-        de: c.d, para: c.p, fase: c.f, condutor: c.c,
-        trecho: c.t, comprimento: c.l, tipo: c.tp
-      }));
-      trafoInfo = { potencia: data.potencia || null, clientes: data.clientes || null };
-    } else {
-      // formato legado: precisa do HTML
-      let htmlContent = data.htmlContent || null;
-      if (!htmlContent && data.htmlUrl) {
-        try {
-          const resp = await fetch(data.htmlUrl);
-          htmlContent = await resp.text();
-        } catch(e) {
-          return showToast('Erro ao carregar circuito.', true);
+    let dBadge = '';
+    if (dias !== null && insp.status === 'pendente') {
+      const cls = dias <= 3 ? 'ok' : dias <= 7 ? 'alerta' : 'critico';
+      const lbl = dias === 0 ? 'Hoje' : dias + 'd em aberto';
+      dBadge = '<span class="dbadge ' + cls + '">' + lbl + '</span>';
+    }
+
+    let fiscMeta = '';
+    if (cPerf === 'admin') {
+      fiscMeta = '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Fiscal: <span>' + (insp.fiscalNome || '-') + '</span></div>';
+    }
+
+    let btnAcao = '';
+    if (insp.status === 'pendente' && cPerf === 'fiscal') {
+      btnAcao = '<button class="bsm b-suc" data-id="' + iid + '" data-nome="' + iNome.replace(/"/g,"&quot;") + '" onclick="abreMConcBtn(this)">'
+              + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>';
+    } else if (insp.status === 'pendente' && cPerf === 'admin') {
+      btnAcao = '<button class="bsm b-dan" data-id="' + iid + '" data-nome="' + iNome.replace(/"/g,"&quot;") + '" onclick="aMCancBtn(this)">'
+              + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancelar</button>';
+    } else if (insp.status === 'concluido' && cPerf === 'admin') {
+      btnAcao = '<button class="bsm b-out" data-id="' + cid + '" data-nome="' + iNome.replace(/"/g,"&quot;") + '" onclick="abreNovaInspBtn(this)" style="border-color:rgba(0,170,255,.4);color:var(--cy)">'
+              + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova inspecao</button>';
+    }
+
+    // ── Easy Trafo + Anel + Clientes Fora do Padrão (visível sempre que preenchido) ──
+    let inspExtra = '';
+    if (insp.easyTrafo !== undefined || insp.fechadoEmAnel !== undefined) {
+      inspExtra += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
+        + '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Informações do transformador</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
+      if (insp.easyTrafo !== undefined) {
+        const etOk  = insp.easyTrafo === true;
+        const etClr = etOk ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)';
+        const etBrd = etOk ? 'rgba(0,229,160,.3)' : 'rgba(255,77,109,.3)';
+        const etTxt = etOk ? 'var(--su)' : 'var(--er)';
+        const etLbl = etOk ? '✓ Easy Trafo' : '✗ Sem Easy Trafo';
+        inspExtra += '<span style="padding:3px 10px;border-radius:12px;background:' + etClr + ';color:' + etTxt + ';border:1px solid ' + etBrd + ';font-size:12px;font-weight:600">' + etLbl + '</span>';
+        if (etOk && insp.easyTrafoFotoUrl) {
+          inspExtra += '<a href="' + insp.easyTrafoFotoUrl + '" target="_blank" onclick="event.stopPropagation()" '
+            + 'style="padding:3px 10px;border-radius:12px;background:rgba(0,170,255,.1);color:var(--cy);border:1px solid rgba(0,170,255,.25);font-size:12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px">'
+            + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Ver foto</a>';
         }
       }
-      if (!htmlContent) return showToast('Circuito sem dados.', true);
-      postesData   = extrairPostes(htmlContent);
-      conexoesData = extrairConexoes(htmlContent);
-      trafoInfo    = extrairInfoTrafo(htmlContent);
+      if (insp.fechadoEmAnel !== undefined) {
+        const anOk  = insp.fechadoEmAnel === true;
+        const anClr = anOk ? 'rgba(0,229,160,.12)' : 'rgba(255,77,109,.12)';
+        const anBrd = anOk ? 'rgba(0,229,160,.3)' : 'rgba(255,77,109,.3)';
+        const anTxt = anOk ? 'var(--su)' : 'var(--er)';
+        const anLbl = anOk ? '✓ Fechado em anel' : '✗ Não em anel';
+        inspExtra += '<span style="padding:3px 10px;border-radius:12px;background:' + anClr + ';color:' + anTxt + ';border:1px solid ' + anBrd + ';font-size:12px;font-weight:600">' + anLbl + '</span>';
+      }
+      inspExtra += '</div>';
+      if (insp.anelObservacao) {
+        inspExtra += '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Observação — Anel</div>'
+          + '<div style="font-size:12px;color:var(--wh);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;line-height:1.5;margin-bottom:6px">' + insp.anelObservacao + '</div>';
+      }
+      inspExtra += '</div>';
     }
 
-    const trafoData = renderCircuitoData(postesData, conexoesData, trafoInfo, id, data.nome);
-    await loadAnomaliasNoMapa(id);
+    // ── Clientes fora do padrão (anomalias tipo 'fora') — colapsável ──
+    const anomInspAll = (window._anomaliasPorCircuito || {})[insp.circuitoId] || [];
+    const foraList = anomInspAll.filter(a => a.tipo === 'fora');
+    if (foraList.length > 0) {
+      const foraId = 'fora-' + iid;
+      inspExtra += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
+        // header colapsável
+        + '<button onclick="event.stopPropagation();toggleForaList(&quot;' + foraId + '&quot;,this)" '
+        + 'style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;padding:0;margin-bottom:0">'
+        + '<span style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px">Clientes fora do padrão</span>'
+        + '<span style="display:flex;align-items:center;gap:6px">'
+        + '<span style="padding:2px 8px;border-radius:10px;background:rgba(255,77,109,.15);color:var(--er);border:1px solid rgba(255,77,109,.3);font-size:11px;font-weight:700">' + foraList.length + '</span>'
+        + '<svg id="chevron-' + foraId + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gr)" stroke-width="2" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</span></button>'
+        // lista (começa colapsada)
+        + '<div id="' + foraId + '" style="display:none;margin-top:8px">';
 
-    // decômetro — assíncrono, depois do mapa já ter carregado
-    if (trafoData && data.nome) {
-      try {
-        const decoDiv = document.getElementById('trafoDecoBadge');
-        decoDiv.style.display = 'none';
-        decoDiv.innerHTML = '';
-        const decoSnap = await getDocs(query(collection(db,'decometro'), where('equipamento','==', data.nome)));
-        if (!decoSnap.empty) {
-          const all = decoSnap.docs[0].data().ocorrencias || [];
-          const hoje = new Date();
-          // 3 meses fechados + mês atual (até hoje)
-          const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
-          const ini3m = new Date(hoje.getFullYear(), hoje.getMonth()-3, 1, 0, 0, 0);
-          const parseDt = s => {
-            if (!s) return null;
-            const [d,t] = String(s).split(' ');
-            const [dd,mm,yy] = d.split('/');
-            return new Date(`${yy}-${mm}-${dd}T${t||'00:00:00'}`);
-          };
-          const ocs3m = all.filter(o => { const dt=parseDt(o.inicio); return dt&&dt>=ini3m&&dt<=fim3m; });
-          const freq = ocs3m.length;
-          const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
-          let cls, label;
-          if (!freq) { cls='ok'; label='0 desarmes (3m+atual)'; }
-          else { cls=chi>500?'critico':chi>100?'alerta':'ok'; label=freq+' desarme'+(freq>1?'s':'')+' · CHI '+chi.toFixed(1); }
-          const chiCor = cls==='critico'?'#ff4d6d':cls==='alerta'?'#ffb300':'#00e5a0';
-          // Monta resumo das ocorrências por tipo de causa
-          const causasUnicas = ocs3m.map(function(o){return o.causa||'—';})
-            .filter(function(v,i,a){return a.indexOf(v)===i;}).slice(0,3);
-          const ocs3mOrdenado = ocs3m.slice().sort(function(a,b){
-            const pa = parseDt(a.inicio), pb = parseDt(b.inicio);
-            return (pa||0) - (pb||0);
-          });
-          const linhasOcs = freq > 0 ? ocs3mOrdenado.map(function(o){
-            const dtStr = o.inicio ? String(o.inicio).split(' ')[0] : '—';
-            const chiO  = parseFloat(o.chi) || 0;
-            const corO  = chiO > 500 ? '#ff4d6d' : chiO > 100 ? '#ffb300' : '#8a9bbf';
-            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
-              + '<span style="font-size:11px;color:#8a9bbf">' + dtStr + ' — ' + (o.causa||'—') + '</span>'
-              + '<span style="font-size:11px;font-weight:700;color:'+corO+'">CHI '+chiO.toFixed(1)+'</span>'
-              + '</div>';
-          }).join('') : '';
-          const maisLabel = '';
-
-          decoDiv.innerHTML = ''
-            + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — 3 meses + atual</div>'
-            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:' + (freq>0?'8':'0') + 'px">'
-            + '<span class="deco-badge '+cls+'" style="font-size:12px;padding:4px 12px">'+label+'</span>'
-            + (freq>0 ? '<span style="font-size:11px;color:'+chiCor+';font-weight:700">CHI '+chi.toFixed(1)+'</span>' : '')
-            + '</div>'
-            + (freq>0 ? linhasOcs + maisLabel : '')
+      foraList.forEach(function(a, idx) {
+        inspExtra += '<div style="background:rgba(255,179,0,.05);border:1px solid rgba(255,179,0,.18);border-radius:8px;padding:9px 10px;margin-bottom:6px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+          + '<div style="flex:1;min-width:0">';
+        if (a.foraUC || a.foraMedidor) {
+          inspExtra += '<div style="font-size:12px;color:var(--wh);font-weight:600;margin-bottom:3px">'
+            + (a.foraUC ? 'UC ' + a.foraUC : '')
+            + (a.foraMedidor ? '<span style="color:var(--gr);font-weight:400"> — ' + a.foraMedidor + '</span>' : '')
             + '</div>';
-          // mostra o wrapper (botão colapsável), começa fechado
-          document.getElementById('trafoDecoWrap').style.display = 'block';
-          document.getElementById('trafoDecoBadge').style.display = 'none'; // começa colapsado
-          // resumo no botão: frequência + CHI total
-          const resumoBtn = freq > 0
-            ? freq + ' desarme' + (freq > 1 ? 's' : '') + ' · CHI ' + chi.toFixed(1)
-            : '0 desarmes';
-          const corResumo = cls === 'critico' ? '#ff4d6d' : cls === 'alerta' ? '#ffb300' : '#00e5a0';
-          document.getElementById('trafoDecoBtnResume').textContent = resumoBtn;
-          document.getElementById('trafoDecoBtnResume').style.color = corResumo;
-        } else {
-          // sem dados: mostra wrap com botão indicando sem dados
-          document.getElementById('trafoDecoWrap').style.display = 'block';
-          document.getElementById('trafoDecoBtnResume').textContent = 'sem dados';
-          document.getElementById('trafoDecoBtnResume').style.color = '#8a9bbf';
         }
-      } catch(e) { console.warn('Deco load:', e); }
-    }
-  }
-
-  // ── renderizar postes/cabos a partir de dados já extraídos ──
-  function renderCircuitoData(postesData, conexoesData, trafoInfo, circuitoId, circuitoNome) {
-    try {
-      if (!postesData.length) {
-        showToast('Nenhum poste encontrado no circuito.', true);
-        return;
-      }
-      const faseCores = { 'ABCN':'#2e86de','AN':'#ff6b6b','BN':'#ffd93d','CN':'#6bcb77','N':'#aaa','ABC':'#2e86de' };
-
-      conexoesData.forEach(c => {
-        const o = postesData.find(p => p.id === c.de);
-        const d = postesData.find(p => p.id === c.para);
-        if (!o || !d) return;
-        const cor = faseCores[c.fase] || '#666';
-        L.polyline([[o.lat,o.lng],[d.lat,d.lng]], { color: cor, weight: 3, opacity: .85 })
-          .bindPopup(`<div class="popup-title">Trecho</div>
-            <div class="popup-row">Fase: <span>${c.fase}</span></div>
-            <div class="popup-row">Condutor: <span>${c.condutor}</span></div>
-            <div class="popup-row">Comprimento: <span>${c.comprimento}m</span></div>
-            <div class="popup-row">Tipo: <span>${c.tipo}</span></div>`)
-          .addTo(map);
+        if (a.foraObs) {
+          inspExtra += '<div style="font-size:12px;color:var(--gr);line-height:1.4">' + a.foraObs + '</div>';
+        }
+        inspExtra += '</div>';
+        // ícone de foto (se houver)
+        if (a.fotoUrl) {
+          inspExtra += '<a href="' + a.fotoUrl + '" target="_blank" onclick="event.stopPropagation()" '
+            + 'title="Ver foto" style="flex-shrink:0;width:32px;height:32px;border-radius:8px;background:rgba(0,170,255,.12);border:1px solid rgba(0,170,255,.25);display:flex;align-items:center;justify-content:center;text-decoration:none">'
+            + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cy)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></a>';
+        }
+        inspExtra += '</div>';
       });
 
-      let trafoData = null;
-      postesData.forEach(p => {
-        const icon = p.temTransformador ? iconTrafo : iconPoste;
-        const m = L.marker([p.lat, p.lng], { icon }).addTo(map);
-        let html;
-        if (p.temTransformador) {
-          const potencia = (trafoInfo && trafoInfo.potencia) || p.potencia || '—';
-          const clientes = (trafoInfo && trafoInfo.clientes) || p.clientes || p.ucs?.length || '—';
-          const gnNome   = circuitoNome || circuitoId;
-          html = `<div class="popup-title">⚡ ${gnNome}</div>
-            <div class="popup-row">Poste: <span>${p.id}</span></div>
-            <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>
-            <div class="popup-row">Potência: <span>${potencia} kVA</span></div>
-            <div class="popup-row">Clientes: <span>${clientes}</span></div>
-`;
-          trafoData = { ...p, potencia, clientes: String(clientes), gnNome };
-        } else {
-          html = `<div class="popup-title">📍 Poste: ${p.id}</div>
-            <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>`;
-          if (p.ucs && p.ucs.length > 0) {
-            html += `<div class="popup-row">UCs: <span>${p.ucs.length}</span></div>`;
-          }
-        }
-        m.bindPopup(html);
-      });
-
-      // card transformador
-      // card transformador
-      if (trafoData) {
-        currentTrafoNome = circuitoNome || circuitoId;
-        document.getElementById('trafoId').textContent       = currentTrafoNome;
-        document.getElementById('trafoCircuito').textContent = `Poste: ${trafoData.id}`;
-        document.getElementById('trafoPotencia').textContent = trafoData.potencia;
-        document.getElementById('trafoClientes').textContent = trafoData.clientes;
-        document.getElementById('trafoCard').classList.remove('hidden');
-        reposicionarFAB();
-        // guarda coords para botoes de rota do card
-        const rb = document.getElementById('trafoRotaBtns');
-        rb.style.display = 'flex';
-        rb.dataset.lat = trafoData.lat;
-        rb.dataset.lng = trafoData.lng;
-        // botões de inspeção (easy trafo / anel) — apenas fiscal com inspeção ativa
-        atualizarBotoesInspTrafo();
-      }
-
-      // zoom no circuito
-      const bounds = L.latLngBounds(postesData.map(p => [p.lat, p.lng]));
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 19 });
-
-      // armazena para uso na anomalia
-      window._postesAtivos = postesData;
-      window._conexoesAtivas = conexoesData;
-
-      return trafoData; // retorna para loadCircuitById usar
-
-    } catch(err) {
-      showToast('Erro ao renderizar circuito.', true);
-      console.error(err);
-    }
-  }
-
-  // ── anomalias no mapa ──
-  async function loadAnomaliasNoMapa(circuitoId) {
-    let q;
-    if (currentPerfil === 'equipe') {
-      q = query(collection(db, 'anomalias'),
-        where('circuitoId', '==', circuitoId),
-        where('equipeId', '==', currentUser.uid),
-        where('status', '==', 'programado'));
-    } else {
-      q = query(collection(db, 'anomalias'), where('circuitoId', '==', circuitoId));
+      inspExtra += '</div></div>';
     }
 
-    const snap = await getDocs(q);
-    snap.forEach(d => plotarAnomalia(d.id, d.data()));
-  }
+    let concInfo = '';
+    if (insp.status === 'concluido') {
+      const dtC  = insp.concluidoEm && insp.concluidoEm.toDate ? insp.concluidoEm.toDate().toLocaleDateString('pt-BR') : '-';
+      const obs  = insp.observacoes ? insp.observacoes : '';
+      const idsAnom = insp.anomaliasIds || [];
+      // contagem por tipo das anomalias desta inspecao (carregadas no carregar())
+      const anomInsp = (window._anomaliasPorCircuito || {})[insp.circuitoId] || [];
+      const nPoda  = anomInsp.filter(a => a.tipo === 'poda').length;
+      const nEsp   = anomInsp.filter(a => a.tipo === 'espacador').length;
+      const nMux   = anomInsp.filter(a => a.tipo === 'mux').length;
+      const nRamal = anomInsp.filter(a => a.tipo === 'ramal').length;
+      const nFora  = anomInsp.filter(a => a.tipo === 'fora').length;
+      const nPoste = anomInsp.filter(a => a.tipo === 'poste').length;
+      const temAnom = nPoda + nEsp + nMux + nRamal + nFora + nPoste > 0;
 
-  function plotarAnomalia(id, data) {
-    const icon = data.tipo === 'poda' ? iconPoda : data.tipo === 'mux' ? iconMux : iconEspacador;
-    const m = L.marker([data.lat, data.lng], { icon }).addTo(map);
-    m._anomaliaId = id;
-    anomaliaMarkers.push(m);
+      concInfo = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
+        + '<div class="mi" style="padding:0 0 6px 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span style="color:var(--su);font-size:12px;font-weight:600">Concluido em ' + dtC + '</span></div>';
 
-    const tipoLabel = { poda: '🌳 Poda', mux: '🔄 MBX', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', fora: '⚠️ Fora do Padrão', poste: '🪵 Sub. Poste' };
-    let html = `<div class="popup-title">Anomalia</div>
-      <span class="popup-badge ${data.tipo}">${tipoLabel[data.tipo] || data.tipo}</span><br>
-      <div class="popup-row">Endereço: <span>${data.endereco || '—'}</span></div>
-      <div class="popup-row">Entre postes: <span>${data.postes || '—'}</span></div>
-      ${data.quantidade ? `<div class="popup-row">Quantidade: <span>${data.quantidade}</span></div>` : ''}
-      <div class="popup-row">Status: <span>${data.status || 'pendente'}</span></div>
-      <div class="popup-row">Por: <span>${data.fiscalNome || '—'}</span></div>`;
-
-    if (data.textoOS && currentPerfil === 'admin') {
-      html += `<div style="margin:8px 0 4px;font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.6px">Texto OS</div>
-        <div style="
-          padding:8px 10px; background:rgba(0,170,255,0.06);
-          border:1px solid rgba(0,170,255,0.2); border-radius:8px;
-          font-size:12px; color:var(--eq-white); line-height:1.4;
-          margin-bottom:4px; user-select:all; cursor:text;
-        ">${data.textoOS}</div>
-        <button onclick="navigator.clipboard.writeText(this.dataset.texto).then(()=>showToast('Copiado!'))" data-texto="${(data.textoOS||'').replace(/"/g,'&quot;')}" style="
-          background:none; border:1px solid rgba(0,170,255,0.3); border-radius:6px;
-          padding:3px 8px; color:var(--eq-cyan); font-size:11px; cursor:pointer; margin-bottom:4px;
-        ">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar texto
-        </button>`;
-    }
-
-    if (data.fotoUrl) {
-      html += `<img class="popup-foto" src="${cldThumb(data.fotoUrl)}" alt="Foto"/>`;
-    }
-    if (data.fotoConcluidoUrl) {
-      html += `<div class="popup-row" style="margin-top:6px;color:var(--eq-success)">✓ Foto de conclusão:</div>
-        <img class="popup-foto" src="${cldThumb(data.fotoConcluidoUrl)}" alt="Foto conclusão"/>`;
-    }
-
-    // botões por perfil
-    if (currentPerfil === 'admin' && data.status === 'pendente') {
-      html += `<button class="popup-btn popup-btn-prog" onclick="openModalProgramar('${id}', '${data.tipo}', '${data.postes || ''}')">Programar para Equipe</button>`;
-    }
-    if (currentPerfil === 'equipe' && data.status === 'programado') {
-      html += `<div style="display:flex;gap:6px;margin-top:6px;">
-        <button class="popup-btn popup-btn-nav" style="flex:1" onclick="abrirNavegacao(${data.lat}, ${data.lng}, 'maps')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Maps
-        </button>
-        <button class="popup-btn popup-btn-nav" style="flex:1;background:linear-gradient(135deg,#1a3a8c,#0d2e6e)" onclick="abrirNavegacao(${data.lat}, ${data.lng}, 'waze')">
-          🗺 Waze
-        </button>
-      </div>
-      <button class="popup-btn popup-btn-conc" onclick="concluirServico('${id}')">Concluir Serviço</button>`;
-    }
-    // excluir — admin ou fiscal que apontou, nunca concluído
-    if (data.status !== 'concluido' &&
-        (currentPerfil === 'admin' || (currentPerfil === 'fiscal' && data.fiscalId === currentUser?.uid))) {
-      html += `<button class="popup-btn popup-btn-del" onclick="excluirAnomaliaDoMapa('${id}')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir anomalia
-      </button>`;
-    }
-
-    m.bindPopup(html, { maxWidth: 300 });
-  }
-
-  // ── abrir modal anomalia ──
-  window.openModalAnomalia = function() {
-    if (!currentCircuitoId) return showToast('Selecione um transformador primeiro.', true);
-    document.getElementById('modalAnomalia').classList.add('open');
-    selectedTipo = null;
-    fotoFile = null;
-    document.getElementById('fotoPreview').style.display = 'none';
-    document.getElementById('btnCameraAnomalia').classList.remove('selected');
-    document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
-    document.getElementById('btnSalvarAnomalia').disabled = true;
-    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste'].forEach(id => {
-      document.getElementById(id)?.classList.remove('selected');
-    });
-    document.getElementById('modalEndereco').textContent = 'Obtendo localização...';
-    document.getElementById('modalEndereco').classList.add('loading');
-    document.getElementById('modalCoords').textContent = '—';
-    document.getElementById('modalPostes').value = '';
-    document.getElementById('qtyValor').textContent = '1';
-    document.getElementById('qtyFieldWrap').style.display = 'block';
-    document.getElementById('textoOrdemWrap').style.display = 'none';
-    document.getElementById('textoOS').textContent = '';
-    if (document.getElementById('ramalFieldWrap')) document.getElementById('ramalFieldWrap').style.display = 'none';
-    if (document.getElementById('ramalMedidor')) document.getElementById('ramalMedidor').value = '';
-    if (document.getElementById('ramalUC'))  document.getElementById('ramalUC').value = '';
-    if (document.getElementById('ramalUCMsg')) document.getElementById('ramalUCMsg').textContent = '';
-    if (document.getElementById('foraFieldWrap')) document.getElementById('foraFieldWrap').style.display = 'none';
-    if (document.getElementById('foraMedidor')) document.getElementById('foraMedidor').value = '';
-    if (document.getElementById('foraUC'))  document.getElementById('foraUC').value = '';
-    if (document.getElementById('foraUCMsg')) document.getElementById('foraUCMsg').textContent = '';
-    if (document.getElementById('foraObs')) document.getElementById('foraObs').value = '';
-    if (document.getElementById('muxTodoWrap')) document.getElementById('muxTodoWrap').style.display = 'none';
-    window._muxTodo = false;
-    // reset label do campo postes
-    const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
-    if (postesLabel) postesLabel.textContent = 'Entre os postes';
-
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      currentAnomaliaPos = { lat, lng };
-      document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-      // postes mais próximos
-      if (window._postesAtivos) {
-        const sorted = [...window._postesAtivos].sort((a,b) => {
-          const da = Math.hypot(a.lat-lat, a.lng-lng);
-          const db2 = Math.hypot(b.lat-lat, b.lng-lng);
-          return da - db2;
-        });
-        currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
-        document.getElementById('modalPostes').value = currentAnomaliaPostes;
-        gerarTextoOS();
-      }
-
-      // geocode reverso
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-        const j = await r.json();
-        const end = j.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        document.getElementById('modalEndereco').textContent = end;
-        document.getElementById('modalEndereco').classList.remove('loading');
-        currentAnomaliaPos.endereco = end;
-      } catch {
-        document.getElementById('modalEndereco').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        document.getElementById('modalEndereco').classList.remove('loading');
-      }
-    }, () => {
-      document.getElementById('modalEndereco').textContent = 'Localização não disponível';
-      document.getElementById('modalEndereco').classList.remove('loading');
-    }, { enableHighAccuracy: true });
-  };
-
-  window.closeModalAnomalia = function() {
-    document.getElementById('modalAnomalia').classList.remove('open');
-  };
-
-  window.selectTipo = function(tipo) {
-    selectedTipo = tipo;
-    document.getElementById('tipoPoda').classList.toggle('selected', tipo === 'poda');
-    document.getElementById('tipoEspacador').classList.toggle('selected', tipo === 'espacador');
-    document.getElementById('tipoMux').classList.toggle('selected', tipo === 'mux');
-    document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
-    document.getElementById('tipoFora').classList.toggle('selected', tipo === 'fora');
-    document.getElementById('tipoPoste').classList.toggle('selected', tipo === 'poste');
-    // mux: mostra opção de circuito todo; reseta ao sair do mux
-    const muxWrap = document.getElementById('muxTodoWrap');
-    if (muxWrap) {
-      muxWrap.style.display = tipo === 'mux' ? 'block' : 'none';
-      if (tipo !== 'mux') {
-        window._muxTodo = false;
-        const chk = document.getElementById('muxTodoCheck');
-        if (chk) { chk.innerHTML = ''; chk.style.background = 'transparent'; }
-        const btn = document.getElementById('btnMuxTodo');
-        if (btn) { btn.style.background = 'rgba(181,123,238,.07)'; btn.style.borderColor = 'rgba(181,123,238,.3)'; btn.style.color = '#b57bee'; }
-      }
-    }
-    // ramal
-    const ramalWrap = document.getElementById('ramalFieldWrap');
-    if (ramalWrap) {
-      ramalWrap.style.display = tipo === 'ramal' ? 'block' : 'none';
-      if (tipo !== 'ramal') {
-        document.getElementById('ramalMedidor').value = '';
-        document.getElementById('ramalUC').value = '';
-        document.getElementById('ramalUCMsg').textContent = '';
-      }
-    }
-    // fora do padrão
-    const foraWrap = document.getElementById('foraFieldWrap');
-    if (foraWrap) {
-      foraWrap.style.display = tipo === 'fora' ? 'block' : 'none';
-      if (tipo !== 'fora') {
-        document.getElementById('foraMedidor').value = '';
-        document.getElementById('foraUC').value = '';
-        document.getElementById('foraUCMsg').textContent = '';
-        document.getElementById('foraObs').value = '';
-      }
-    }
-    // ramal e fora: quantidade sempre 1, esconde controle; poste: também 1
-    const qtyWrap = document.getElementById('qtyFieldWrap');
-    if (qtyWrap) {
-      if (tipo === 'ramal' || tipo === 'fora' || tipo === 'poste') {
-        document.getElementById('qtyValor').textContent = '1';
-        qtyWrap.style.display = 'none';
+      if (temAnom) {
+        concInfo += '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Anomalias encontradas</div>';
+        concInfo += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">';
+        if (nPoda) concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(255,179,0,.12);color:var(--wa);border:1px solid rgba(255,179,0,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M17 8C8 10 5.9 16.17 3.82 19.34a1 1 0 0 0 1.38 1.38C8.55 18.9 14.8 16 17 8z"/></svg>' + nPoda + ' poda' + (nPoda>1?'s':'') + '</span>';
+        if (nEsp)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(0,170,255,.12);color:var(--cy);border:1px solid rgba(0,170,255,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>' + nEsp + ' espacador' + (nEsp>1?'es':'') + '</span>';
+        if (nMux)   concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(124,63,192,.12);color:#b57bee;border:1px solid rgba(124,63,192,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' + nMux + ' trecho MBX</span>';
+        if (nRamal) concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(0,229,160,.12);color:var(--su);border:1px solid rgba(0,229,160,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' + nRamal + ' ramal' + (nRamal>1?'s':'') + '</span>';
+        if (nFora)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(255,77,109,.12);color:var(--er);border:1px solid rgba(255,77,109,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' + nFora + ' fora do padrão</span>';
+        if (nPoste) concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(180,120,60,.12);color:#c8864a;border:1px solid rgba(180,120,60,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg>' + nPoste + ' sub. poste' + (nPoste>1?'s':'') + '</span>';
+        concInfo += '</div>';
       } else {
-        qtyWrap.style.display = 'block';
+        concInfo += '<div style="font-size:12px;color:var(--gr);margin-bottom:8px">'
+          + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2" style="margin-right:4px;vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>'
+          + 'Nenhuma anomalia encontrada</div>';
       }
-    }
-    // label do campo postes: muda para "Poste a substituir" quando tipo=poste
-    const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
-    if (postesLabel) {
-      postesLabel.textContent = tipo === 'poste' ? 'Poste a substituir' : 'Entre os postes';
-    }
-    gerarTextoOS();
-    checkSalvarEnabled();
-  };
 
-  window.alterarQty = function(delta) {
-    const el = document.getElementById('qtyValor');
-    const atual = parseInt(el.textContent) || 1;
-    const novo = Math.max(1, Math.min(99, atual + delta));
-    el.textContent = novo;
-    gerarTextoOS();
-  };
-
-  // ── busca UC pelo número do medidor nos postes carregados ──
-  window.onMedidorInput = function() {
-    const med = document.getElementById('ramalMedidor').value.trim().toUpperCase();
-    const ucEl  = document.getElementById('ramalUC');
-    const msg   = document.getElementById('ramalUCMsg');
-    ucEl.value  = '';
-    if (!med) { msg.textContent = ''; gerarTextoOS(); return; }
-    // percorre todos os postes ativos buscando o medidor
-    const postes = window._postesAtivos || [];
-    let found = null;
-    // normaliza: remove hífen e espaços, uppercase
-    const medNorm = med.replace(/[-\s]/g, '');
-    for (const p of postes) {
-      const ucs = p.ucs || [];
-      for (const u of ucs) {
-        const mRaw  = String(u.medidor || u.m || '');
-        const mNorm = mRaw.replace(/[-\s]/g, '').toUpperCase();
-        if (mNorm === medNorm || mRaw.toUpperCase() === med) { found = u; break; }
+      if (obs) {
+        concInfo += '<div style="font-size:11px;color:var(--gr);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Observacao do fiscal</div>'
+          + '<div style="font-size:12px;color:var(--wh);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;line-height:1.5">' + obs + '</div>';
       }
-      if (found) break;
-    }
-    if (found) {
-      const ucVal = found.uc || found.u || found.codigo || '';
-      ucEl.value = ucVal;
-      msg.textContent = 'UC encontrada no circuito.';
-      msg.style.color = 'var(--eq-success, #00e5a0)';
-    } else {
-      const totalUcs = postes.reduce((acc, p) => acc + (p.ucs || []).length, 0);
-      if (totalUcs === 0) {
-        msg.textContent = 'Circuito sem dados de UC — re-suba o arquivo do circuito.';
-      } else {
-        msg.textContent = 'Medidor não encontrado no circuito.';
-      }
-      msg.style.color = 'var(--eq-warning, #ffb300)';
-    }
-    gerarTextoOS();
-  };
 
-  window.onPostesInput = function() {
-    currentAnomaliaPostes = document.getElementById('modalPostes').value.trim();
-    gerarTextoOS();
-  };
-
-  function gerarTextoOS() {
-    const isRamal   = selectedTipo === 'ramal';
-    const isFora    = selectedTipo === 'fora';
-    const isMuxTodo = selectedTipo === 'mux' && window._muxTodo;
-    const isPoste   = selectedTipo === 'poste';
-    // fora do padrão: sem texto automático
-    if (isFora) {
-      document.getElementById('textoOrdemWrap').style.display = 'none';
-      return;
-    }
-    if (!selectedTipo || (!currentAnomaliaPostes && !isRamal && !isMuxTodo)) {
-      document.getElementById('textoOrdemWrap').style.display = 'none';
-      return;
-    }
-    const qty    = parseInt(document.getElementById('qtyValor').textContent) || 1;
-    const trafo  = currentTrafoNome || currentCircuitoId || '—';
-    const postes = currentAnomaliaPostes;
-    let texto;
-    if (selectedTipo === 'poda') {
-      texto = trafo + ' - Realizar ' + qty + ' poda' + (qty > 1 ? 's' : '') + ' de arvore entre os postes ' + postes;
-    } else if (selectedTipo === 'mux') {
-      if (window._muxTodo) {
-        texto = trafo + ' - Realizar MBX (troca de cabo) em todo o circuito';
-      } else {
-        texto = trafo + ' - Realizar MBX (troca de cabo) em ' + qty + ' trecho' + (qty > 1 ? 's' : '') + ' entre os postes ' + postes;
-      }
-    } else if (selectedTipo === 'ramal') {
-      const med = document.getElementById('ramalMedidor')?.value.trim() || '';
-      const uc  = document.getElementById('ramalUC')?.value.trim() || '';
-      texto = (uc ? 'UC ' + uc : '—') + ' - Instalar e retirar o ramal do Medidor ' + (med || '—');
-    } else if (selectedTipo === 'poste') {
-      texto = trafo + ' - Substituir o poste ' + postes;
-    } else {
-      texto = trafo + ' - Instalar ' + qty + ' espacador' + (qty > 1 ? 'es' : '') + ' entre os postes ' + postes;
-    }
-    document.getElementById('textoOS').textContent = texto;
-    document.getElementById('textoOrdemWrap').style.display = 'block';
-  }
-
-  window.copiarTextoOS = function() {
-    const texto = document.getElementById('textoOS').textContent;
-    if (!texto) return;
-    navigator.clipboard.writeText(texto).then(() => {
-      showToast('Texto copiado!');
-    }).catch(() => {
-      // fallback para dispositivos sem clipboard API
-      const sel = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(document.getElementById('textoOS'));
-      sel.removeAllRanges();
-      sel.addRange(range);
-      showToast('Selecione e copie o texto manualmente.');
-    });
-  };
-
-  window.abrirFotoAnomalia = function(origem) {
-    const input = document.createElement('input');
-    input.type   = 'file';
-    input.accept = 'image/*';
-    if (origem === 'camera') input.capture = 'environment';
-    input.onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      fotoFile = file;
-      const prev = document.getElementById('fotoPreview');
-      prev.src = URL.createObjectURL(file);
-      prev.style.display = 'block';
-      document.getElementById('btnCameraAnomalia').classList.toggle('selected', origem === 'camera');
-      document.getElementById('btnGaleriaAnomalia').classList.toggle('selected', origem === 'galeria');
-      checkSalvarEnabled();
-    };
-    input.click();
-  };
-
-  function checkSalvarEnabled() {
-    if (!selectedTipo || !fotoFile) {
-      document.getElementById('btnSalvarAnomalia').disabled = true;
-      return;
-    }
-    if (selectedTipo === 'fora') {
-      const obs = document.getElementById('foraObs')?.value.trim() || '';
-      document.getElementById('btnSalvarAnomalia').disabled = !obs;
-      return;
-    }
-    document.getElementById('btnSalvarAnomalia').disabled = false;
-  }
-
-  // ── salvar anomalia ──
-  window.salvarAnomalia = async function() {
-    if (!selectedTipo || !fotoFile || !currentAnomaliaPos) return;
-    if (selectedTipo === 'fora' && !document.getElementById('foraObs')?.value.trim()) return;
-    const btn = document.getElementById('btnSalvarAnomalia');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
-
-    try {
-      // upload Cloudinary
-      const formData = new FormData();
-      formData.append('file', fotoFile);
-      formData.append('upload_preset', 'anomalias-stcgyn');
-      const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
-      const json = await res.json();
-      const fotoUrl = cldSave(json.secure_url);
-
-      // salvar Firestore
-      const qty      = parseInt(document.getElementById('qtyValor').textContent) || 1;
-      const textoOS  = document.getElementById('textoOS').textContent || '';
-      const ramalMed = selectedTipo === 'ramal' ? (document.getElementById('ramalMedidor').value.trim() || '') : '';
-      const ramalUC  = selectedTipo === 'ramal' ? (document.getElementById('ramalUC').value.trim() || '') : '';
-      const foraMed  = selectedTipo === 'fora'  ? (document.getElementById('foraMedidor').value.trim() || '') : '';
-      const foraUC   = selectedTipo === 'fora'  ? (document.getElementById('foraUC').value.trim() || '') : '';
-      const foraObs  = selectedTipo === 'fora'  ? (document.getElementById('foraObs').value.trim() || '') : '';
-      const docData = {
-        circuitoId:  currentCircuitoId,
-        circuitoNome: currentTrafoNome || currentCircuitoId || '',
-        tipo:        selectedTipo,
-        lat:         currentAnomaliaPos.lat,
-        lng:         currentAnomaliaPos.lng,
-        endereco:    currentAnomaliaPos.endereco || '',
-        postes:      currentAnomaliaPostes || '',
-        quantidade:  qty,
-        textoOS,
-        fotoUrl,
-        fiscalId:    currentUser.uid,
-        fiscalNome:  currentUser.nome,
-        status:      'pendente',
-        criadoEm:    serverTimestamp()
-      };
-      if (ramalMed) docData.ramalMedidor = ramalMed;
-      if (ramalUC)  docData.ramalUC  = ramalUC;
-      if (foraMed)  docData.foraMedidor = foraMed;
-      if (foraUC)   docData.foraUC   = foraUC;
-      if (foraObs)  docData.foraObs  = foraObs;
-      if (selectedTipo === 'mux' && window._muxTodo) docData.muxCircuitoTodo = true;
-      await addDoc(collection(db, 'anomalias'), docData);
-
-      closeModalAnomalia();
-      showToast('Anomalia registrada com sucesso!');
-      await loadAnomaliasNoMapa(currentCircuitoId);
-    } catch(err) {
-      showToast('Erro ao salvar. Tente novamente.', true);
-      btn.disabled = false;
-      btn.textContent = 'Salvar';
-    }
-  };
-
-  // ── modal programar (admin) ──
-  window.openModalProgramar = async function(anomaliaId, tipo, postes) {
-    programarAnomaliaId = anomaliaId;
-
-    // busca dados completos da anomalia para pegar textoOS e quantidade
-    const anoSnap = await getDoc(doc(db, 'anomalias', anomaliaId));
-    const anoData = anoSnap.exists() ? anoSnap.data() : {};
-    const textoOS   = anoData.textoOS   || '';
-    const quantidade = anoData.quantidade || 1;
-
-    document.getElementById('programarInfo').innerHTML =
-      `Tipo: <strong>${tipo}</strong> | Postes: <strong>${postes || '—'}</strong> | Qtd: <strong>${quantidade}</strong>`;
-
-    if (textoOS) {
-      document.getElementById('programarTextoOS').textContent = textoOS;
-      document.getElementById('programarTextoOSWrap').style.display = 'block';
-    } else {
-      document.getElementById('programarTextoOSWrap').style.display = 'none';
+      concInfo += '</div>';
     }
 
-    // carrega equipes
-    const sel = document.getElementById('selectEquipe');
-    sel.innerHTML = '<option value="">Carregando...</option>';
-    const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil','==','equipe')));
-    sel.innerHTML = '';
+    h += '<div class="card ' + insp.status + (urgente ? ' urgente' : '') + '" data-id="' + cid + '" data-iid="' + iid + '" onclick="goMapaBtn(this)">'
+       + '<div class="ctop"><div class="cnome">' + nome + '</div><span class="spill ' + insp.status + '">' + stLbl + '</span></div>'
+       + '<div class="cmeta">'
+       + '<div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Delegado: <span>' + dtStr + '</span></div>'
+       + fiscMeta + dBadge
+       + '</div>'
+       + '<div class="cacts" onclick="event.stopPropagation()">'
+       + '<button class="bsm b-out" data-id="' + cid + '" data-iid="' + iid + '" onclick="goMapaBtn(this)">'
+       + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>'
+       + btnAcao + inspExtra + concInfo
+       + '</div></div>';
+  });
+
+  el.innerHTML = h;
+}
+
+// ---- helpers ----
+function safe(s) { return String(s || ''); }
+function ts(t)   { return t && t.toDate ? t.toDate().toLocaleDateString('pt-BR') : '-'; }
+function showSk() {
+  document.getElementById('lista').innerHTML =
+    '<div class="sk" style="height:130px;margin-bottom:10px"></div>'
+    + '<div class="sk" style="height:130px;margin-bottom:10px"></div>'
+    + '<div class="sk" style="height:130px"></div>';
+}
+function showErr(msg) {
+  document.getElementById('lista').innerHTML = '<div class="empty"><div class="empty-icon">x</div><p>' + msg + '</p></div>';
+}
+
+// ---- wrappers data-attribute (evita escaping de parametros no onclick) ----
+window.goMapaBtn   = function(el) { goMapa(el.dataset.id, el.dataset.iid); };
+
+window.toggleForaList = function(id, btn) {
+  const list    = document.getElementById(id);
+  const chevron = document.getElementById('chevron-' + id);
+  if (!list) return;
+  const open = list.style.display !== 'none';
+  list.style.display   = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+};
+window.abreNovaInspBtn = function(el) { abreNovaInsp(el.dataset.id, el.dataset.nome); };
+window.abreMConcBtn = function(el) { abreMConc(el.dataset.id, el.dataset.nome); };
+window.aMCancBtn   = function(el) { abreMCanc(el.dataset.id, el.dataset.nome); };
+
+// ---- filtros ----
+window.setFiltro = function(f, btn) {
+  filtro = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLista();
+};
+
+// ---- modal nova inspecao ----
+let idNovaInspCircuito = '';
+window.abreNovaInsp = async function(circuitoId, circuitoNome) {
+  idNovaInspCircuito = circuitoId;
+  document.getElementById('mNovaInspSub').textContent = 'Circuito: ' + circuitoNome;
+  document.getElementById('obsNovaInsp').value = '';
+  // carrega fiscais
+  const sel = document.getElementById('selectFiscalNova');
+  sel.innerHTML = '<option value="">-- Selecione um fiscal --</option>';
+  try {
+    const snap = await getDocs(query(collection(db,'usuarios'), where('perfil','==','fiscal')));
     snap.forEach(d => {
       const opt = document.createElement('option');
       opt.value = d.id;
       opt.textContent = d.data().nome;
       sel.appendChild(opt);
     });
-
-    document.getElementById('modalProgramar').classList.add('open');
-  };
-
-  window.closeModalProgramar = function() {
-    document.getElementById('modalProgramar').classList.remove('open');
-  };
-
-  window.copiarTextoOSProgramar = function() {
-    const texto = document.getElementById('programarTextoOS').textContent;
-    if (!texto) return;
-    navigator.clipboard.writeText(texto).then(() => {
-      showToast('Texto copiado!');
-    }).catch(() => {
-      const sel = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(document.getElementById('programarTextoOS'));
-      sel.removeAllRanges(); sel.addRange(range);
-      showToast('Selecione e copie manualmente.');
+  } catch(_) {}
+  document.getElementById('mNovaInsp').classList.add('open');
+};
+window.fechaMNovaInsp = function() { document.getElementById('mNovaInsp').classList.remove('open'); };
+window.confirmNovaInsp = async function() {
+  const fiscalId = document.getElementById('selectFiscalNova').value;
+  if (!fiscalId) { showToast('Selecione um fiscal.', true); return; }
+  const obs = document.getElementById('obsNovaInsp').value.trim();
+  const btn = document.getElementById('btnNovaInsp');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    // busca nome do fiscal
+    const fSnap = await getDocs(query(collection(db,'usuarios'), where('__name__','==',fiscalId)));
+    const fiscalNome = fSnap.empty ? '?' : fSnap.docs[0].data().nome;
+    // busca nome do circuito
+    const cSnap = await getDocs(query(collection(db,'circuitos'), where('__name__','==',idNovaInspCircuito)));
+    const circNome = cSnap.empty ? idNovaInspCircuito : cSnap.docs[0].data().nome;
+    await addDoc(collection(db,'inspecoes'), {
+      circuitoId:   idNovaInspCircuito,
+      circuitoNome: circNome,
+      fiscalId:     fiscalId,
+      fiscalNome:   fiscalNome,
+      status:       'pendente',
+      observacoes:  obs,
+      delegadoEm:   serverTimestamp(),
+      adminId:      cUser.uid
     });
-  };
+    fechaMNovaInsp();
+    showToast('Nova inspecao solicitada!');
+    pronto = false;
+    await carregar();
+  } catch(e) { console.error(e); showToast('Erro ao solicitar.', true); }
+  finally { btn.disabled = false; btn.textContent = 'Solicitar'; }
+};
 
-  window.confirmarProgramar = async function() {
-    const equipeId = document.getElementById('selectEquipe').value;
-    if (!equipeId) return showToast('Selecione uma equipe.', true);
-    try {
-      await updateDoc(doc(db, 'anomalias', programarAnomaliaId), {
-        status: 'programado', equipeId, programadoEm: serverTimestamp()
-      });
-      closeModalProgramar();
-      showToast('Serviço programado!');
-      await loadAnomaliasNoMapa(currentCircuitoId);
-    } catch {
-      showToast('Erro ao programar.', true);
-    }
-  };
+window.goMapa = function(id, iid) {
+  if (id)  sessionStorage.setItem('circuitoSelecionado', id);
+  if (iid) sessionStorage.setItem('inspecaoAtiva', iid);
+  sessionStorage.setItem('mapaOrigem', 'pendencias');
+  location.href = 'mapa.html';
+};
 
-  // ── excluir anomalia (admin ou fiscal que apontou, nunca concluído) ──
-  window.excluirAnomaliaDoMapa = async function(anomaliaId) {
-    if (!confirm('Excluir este registro de anomalia?\nEsta ação não pode ser desfeita.')) return;
-    try {
-      // valida status antes de deletar
-      const snap = await getDoc(doc(db, 'anomalias', anomaliaId));
-      if (!snap.exists()) return showToast('Anomalia não encontrada.', true);
-      const d = snap.data();
-      if (d.status === 'concluido') return showToast('Não é possível excluir anomalias concluídas.', true);
-      if (currentPerfil === 'fiscal' && d.fiscalId !== currentUser.uid)
-        return showToast('Você só pode excluir anomalias que apontou.', true);
+// ---- modal concluir ----
+window.abreMConc = function(id, nome) {
+  idConc = id;
+  document.getElementById('mConcluirSub').textContent = 'Circuito: ' + nome;
+  document.querySelectorAll('.chi').forEach(el => el.classList.remove('checked'));
+  document.getElementById('obsConc').value = '';
+  document.getElementById('mConcluir').classList.add('open');
+};
+window.fechaMConc = function() { document.getElementById('mConcluir').classList.remove('open'); };
+window.togCheck   = function(el) { el.classList.toggle('checked'); };
 
-      await deleteDoc(doc(db, 'anomalias', anomaliaId));
+window.confirmConc = async function() {
+  const checks   = document.querySelectorAll('.chi');
+  const marcados = [...checks].filter(c => c.classList.contains('checked')).length;
+  if (marcados < checks.length) { showToast('Marque todos os itens.', true); return; }
+  const obs = document.getElementById('obsConc').value.trim();
+  const btn = document.getElementById('btnConc');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await updateDoc(doc(db, 'inspecoes', idConc), {
+      status: 'concluido', observacoes: obs,
+      concluidoEm: serverTimestamp(),
+      fiscalId: cUser.uid, fiscalNome: cUser.nome
+    });
+    fechaMConc();
+    showToast('Inspecao concluida!');
+    pronto = false;
+    await carregar();
+  } catch(e) { showToast('Erro ao concluir.', true); }
+  finally { btn.disabled = false; btn.textContent = 'Concluir'; }
+};
 
-      // remove marcador do mapa sem recarregar tudo
-      anomaliaMarkers = anomaliaMarkers.filter(m => {
-        if (m._anomaliaId === anomaliaId) { map.removeLayer(m); return false; }
-        return true;
-      });
-      showToast('Anomalia excluída.');
-    } catch(e) {
-      showToast('Erro ao excluir.', true);
-      console.error(e);
-    }
-  };
+// ---- modal cancelar ----
+window.abreMCanc = function(id, nome) {
+  idCanc = id;
+  document.getElementById('mCancelarSub').textContent = 'Circuito: ' + nome;
+  document.getElementById('obsCanc').value = '';
+  document.getElementById('mCancelar').classList.add('open');
+};
+window.fechaMCanc = function() { document.getElementById('mCancelar').classList.remove('open'); };
 
-  // ── concluir serviço (equipe) ──
-  window.concluirServico = function(anomaliaId) {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
-    overlay.innerHTML = `
-      <div style="background:#0d1f3c;border:1px solid rgba(0,170,255,0.2);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:480px">
-        <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px"></div>
-        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px">Foto de conclusão</div>
-        <div style="font-size:13px;color:#8a9bbf;margin-bottom:20px">Obrigatório para concluir o serviço.</div>
-        <div style="display:flex;gap:10px">
-          <button id="btnConcCamera" style="flex:1;padding:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#8a9bbf;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            Câmera
-          </button>
-          <button id="btnConcGaleria" style="flex:1;padding:13px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#8a9bbf;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            Galeria
-          </button>
-        </div>
-        <button id="btnConcCancelar" style="width:100%;margin-top:10px;padding:11px;background:transparent;border:none;color:#8a9bbf;font-size:13px;cursor:pointer">Cancelar</button>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#btnConcCancelar').onclick = () => document.body.removeChild(overlay);
+window.confirmCanc = async function() {
+  const motivo = document.getElementById('obsCanc').value.trim();
+  if (!motivo) { showToast('Informe o motivo.', true); return; }
+  const btn = document.getElementById('btnCanc');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try {
+    await deleteDoc(doc(db, 'inspecoes', idCanc));
+    fechaMCanc();
+    showToast('Inspecao cancelada.');
+    pronto = false;
+    await carregar();
+  } catch(e) { showToast('Erro ao cancelar.', true); }
+  finally { btn.disabled = false; btn.textContent = 'Cancelar inspecao'; }
+};
 
-    const pickFoto = (origem) => {
-      document.body.removeChild(overlay);
-      const input = document.createElement('input');
-      input.type = 'file'; input.accept = 'image/*';
-      if (origem === 'camera') input.capture = 'environment';
-      input.onchange = async e => {
-        const file = e.target.files[0];
-        if (!file) return showToast('É obrigatório tirar uma foto para concluir.', true);
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', 'anomalias-stcgyn');
-        try {
-          const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
-          const json = await res.json();
-          await updateDoc(doc(db, 'anomalias', anomaliaId), {
-            status: 'concluido',
-            fotoConcluidoUrl: cldSave(json.secure_url),
-            concluidoEm: serverTimestamp(),
-            equipeConcluidoId: currentUser.uid
-          });
-          showToast('Serviço concluído!');
-          map.closePopup();
-          await loadAnomaliasNoMapa(currentCircuitoId);
-        } catch {
-          showToast('Erro ao concluir.', true);
-        }
-      };
-      input.click();
-    };
+// ---- toast ----
+window.showToast = function(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isErr ? ' error' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+};
 
-    overlay.querySelector('#btnConcCamera').onclick  = () => pickFoto('camera');
-    overlay.querySelector('#btnConcGaleria').onclick = () => pickFoto('galeria');
-  };
-
-  // ── navegação (Google Maps / Waze) ──
-  // ── Reposicionar FAB acima do trafo-card ──
-  function reposicionarFAB() {
-    const fab  = document.getElementById('fabAnomalias');
-    const card = document.getElementById('trafoCard');
-    const nav  = document.querySelector('.bottom-nav');
-    if (!fab) return;
-    const navH    = nav ? nav.offsetHeight : 64;
-    const cardVis = card && !card.classList.contains('hidden');
-    if (cardVis) {
-      const cardH = card.offsetHeight;
-      fab.style.bottom = (navH + cardH + 12) + 'px';
-    } else {
-      fab.style.bottom = (navH + 16) + 'px';
-    }
-  }
-
-  // Observar mudancas no card para reposicionar automaticamente
-  (function() {
-    const card = document.getElementById('trafoCard');
-    if (!card) return;
-    const ro = new ResizeObserver(reposicionarFAB);
-    ro.observe(card);
-    const mo = new MutationObserver(reposicionarFAB);
-    mo.observe(card, { attributes: true, attributeFilter: ['class'] });
-  })();
-
-  window.toggleDeco = function() {
-    const badge = document.getElementById('trafoDecoBadge');
-    const btn   = document.getElementById('trafoDecoBtn');
-    const open  = badge.style.display !== 'none';
-    badge.style.display = open ? 'none' : 'block';
-    btn.style.borderBottom = open ? 'none' : '1px solid rgba(255,255,255,.06)';
-    btn.style.paddingBottom = open ? '0' : '6px';
-    btn.style.marginBottom  = open ? '0' : '2px';
-    reposicionarFAB();
-  };
-
-  window.abrirNavTrafo = function(app) {
-    const rb  = document.getElementById('trafoRotaBtns');
-    const lat = rb.dataset.lat;
-    const lng = rb.dataset.lng;
-    if (!lat || !lng) return;
-    abrirNavegacao(parseFloat(lat), parseFloat(lng), app);
-  };
-
-  window.abrirNavegacao = function(lat, lng, app) {
-    const url = app === 'waze'
-      ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
-      : `https://maps.google.com/?q=${lat},${lng}&navigate=yes`;
-    window.open(url, '_blank');
-  };
-
-  // ── badge pendências — só mostra se > 0, filtrado por perfil ──
-  async function loadPendenciasBadge() {
-    const badge = document.getElementById('badgePendencias');
-    badge.style.display = 'none';
-    let q;
-    if (currentPerfil === 'admin') {
-      q = query(collection(db, 'inspecoes'), where('status', '==', 'pendente'));
-    } else if (currentPerfil === 'fiscal') {
-      q = query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid), where('status', '==', 'pendente'));
-    } else {
-      // equipe: conta anomalias programadas para ela que ainda não concluiu
-      q = query(collection(db, 'anomalias'), where('equipeId', '==', currentUser.uid), where('status', '==', 'programado'));
-    }
-    const snap = await getDocs(q);
-    if (snap.size > 0) {
-      badge.textContent = snap.size;
-      badge.style.display = 'flex';
-    }
-  }
-
-  // ── extração robusta de postes via regex ──
-
-  // ── legado: renderCircuito(htmlContent) ── delega para renderCircuitoData
-  function renderCircuito(htmlContent, circuitoId, circuitoNome) {
-    const postesData   = extrairPostes(htmlContent);
-    const conexoesData = extrairConexoes(htmlContent);
-    const trafoInfo    = extrairInfoTrafo(htmlContent);
-    return renderCircuitoData(postesData, conexoesData, trafoInfo, circuitoId, circuitoNome);
-  }
-
-  function extrairPostes(html) {
-    const offsetLat = parseFloat((html.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
-    const offsetLng = parseFloat((html.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
-    const postes = [];
-    // Extrai o array completo contando colchetes para não parar cedo
-    const startIdx = html.search(/var postes\s*=\s*\[/);
-    if (startIdx !== -1) {
-      const arrStart = html.indexOf('[', startIdx);
-      let depth = 0, i = arrStart;
-      for (; i < html.length; i++) {
-        if (html[i] === '[') depth++;
-        else if (html[i] === ']') { depth--; if (depth === 0) { i++; break; } }
-      }
-      try {
-        const raw = eval(html.slice(arrStart, i));
-        raw.forEach(p => postes.push({
-          id:               p.id,
-          lat:              p.lat + offsetLat,
-          lng:              p.lng + offsetLng,
-          esforco:          p.esforco || '',
-          temTransformador: p.temTransformador === 1,
-          ucs: (p.ucs || []).map(u => ({
-            uc: String(u.uc), medidor: u.medidor || '',
-            nome: u.nome || '', fase: u.fase || '',
-            pot: u.pot || '0', potgd: u.potgd || '0'
-          }))
-        }));
-      } catch(e) { console.error('extrairPostes eval error:', e); }
-    }
-    return postes;
-  }
-
-  // ── extração de conexões via regex preciso ──
-  function extrairConexoes(html) {
-    const conexoes = [];
-    const re = /\{\s*de:\s*'([^']+)',\s*para:\s*'([^']+)',\s*fase:\s*'([^']+)',\s*condutor:\s*'([^']+)',\s*trecho:\s*'([^']+)',\s*comprimento:\s*([\d.]+),\s*tipo:\s*'([^']+)'/g;
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      conexoes.push({
-        de:          m[1],
-        para:        m[2],
-        fase:        m[3],
-        condutor:    m[4],
-        trecho:      m[5],
-        comprimento: parseFloat(m[6]),
-        tipo:        m[7]
-      });
-    }
-    return conexoes;
-  }
-
-  // ── extração de potencia e clientes do popup inline do trafo ──
-  function extrairInfoTrafo(html) {
-    const info = { potencia: null, clientes: null };
-    const mPot = html.match(/[Pp]otenci[ae]\s*:\s*(\d+)/);
-    const mCli = html.match(/[Cc]lientes\s*:\s*(\d+)/);
-    if (mPot) info.potencia = mPot[1];
-    if (mCli) info.clientes = mCli[1];
-    return info;
-  }
-
-  // ── toast ──
-  window.showToast = function(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast' + (isError ? ' error' : '') + ' show';
-    setTimeout(() => t.classList.remove('show'), 3000);
-  };
-
-  // service worker
-
-  // ── Mostrar botões inspeção no card do trafo (apenas fiscal com inspeção ativa) ──
-  function atualizarBotoesInspTrafo() {
-    const wrap = document.getElementById('trafoInspBtns');
-    if (!wrap) return;
-    if (currentPerfil === 'fiscal' && currentInspecaoId) {
-      wrap.style.display = 'block';
-      // carrega estado atual da inspeção para atualizar labels
-      carregarEstadoInspTrafo();
-    } else {
-      wrap.style.display = 'none';
-    }
-  }
-
-  async function carregarEstadoInspTrafo() {
-    if (!currentInspecaoId) return;
-    try {
-      const snap = await getDoc(doc(db, 'inspecoes', currentInspecaoId));
-      if (!snap.exists()) return;
-      const d = snap.data();
-      // Easy Trafo
-      const lblET = document.getElementById('btnEasyTrafoLbl');
-      if (lblET) {
-        if (d.easyTrafo === true)  lblET.textContent = '✓ Easy Trafo';
-        else if (d.easyTrafo === false) lblET.textContent = '✗ Sem Easy Trafo';
-        else lblET.textContent = 'Easy Trafo';
-      }
-      // Anel
-      const lblA = document.getElementById('btnAnelLbl');
-      if (lblA) {
-        if (d.fechadoEmAnel === true)  lblA.textContent = '✓ Anel: Sim';
-        else if (d.fechadoEmAnel === false) lblA.textContent = '✗ Anel: Não';
-        else lblA.textContent = 'Anel';
-      }
-    } catch(e) { console.error('carregarEstadoInspTrafo:', e); }
-  }
-
-  // ── Easy Trafo ──
-  let easyTrafoSelecionado = null;
-  let fotoEasyFile = null;
-
-  window.openModalEasyTrafo = function() {
-    easyTrafoSelecionado = null;
-    fotoEasyFile = null;
-    document.getElementById('easyTrafoFotoWrap').style.display = 'none';
-    document.getElementById('fotoEasyPreview').style.display = 'none';
-    document.getElementById('fotoEasyPreview').src = '';
-    document.getElementById('btnSalvarEasyTrafo').disabled = true;
-    document.getElementById('btnCameraEasy').classList.remove('selected');
-    document.getElementById('btnGaleriaEasy').classList.remove('selected');
-    document.getElementById('modalEasyTrafo').classList.add('open');
-  };
-  window.closeModalEasyTrafo = function() {
-    document.getElementById('modalEasyTrafo').classList.remove('open');
-  };
-
-  window.selectEasyTrafo = function(val) {
-    easyTrafoSelecionado = val;
-    document.getElementById('btnEasyTrafoSim').style.opacity = val ? '1' : '0.4';
-    document.getElementById('btnEasyTrafoNao').style.opacity = !val ? '1' : '0.4';
-    document.getElementById('easyTrafoFotoWrap').style.display = val ? 'block' : 'none';
-    // se Não, pode salvar direto
-    document.getElementById('btnSalvarEasyTrafo').disabled = val ? true : false;
-    if (!val) { fotoEasyFile = null; }
-  };
-
-  window.abrirFotoEasy = function(origem) {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    if (origem === 'camera') input.capture = 'environment';
-    input.onchange = e => {
-      const file = e.target.files[0]; if (!file) return;
-      fotoEasyFile = file;
-      const prev = document.getElementById('fotoEasyPreview');
-      prev.src = URL.createObjectURL(file); prev.style.display = 'block';
-      document.getElementById('btnCameraEasy').classList.toggle('selected', origem === 'camera');
-      document.getElementById('btnGaleriaEasy').classList.toggle('selected', origem === 'galeria');
-      document.getElementById('btnSalvarEasyTrafo').disabled = false;
-    };
-    input.click();
-  };
-
-  window.salvarEasyTrafo = async function() {
-    if (easyTrafoSelecionado === null) return;
-    if (easyTrafoSelecionado && !fotoEasyFile) return showToast('Foto obrigatória para Easy Trafo.', true);
-    const btn = document.getElementById('btnSalvarEasyTrafo');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    try {
-      let fotoUrl = null;
-      if (fotoEasyFile) {
-        const fd = new FormData();
-        fd.append('file', fotoEasyFile);
-        fd.append('upload_preset', 'anomalias-stcgyn');
-        const res = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: fd });
-        const json = await res.json();
-        fotoUrl = cldSave(json.secure_url);
-      }
-      const update = { easyTrafo: easyTrafoSelecionado, easyTrafoAtualizadoEm: serverTimestamp() };
-      if (fotoUrl) update.easyTrafoFotoUrl = fotoUrl;
-      await updateDoc(doc(db, 'inspecoes', currentInspecaoId), update);
-      closeModalEasyTrafo();
-      await carregarEstadoInspTrafo();
-      showToast('✓ Easy Trafo registrado!');
-    } catch(e) { console.error(e); showToast('Erro ao salvar.', true); }
-    finally { btn.disabled = false; btn.textContent = 'Salvar'; }
-  };
-
-  // ── Anel ──
-  let anelSelecionado = null;
-
-  window.openModalAnel = function() {
-    anelSelecionado = null;
-    document.getElementById('anelObsWrap').style.display = 'none';
-    document.getElementById('anelObs').value = '';
-    document.getElementById('btnSalvarAnel').disabled = true;
-    document.getElementById('modalAnel').classList.add('open');
-  };
-  window.closeModalAnel = function() {
-    document.getElementById('modalAnel').classList.remove('open');
-  };
-
-  window.selectAnel = function(val) {
-    anelSelecionado = val;
-    document.getElementById('btnAnelSim').style.opacity = val ? '1' : '0.4';
-    document.getElementById('btnAnelNao').style.opacity = !val ? '1' : '0.4';
-    // observação obrigatória apenas quando Não
-    document.getElementById('anelObsWrap').style.display = !val ? 'block' : 'none';
-    document.getElementById('btnSalvarAnel').disabled = !val ? true : false;
-    if (val) document.getElementById('anelObs').value = '';
-  };
-
-  window.checkAnelSalvar = function() {
-    const obs = document.getElementById('anelObs').value.trim();
-    document.getElementById('btnSalvarAnel').disabled = !anelSelecionado && !obs;
-  };
-
-  window.salvarAnel = async function() {
-    if (anelSelecionado === null) return;
-    const obs = document.getElementById('anelObs').value.trim();
-    if (!anelSelecionado && !obs) return showToast('Observação obrigatória quando não é anel.', true);
-    const btn = document.getElementById('btnSalvarAnel');
-    btn.disabled = true; btn.textContent = 'Salvando...';
-    try {
-      const update = { fechadoEmAnel: anelSelecionado, anelAtualizadoEm: serverTimestamp() };
-      if (obs) update.anelObservacao = obs;
-      await updateDoc(doc(db, 'inspecoes', currentInspecaoId), update);
-      closeModalAnel();
-      await carregarEstadoInspTrafo();
-      showToast('✓ Informação de anel registrada!');
-    } catch(e) { console.error(e); showToast('Erro ao salvar.', true); }
-    finally { btn.disabled = false; btn.textContent = 'Salvar'; }
-  };
-
-  // ── Fora do Padrão: busca UC pelo medidor ──
-  window.onForaMedidorInput = function() {
-    const med   = document.getElementById('foraMedidor').value.trim().toUpperCase();
-    const ucEl  = document.getElementById('foraUC');
-    const msg   = document.getElementById('foraUCMsg');
-    ucEl.value  = '';
-    if (!med) { msg.textContent = ''; checkSalvarEnabled(); return; }
-    const postes  = window._postesAtivos || [];
-    const medNorm = med.replace(/[-\s]/g, '');
-    let found = null;
-    for (const p of postes) {
-      for (const u of (p.ucs || [])) {
-        const mNorm = String(u.medidor || u.m || '').replace(/[-\s]/g, '').toUpperCase();
-        if (mNorm === medNorm) { found = u; break; }
-      }
-      if (found) break;
-    }
-    if (found) {
-      ucEl.value = found.uc || '';
-      msg.textContent = 'UC encontrada.';
-      msg.style.color = 'var(--eq-success, #00e5a0)';
-    } else {
-      const totalUcs = postes.reduce((a, p) => a + (p.ucs || []).length, 0);
-      msg.textContent = totalUcs === 0 ? 'Circuito sem dados de UC — re-suba o arquivo.' : 'Medidor não encontrado.';
-      msg.style.color = 'var(--eq-warning, #ffb300)';
-    }
-    checkSalvarEnabled();
-  };
-
-  // ── Multiplexar circuito todo (MBX) ──
-  window._muxTodo = false;
-  window.toggleMuxTodo = function() {
-    window._muxTodo = !window._muxTodo;
-    const chk = document.getElementById('muxTodoCheck');
-    const btn = document.getElementById('btnMuxTodo');
-    if (window._muxTodo) {
-      chk.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
-      chk.style.background = '#b57bee';
-      btn.style.background = 'rgba(181,123,238,.2)';
-      btn.style.borderColor = '#b57bee';
-      // oculta campo entre postes — não necessário para circuito todo
-      document.getElementById('modalPostes').value = '';
-      currentAnomaliaPostes = '';
-    } else {
-      chk.innerHTML = '';
-      chk.style.background = 'transparent';
-      btn.style.background = 'rgba(181,123,238,.07)';
-      btn.style.borderColor = 'rgba(181,123,238,.3)';
-    }
-    gerarTextoOS();
-  };
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  }
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 </script>
-
 </body>
 </html>
