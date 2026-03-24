@@ -1872,7 +1872,7 @@
   // ── badge pendências — só mostra se > 0, filtrado por perfil ──
   async function loadPendenciasBadge() {
     const badge = document.getElementById('badgePendencias');
-    badge.classList.add('hidden');
+    badge.style.display = 'none';
     let q;
     if (currentPerfil === 'admin') {
       q = query(collection(db, 'inspecoes'), where('status', '==', 'pendente'));
@@ -1885,7 +1885,7 @@
     const snap = await getDocs(q);
     if (snap.size > 0) {
       badge.textContent = snap.size;
-      badge.classList.remove('hidden');
+      badge.style.display = 'flex';
     }
   }
 
