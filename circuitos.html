@@ -809,12 +809,19 @@
         const col = k => h.indexOf(k);
         const iNum=col('Número'), iIni=col('Data Início'), iFim=col('Data Fim'),
               iCausa=col('Causa'), iChi=col('CHI'), iCd=col('CD');
+        // procura coluna de situação/estado (nome pode variar no xlsx)
+        const iSit = h.findIndex(c => String(c||'').trim().toUpperCase().includes('SITUA') || String(c||'').trim().toUpperCase().includes('ESTADO'));
         if ([iNum,iIni,iFim,iChi,iCd].some(x=>x<0)) {
           showToast('Colunas obrigatórias não encontradas no xlsx.', true); return;
         }
         onProgress?.(45, 'Agrupando equipamentos…');
         const ocorsPorEquip = {};
         for (const r of rows.slice(hIdx+1)) {
+          // filtra apenas ocorrências finalizadas (F-FINALIZADAS)
+          if (iSit >= 0) {
+            const sit = String(r[iSit]||'').trim().toUpperCase();
+            if (!sit.includes('FINALIZ')) continue;
+          }
           const equip = String(r[iCd]||'').trim();
           if (!equip || equip==='---' || !equip.startsWith('GN')) continue;
           if (!ocorsPorEquip[equip]) ocorsPorEquip[equip] = {};
