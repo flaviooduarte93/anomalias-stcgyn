@@ -474,7 +474,7 @@
   <div id="trafoDecoWrap" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">
     <button id="trafoDecoBtn" onclick="toggleDeco()"
       style="width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;padding:0">
-      <span style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px">Decometro — ultimos 3 meses</span>
+      <span style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px">Decômetro — 3 meses + atual</span>
       <span id="trafoDecoBtnResume" style="font-size:11px;font-weight:700;color:#8a9bbf"></span>
     </button>
     <div id="trafoDecoBadge" style="display:none;margin-top:8px"></div>
@@ -1136,8 +1136,9 @@
         if (!decoSnap.empty) {
           const all = decoSnap.docs[0].data().ocorrencias || [];
           const hoje = new Date();
-          const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
-          const ini3m = new Date(fim3m.getFullYear(), fim3m.getMonth()-2, 1, 0, 0, 0);
+          // 3 meses fechados + mês atual (até hoje)
+          const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
+          const ini3m = new Date(hoje.getFullYear(), hoje.getMonth()-3, 1, 0, 0, 0);
           const parseDt = s => {
             if (!s) return null;
             const [d,t] = String(s).split(' ');
@@ -1148,7 +1149,7 @@
           const freq = ocs3m.length;
           const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
           let cls, label;
-          if (!freq) { cls='ok'; label='0 desarmes nos ultimos 3 meses'; }
+          if (!freq) { cls='ok'; label='0 desarmes (3m+atual)'; }
           else { cls=chi>500?'critico':chi>100?'alerta':'ok'; label=freq+' desarme'+(freq>1?'s':'')+' · CHI '+chi.toFixed(1); }
           const chiCor = cls==='critico'?'#ff4d6d':cls==='alerta'?'#ffb300':'#00e5a0';
           // Monta resumo das ocorrências por tipo de causa
@@ -1170,7 +1171,7 @@
           const maisLabel = '';
 
           decoDiv.innerHTML = ''
-            + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — ultimos 3 meses</div>'
+            + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — 3 meses + atual</div>'
             + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:' + (freq>0?'8':'0') + 'px">'
             + '<span class="deco-badge '+cls+'" style="font-size:12px;padding:4px 12px">'+label+'</span>'
             + (freq>0 ? '<span style="font-size:11px;color:'+chiCor+';font-weight:700">CHI '+chi.toFixed(1)+'</span>' : '')
