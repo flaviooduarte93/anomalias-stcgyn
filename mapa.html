@@ -1433,22 +1433,28 @@
     if (postesLabel) postesLabel.textContent = 'Entre os postes';
 
     navigator.geolocation.getCurrentPosition(async pos => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      currentAnomaliaPos = { lat, lng };
-      document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const gpsLat = pos.coords.latitude;
+      const gpsLng = pos.coords.longitude;
 
-      // postes mais próximos
-      if (window._postesAtivos) {
+      // usa coordenadas do poste mais próximo do GPS como posição da anomalia
+      // (mais preciso que o GPS do dispositivo, que pode ter deriva)
+      let lat = gpsLat, lng = gpsLng;
+      if (window._postesAtivos && window._postesAtivos.length > 0) {
         const sorted = [...window._postesAtivos].sort((a,b) => {
-          const da = Math.hypot(a.lat-lat, a.lng-lng);
-          const db2 = Math.hypot(b.lat-lat, b.lng-lng);
+          const da = Math.hypot(a.lat-gpsLat, a.lng-gpsLng);
+          const db2 = Math.hypot(b.lat-gpsLat, b.lng-gpsLng);
           return da - db2;
         });
+        const maisProximo = sorted[0];
+        lat = maisProximo.lat;
+        lng = maisProximo.lng;
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
         document.getElementById('modalPostes').value = currentAnomaliaPostes;
         gerarTextoOS();
       }
+
+      currentAnomaliaPos = { lat, lng };
+      document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
       // geocode reverso
       try {
@@ -1463,7 +1469,18 @@
         document.getElementById('modalEndereco').classList.remove('loading');
       }
     }, () => {
-      document.getElementById('modalEndereco').textContent = 'Localização não disponível';
+      // GPS indisponível — usa coordenadas do trafo/primeiro poste do circuito
+      if (window._postesAtivos && window._postesAtivos.length > 0) {
+        const p0 = window._postesAtivos[0];
+        currentAnomaliaPos = { lat: p0.lat, lng: p0.lng };
+        document.getElementById('modalCoords').textContent = `${p0.lat.toFixed(6)}, ${p0.lng.toFixed(6)}`;
+        const sorted = [...window._postesAtivos];
+        currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
+        document.getElementById('modalPostes').value = currentAnomaliaPostes;
+        document.getElementById('modalEndereco').textContent = 'GPS indisponível — usando posição do circuito';
+      } else {
+        document.getElementById('modalEndereco').textContent = 'Localização não disponível';
+      }
       document.getElementById('modalEndereco').classList.remove('loading');
     }, { enableHighAccuracy: true });
   };
