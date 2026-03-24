@@ -549,7 +549,8 @@ function renderLista() {
       const nMux   = anomInsp.filter(a => a.tipo === 'mux').length;
       const nRamal = anomInsp.filter(a => a.tipo === 'ramal').length;
       const nFora  = anomInsp.filter(a => a.tipo === 'fora').length;
-      const temAnom = nPoda + nEsp + nMux + nRamal + nFora > 0;
+      const nPoste = anomInsp.filter(a => a.tipo === 'poste').length;
+      const temAnom = nPoda + nEsp + nMux + nRamal + nFora + nPoste > 0;
 
       concInfo = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">'
         + '<div class="mi" style="padding:0 0 6px 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--su)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span style="color:var(--su);font-size:12px;font-weight:600">Concluido em ' + dtC + '</span></div>';
@@ -567,6 +568,8 @@ function renderLista() {
           + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' + nRamal + ' ramal' + (nRamal>1?'s':'') + '</span>';
         if (nFora)  concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(255,77,109,.12);color:var(--er);border:1px solid rgba(255,77,109,.25);font-size:12px;font-weight:600">'
           + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' + nFora + ' fora do padrão</span>';
+        if (nPoste) concInfo += '<span style="padding:3px 10px;border-radius:12px;background:rgba(180,120,60,.12);color:#c8864a;border:1px solid rgba(180,120,60,.25);font-size:12px;font-weight:600">'
+          + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:middle"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg>' + nPoste + ' sub. poste' + (nPoste>1?'s':'') + '</span>';
         concInfo += '</div>';
       } else {
         concInfo += '<div style="font-size:12px;color:var(--gr);margin-bottom:8px">'
