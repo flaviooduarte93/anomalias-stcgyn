@@ -684,6 +684,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg>
           Sub. Poste
         </button>
+        <button class="tipo-btn" id="tipoOutros" onclick="selectTipo('outros')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          Outros
+        </button>
       </div>
     </div>
 
@@ -779,6 +783,16 @@
         border-radius:8px; font-size:13px; color:var(--eq-white);
         line-height:1.5; user-select:all; cursor:text;
       "></div>
+    </div>
+
+    <div class="modal-field">
+      <div class="modal-label">Observação <span style="color:var(--eq-gray);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px" id="obsAnomaliaReq"></span></div>
+      <textarea id="obsAnomalia" placeholder="Observação adicional..."
+        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:68px;box-sizing:border-box"
+        oninput="checkSalvarEnabled()"
+        onfocus="this.style.borderColor='var(--eq-cyan)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+      ></textarea>
     </div>
 
     <div class="modal-actions">
@@ -1312,6 +1326,10 @@
 
   // ── anomalias no mapa ──
   async function loadAnomaliasNoMapa(circuitoId) {
+    // limpa markers de anomalia anteriores antes de replotar
+    anomaliaMarkers.forEach(m => map.removeLayer(m));
+    anomaliaMarkers = [];
+
     let q;
     if (currentPerfil === 'equipe') {
       q = query(collection(db, 'anomalias'),
@@ -1327,22 +1345,24 @@
   }
 
   function plotarAnomalia(id, data) {
-    const icon = data.tipo === 'poda' ? iconPoda
-      : data.tipo === 'mux'       ? iconMux
-      : data.tipo === 'ramal'     ? iconRamal
-      : data.tipo === 'fora'      ? iconFora
-      : data.tipo === 'poste'     ? iconSubPoste
+    const icon = data.tipo === 'poda'   ? iconPoda
+      : data.tipo === 'mux'    ? iconMux
+      : data.tipo === 'ramal'  ? iconRamal
+      : data.tipo === 'fora'   ? iconFora
+      : data.tipo === 'poste'  ? iconSubPoste
+      : data.tipo === 'outros' ? iconFora
       : iconEspacador;
     const m = L.marker([data.lat, data.lng], { icon }).addTo(map);
     m._anomaliaId = id;
     anomaliaMarkers.push(m);
 
-    const tipoLabel = { poda: '🌳 Poda', mux: '🔄 MBX', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', fora: '⚠️ Fora do Padrão', poste: '🪵 Sub. Poste' };
+    const tipoLabel = { poda: '🌳 Poda', mux: '🔄 MBX', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', fora: '⚠️ Fora do Padrão', poste: '🪵 Sub. Poste', outros: '📋 Outros' };
     let html = `<div class="popup-title">Anomalia</div>
       <span class="popup-badge ${data.tipo}">${tipoLabel[data.tipo] || data.tipo}</span><br>
       <div class="popup-row">Endereço: <span>${data.endereco || '—'}</span></div>
       <div class="popup-row">Entre postes: <span>${data.postes || '—'}</span></div>
       ${data.quantidade ? `<div class="popup-row">Quantidade: <span>${data.quantidade}</span></div>` : ''}
+      ${data.observacao ? `<div class="popup-row">Obs: <span>${data.observacao}</span></div>` : ''}
       <div class="popup-row">Status: <span>${data.status || 'pendente'}</span></div>
       <div class="popup-row">Por: <span>${data.fiscalNome || '—'}</span></div>`;
 
@@ -1406,7 +1426,7 @@
     document.getElementById('btnCameraAnomalia').classList.remove('selected');
     document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
     document.getElementById('btnSalvarAnomalia').disabled = true;
-    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste'].forEach(id => {
+    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste','tipoOutros'].forEach(id => {
       document.getElementById(id)?.classList.remove('selected');
     });
     document.getElementById('modalEndereco').textContent = 'Obtendo localização...';
@@ -1428,7 +1448,9 @@
     if (document.getElementById('foraObs')) document.getElementById('foraObs').value = '';
     if (document.getElementById('muxTodoWrap')) document.getElementById('muxTodoWrap').style.display = 'none';
     window._muxTodo = false;
-    // reset label do campo postes
+    // reset obs e label
+    if (document.getElementById('obsAnomalia')) document.getElementById('obsAnomalia').value = '';
+    if (document.getElementById('obsAnomaliaReq')) document.getElementById('obsAnomaliaReq').textContent = '';
     const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
     if (postesLabel) postesLabel.textContent = 'Entre os postes';
 
@@ -1497,6 +1519,10 @@
     document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
     document.getElementById('tipoFora').classList.toggle('selected', tipo === 'fora');
     document.getElementById('tipoPoste').classList.toggle('selected', tipo === 'poste');
+    document.getElementById('tipoOutros').classList.toggle('selected', tipo === 'outros');
+    // obs: obrigatória para 'outros', opcional para os demais
+    const obsReq = document.getElementById('obsAnomaliaReq');
+    if (obsReq) obsReq.textContent = tipo === 'outros' ? '(obrigatória)' : '(opcional)';
     // mux: mostra opção de circuito todo; reseta ao sair do mux
     const muxWrap = document.getElementById('muxTodoWrap');
     if (muxWrap) {
@@ -1530,10 +1556,10 @@
         document.getElementById('foraObs').value = '';
       }
     }
-    // ramal e fora: quantidade sempre 1, esconde controle; poste: também 1
+    // ramal e fora: quantidade sempre 1, esconde controle; poste e outros: também 1
     const qtyWrap = document.getElementById('qtyFieldWrap');
     if (qtyWrap) {
-      if (tipo === 'ramal' || tipo === 'fora' || tipo === 'poste') {
+      if (tipo === 'ramal' || tipo === 'fora' || tipo === 'poste' || tipo === 'outros') {
         document.getElementById('qtyValor').textContent = '1';
         qtyWrap.style.display = 'none';
       } else {
@@ -1603,10 +1629,11 @@
   function gerarTextoOS() {
     const isRamal   = selectedTipo === 'ramal';
     const isFora    = selectedTipo === 'fora';
+    const isOutros  = selectedTipo === 'outros';
     const isMuxTodo = selectedTipo === 'mux' && window._muxTodo;
     const isPoste   = selectedTipo === 'poste';
-    // fora do padrão: sem texto automático
-    if (isFora) {
+    // fora e outros: sem texto automático
+    if (isFora || isOutros) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
@@ -1679,9 +1706,11 @@
       document.getElementById('btnSalvarAnomalia').disabled = true;
       return;
     }
-    if (selectedTipo === 'fora') {
-      const obs = document.getElementById('foraObs')?.value.trim() || '';
-      document.getElementById('btnSalvarAnomalia').disabled = !obs;
+    if (selectedTipo === 'fora' || selectedTipo === 'outros') {
+      const obsEl = selectedTipo === 'fora'
+        ? document.getElementById('foraObs')
+        : document.getElementById('obsAnomalia');
+      document.getElementById('btnSalvarAnomalia').disabled = !(obsEl?.value.trim());
       return;
     }
     document.getElementById('btnSalvarAnomalia').disabled = false;
@@ -1691,6 +1720,7 @@
   window.salvarAnomalia = async function() {
     if (!selectedTipo || !fotoFile || !currentAnomaliaPos) return;
     if (selectedTipo === 'fora' && !document.getElementById('foraObs')?.value.trim()) return;
+    if (selectedTipo === 'outros' && !document.getElementById('obsAnomalia')?.value.trim()) return;
     const btn = document.getElementById('btnSalvarAnomalia');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
@@ -1734,9 +1764,14 @@
       if (foraUC)   docData.foraUC   = foraUC;
       if (foraObs)  docData.foraObs  = foraObs;
       if (selectedTipo === 'mux' && window._muxTodo) docData.muxCircuitoTodo = true;
+      const obsGeral = document.getElementById('obsAnomalia')?.value.trim() || '';
+      if (obsGeral) docData.observacao = obsGeral;
       await addDoc(collection(db, 'anomalias'), docData);
 
       closeModalAnomalia();
+      // reset botão ANTES de fechar para próxima abertura
+      btn.disabled = true;
+      btn.textContent = 'Salvar';
       showToast('Anomalia registrada com sucesso!');
       await loadAnomaliasNoMapa(currentCircuitoId);
     } catch(err) {
