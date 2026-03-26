@@ -126,6 +126,8 @@
     .filtro-btn.mux.active { background: rgba(181,123,238,0.15); border-color: rgba(181,123,238,0.6); }
     .filtro-btn.poste { border-color: rgba(180,120,60,0.3); color: #c8864a; }
     .filtro-btn.poste.active { background: rgba(180,120,60,0.15); border-color: rgba(180,120,60,0.6); }
+    .filtro-btn.outros { border-color: rgba(100,100,100,0.3); color: #aaa; }
+    .filtro-btn.outros.active { background: rgba(100,100,100,0.15); border-color: rgba(100,100,100,0.6); }
     .filtro-btn.pendente.active  { background: rgba(255,179,0,0.12); border-color: rgba(255,179,0,0.35); color: var(--eq-warning); }
     .filtro-btn.programado.active{ background: rgba(124,63,192,0.12); border-color: rgba(124,63,192,0.35); color: #bf7fff; }
     .filtro-btn.concluido.active { background: rgba(0,229,160,0.12); border-color: rgba(0,229,160,0.35); color: var(--eq-success); }
@@ -198,6 +200,7 @@
     .card-tipo-badge.mux       { background: rgba(181,123,238,0.12); color: #b57bee; border-color: rgba(181,123,238,0.3); }
     .card-tipo-badge.fora      { background: rgba(255,77,109,0.12); color: var(--eq-error); border-color: rgba(255,77,109,0.3); }
     .card-tipo-badge.poste     { background: rgba(180,120,60,0.12); color: #c8864a; border-color: rgba(180,120,60,0.3); }
+    .card-tipo-badge.outros    { background: rgba(100,100,100,0.12); color: #aaa; border-color: rgba(100,100,100,0.3); }
 
     .card-status-badge {
       position: absolute; top: 10px; right: 10px;
@@ -409,6 +412,7 @@
     <button class="filtro-btn ramal" onclick="setFiltroTipo('ramal', this)">🏠 Ramal</button>
     <button class="filtro-btn mux" onclick="setFiltroTipo('mux', this)">🔄 MBX</button>
     <button class="filtro-btn poste" onclick="setFiltroTipo('poste', this)">🪵 Sub. Poste</button>
+    <button class="filtro-btn outros" onclick="setFiltroTipo('outros', this)">📋 Outros</button>
   </div>
 
   <!-- filtros status -->
@@ -661,7 +665,7 @@
     lista.innerHTML = '';
     itens.forEach(a => {
       const dataStr = a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-      const tipoLabel = { poda: '✂ Poda', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', mux: '🔄 MBX', fora: '⚠️ Fora Padrão', poste: '🪵 Sub. Poste' }[a.tipo] || a.tipo;
+      const tipoLabel = { poda: '✂ Poda', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', mux: '🔄 MBX', fora: '⚠️ Fora Padrão', poste: '🪵 Sub. Poste', outros: '📋 Outros' }[a.tipo] || a.tipo;
       const statusLabel = { pendente: '⏳ Pendente', programado: '📋 Programado', concluido: '✓ Concluído' }[a.status] || a.status;
 
       const fotoHtml = a.fotoUrl
@@ -726,6 +730,10 @@
               ${equipeHtml}
             </div>
             ${fotoConclusaoHtml}
+            ${(a.observacao || a.foraObs) ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4">
+              <span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>
+              ${a.observacao || a.foraObs}
+            </div>` : ''}
             <div class="card-actions">${botoesHtml}</div>
           </div>
         </div>`;
@@ -842,37 +850,56 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   };
 
-  // ── Exportar anomalias pendentes (CSV) ──
-  window.exportarPendentes = function() {
-    const pendentes = todasAnomalias.filter(a => a.status === 'pendente');
-    if (!pendentes.length) return showToast('Nenhuma anomalia pendente para exportar.', true);
+  // ── Exportar anomalias (todas) para Excel ──
+  window.exportarPendentes = async function() {
+    if (!todasAnomalias.length) return showToast('Nenhuma anomalia para exportar.', true);
 
-    const tipoLabel = { poda: 'Poda', espacador: 'Espacador', ramal: 'Ramal', mux: 'MBX', fora: 'Fora Padrao', poste: 'Sub. Poste' };
-    const linhas = [
-      ['Circuito', 'Tipo', 'Endereço', 'Entre Postes', 'Quantidade', 'Fiscal', 'Registrado em']
-    ];
-    pendentes.forEach(a => {
-      const data = a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-      linhas.push([
-        a.circuitoNome || a.circuitoId || '—',
-        tipoLabel[a.tipo] || a.tipo || '—',
-        (a.endereco || '—').replace(/,/g, ';'),
-        (a.postes   || '—').replace(/,/g, ';'),
-        a.quantidade || 1,
-        (a.fiscalNome || '—').replace(/,/g, ';'),
-        data
-      ]);
-    });
+    // carrega SheetJS dinamicamente se não estiver carregado
+    if (!window.XLSX) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
 
-    const csv = linhas.map(r => r.map(c => `"${c}"`).join(',')).join('\r\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `anomalias_pendentes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`✓ ${pendentes.length} anomalias exportadas.`);
+    const tipoLabel = { poda: 'Poda', espacador: 'Espaçador', ramal: 'Ramal', mux: 'MBX', fora: 'Fora do Padrão', poste: 'Sub. Poste', outros: 'Outros' };
+    const statusLabel = { pendente: 'Pendente', programado: 'Programado', concluido: 'Concluído' };
+
+    const rows = todasAnomalias.map(a => ({
+      'Circuito':         a.circuitoNome || a.circuitoId || '—',
+      'Tipo':             tipoLabel[a.tipo] || a.tipo || '—',
+      'Status':           statusLabel[a.status] || a.status || '—',
+      'Endereço':         a.endereco || '—',
+      'Entre Postes':     a.postes || '—',
+      'Quantidade':       a.quantidade || 1,
+      'Medidor (Ramal)':  a.ramalMedidor || '—',
+      'UC (Ramal)':       a.ramalUC || '—',
+      'Medidor (Fora)':   a.foraMedidor || '—',
+      'UC (Fora)':        a.foraUC || '—',
+      'Obs. Irregularidade': a.foraObs || '—',
+      'Observação':       a.observacao || '—',
+      'MBX Circuito Todo': a.muxCircuitoTodo ? 'Sim' : '—',
+      'Fiscal':           a.fiscalNome || '—',
+      'Equipe':           a.equipeNome || '—',
+      'Registrado em':    a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—',
+      'Concluído em':     a.concluidoEm?.toDate ? a.concluidoEm.toDate().toLocaleDateString('pt-BR') : '—',
+      'Lat':              a.lat || '',
+      'Lng':              a.lng || ''
+    }));
+
+    const ws = window.XLSX.utils.json_to_sheet(rows);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, 'Anomalias');
+
+    // auto-width
+    const cols = Object.keys(rows[0] || {}).map(k => ({ wch: Math.max(k.length, 12) }));
+    ws['!cols'] = cols;
+
+    const fname = 'anomalias_' + new Date().toLocaleDateString('pt-BR').replace(/\//g,'-') + '.xlsx';
+    window.XLSX.writeFile(wb, fname);
+    showToast(`✓ ${rows.length} anomalias exportadas para Excel.`);
   };
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
