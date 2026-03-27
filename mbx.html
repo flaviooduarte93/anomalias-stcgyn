@@ -199,252 +199,184 @@
   <div class="toast-obg-txt">Obrigado!</div>
   <div class="toast-obg-sub" id="toastObgSub">Registro atualizado com sucesso.</div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<script type="module">
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import {
-  getFirestore, doc, getDoc, collection, getDocs,
-  updateDoc, query, where, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const app = getApps().length ? getApp() : initializeApp({
-  apiKey:"AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
-  authDomain:"anomalias-stcgyn.firebaseapp.com",
-  projectId:"anomalias-stcgyn",
-  storageBucket:"anomalias-stcgyn.firebasestorage.app",
-  messagingSenderId:"247707729519",
-  appId:"1:247707729519:web:c3dcaf6d9e707fee59979a"
-});
-const auth = getAuth(app);
-const db   = getFirestore(app);
-
-let cUser  = null;
-let dados  = [];       // todas as anomalias mux agrupadas por circuito
-let filtro = 'pendente';
-let pronto = false;
-
-const authTimer = setTimeout(() => { if (!pronto) location.href = 'index.html'; }, 8000);
-
-onAuthStateChanged(auth, async (user) => {
-  clearTimeout(authTimer);
-  if (!user) { location.href = 'index.html'; return; }
-  if (pronto) return;
-  pronto = true;
-  try {
-    const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!snap.exists()) { await signOut(auth); location.href = 'index.html'; return; }
-    const d = snap.data();
-    if (d.perfil !== 'admin') { location.href = 'mapa.html'; return; } // apenas admin
-    cUser = { uid: user.uid, nome: d.nome };
-    document.getElementById('avatarEl').textContent = (d.nome || '?')[0].toUpperCase();
-    await carregar();
-  // badge pendências (admin-only page)
-  try {
-    const bSnap = await getDocs(query(collection(db, 'inspecoes'), where('status', '==', 'pendente')));
-    const badge = document.getElementById('badgePendencias');
-    if (badge && bSnap.size > 0) { badge.textContent = bSnap.size; badge.style.display = 'flex'; }
-  } catch(_) {}
-  } catch(e) {
-    console.error(e);
-    showErro('Erro ao carregar. Recarregue a pagina.');
+async function fetchAll(table, opts = {}) {
+  const { select='*', filters={}, order=null } = opts;
+  let results=[], offset=0, limit=1000;
+  while (true) {
+    let q = sb.from(table).select(select).range(offset, offset+limit-1);
+    for (const [col,val] of Object.entries(filters)) {
+      if (val===null) q=q.is(col,null);
+      else if (Array.isArray(val)) q=q.in(col,val);
+      else q=q.eq(col,val);
+    }
+    if (order) q=q.order(order.col,{ascending:order.asc??true});
+    const {data,error}=await q;
+    if (error){console.error(`fetchAll(${table}):`,error);break;}
+    results=results.concat(data||[]);
+    if ((data||[]).length<limit) break;
+    offset+=limit;
   }
-});
+  return results;
+}
 
-window.doLogout = async () => {
-  await signOut(auth);
-  sessionStorage.removeItem('userPerfil');
-  location.href = 'index.html';
-};
+let cUser=null, dados=[], filtro='pendente';
 
-// ── carregar anomalias MUX do Firestore ──
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) { location.href='index.html'; return; }
+  const { data:u } = await sb.from('usuarios').select('*').eq('auth_id',session.user.id).single();
+  if (!u) { await sb.auth.signOut(); location.href='index.html'; return; }
+  if (u.perfil !== 'admin') { location.href='mapa.html'; return; }
+  cUser = { uid: u.id, nome: u.nome };
+  document.getElementById('avatarEl').textContent = (u.nome||'?')[0].toUpperCase();
+  await carregar();
+  // badge pendências
+  const { count } = await sb.from('inspecoes').select('*',{count:'exact',head:true}).eq('status','pendente');
+  const badge = document.getElementById('badgePendencias');
+  if (badge && count > 0) { badge.textContent=count; badge.style.display='flex'; }
+})();
+
+window.doLogout = async () => { await sb.auth.signOut(); sessionStorage.clear(); location.href='index.html'; };
+
 async function carregar() {
   showSk();
   try {
-    // busca todas anomalias do tipo mux
-    const snap = await getDocs(query(collection(db, 'anomalias'), where('tipo', '==', 'mux')));
-    const anomalias = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // busca todas anomalias mux com loop 1000/1000
+    const anomalias = await fetchAll('anomalias', { filters:{ tipo:'mux' }, order:{ col:'criado_em', asc:false } });
 
-    // agrupa por circuitoId (cada circuito = 1 card)
+    // agrupa por circuito_id
     const mapa = {};
     anomalias.forEach(a => {
-      const cid = a.circuitoId || 'desconhecido';
+      const cid = a.circuito_id || 'desconhecido';
       if (!mapa[cid]) {
         mapa[cid] = {
           circuitoId:   cid,
-          circuitoNome: a.circuitoNome || cid,
-          fiscalNome:   a.fiscalNome || '—',
-          clientes:     0,
-          potencia:     '—',
-          trechos:      0,
-          status:       a.mbxStatus || 'pendente', // pendente | mapeado | tatico
-          anomalias:    [],
-          criadoEm:     a.criadoEm,
-          ids:          []
+          circuitoNome: a.circuito_nome || cid,
+          fiscalNome:   a.fiscal_nome || '—',
+          clientes: 0, potencia: '—', trechos: 0,
+          status:   a.mbx_status || 'pendente',
+          anomalias:[], ids:[], criadoEm: a.criado_em
         };
       }
-      mapa[cid].trechos      += (a.quantidade || 1);
+      mapa[cid].trechos += (a.quantidade || 1);
       mapa[cid].anomalias.push(a);
       mapa[cid].ids.push(a.id);
-      // pega potencia/clientes do circuito se disponivel
-      if (a.mbxStatus) mapa[cid].status = a.mbxStatus;
+      if (a.mbx_status) mapa[cid].status = a.mbx_status;
     });
 
-    // busca info de circuito (potencia, clientes) para cada GN
-    const cids = Object.keys(mapa);
-    await Promise.all(cids.map(async (cid) => {
-      try {
-        const snap2 = await getDocs(query(collection(db,'circuitos'), where('nome','==', mapa[cid].circuitoNome)));
-        if (!snap2.empty) {
-          const cd = snap2.docs[0].data();
-          mapa[cid].potencia = cd.potencia || '—';
-          mapa[cid].clientes = cd.clientes || 0;
-        }
-      } catch(_) {}
-    }));
+    // busca info de potencia/clientes dos circuitos em batch
+    const nomes = Object.values(mapa).map(m => m.circuitoNome).filter(Boolean);
+    if (nomes.length) {
+      const circs = await fetchAll('circuitos', { filters:{ ativo:true } });
+      circs.forEach(c => {
+        const cid = Object.keys(mapa).find(k => mapa[k].circuitoNome === c.nome);
+        if (cid) { mapa[cid].potencia = c.potencia||'—'; mapa[cid].clientes = c.clientes||0; }
+      });
+    }
 
-    dados = Object.values(mapa).sort((a,b) => b.trechos - a.trechos);
+    dados = Object.values(mapa).sort((a,b) => b.trechos-a.trechos);
 
-    // sumario total
-    const totTrafos  = dados.length;
-    const totClients = dados.reduce((s,d) => s + (parseInt(d.clientes)||0), 0);
-    const totTrechos = dados.reduce((s,d) => s + d.trechos, 0);
-    document.getElementById('sTrafos').textContent   = totTrafos;
-    document.getElementById('sClientes').textContent = totClients;
-    document.getElementById('sTrechos').textContent  = totTrechos;
+    document.getElementById('sTrafos').textContent   = dados.length;
+    document.getElementById('sClientes').textContent = dados.reduce((s,d)=>s+(parseInt(d.clientes)||0),0);
+    document.getElementById('sTrechos').textContent  = dados.reduce((s,d)=>s+d.trechos,0);
 
     renderLista();
-  } catch(e) {
-    console.error(e);
-    showErro('Erro ao buscar dados do Firestore.');
-  }
+  } catch(e) { console.error(e); showErro('Erro ao buscar dados.'); }
 }
 
-// ── render ──
 function renderLista() {
   const el = document.getElementById('lista');
   let itens = dados.slice();
-
-  if (filtro !== 'todos') {
-    itens = itens.filter(d => (d.status || 'pendente') === filtro);
-  }
+  if (filtro !== 'todos') itens = itens.filter(d=>(d.status||'pendente')===filtro);
 
   const lbls = { pendente:'Pendentes de avaliacao', mapeado:'Ja mapeados', tatico:'Enviados ao tatico', todos:'Todos os transformadores' };
-  document.getElementById('secTtl').textContent  = lbls[filtro] || '';
+  document.getElementById('secTtl').textContent  = lbls[filtro]||'';
   document.getElementById('cntPill').textContent = itens.length;
 
   if (!itens.length) {
-    const msgs = {
-      pendente: 'Nenhum transformador pendente de avaliacao.<br><strong>Tudo avaliado!</strong>',
-      mapeado:  'Nenhum transformador marcado como mapeado ainda.',
-      tatico:   'Nenhum enviado ao tatico ainda.',
-      todos:    'Nenhuma anomalia MBX registrada ainda.'
-    };
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🔄</div><p>' + (msgs[filtro]||'') + '</p></div>';
+    const msgs = { pendente:'Nenhum transformador pendente de avaliacao.<br><strong>Tudo avaliado!</strong>', mapeado:'Nenhum transformador marcado como mapeado ainda.', tatico:'Nenhum enviado ao tatico ainda.', todos:'Nenhuma anomalia MBX registrada ainda.' };
+    el.innerHTML='<div class="empty"><div class="empty-icon">🔄</div><p>'+(msgs[filtro]||'')+'</p></div>';
     return;
   }
 
-  let h = '';
-  itens.forEach(function(item) {
+  el.innerHTML = itens.map(item => {
     const cid    = item.circuitoId;
-    const status = item.status || 'pendente';
-    const dt     = item.criadoEm && item.criadoEm.toDate ? item.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-    const stBadge = status === 'mapeado'
+    const status = item.status||'pendente';
+    const dt     = item.criadoEm ? new Date(item.criadoEm).toLocaleDateString('pt-BR') : '—';
+    const stBadge = status==='mapeado'
       ? '<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(26,86,196,.2);color:#7aabff;border:1px solid rgba(26,86,196,.4)">Mapeado</span>'
-      : status === 'tatico'
+      : status==='tatico'
       ? '<span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(124,63,192,.2);color:#b57bee;border:1px solid rgba(124,63,192,.4)">Enviado ao tatico</span>'
       : '';
-
-    const btns = status === 'pendente'
-      ? '<button class="btn-acao btn-mapeado" data-cid="' + cid + '" data-acao="mapeado" onclick="acaoMBX(this)">'
-        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
-        + 'Ja e alvo mapeado</button>'
-        + '<button class="btn-acao btn-tatico" data-cid="' + cid + '" data-acao="tatico" onclick="acaoMBX(this)">'
-        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>'
-        + 'Enviar ao tatico</button>'
-      : '<button class="btn-acao btn-mapeado" data-cid="' + cid + '" data-acao="pendente" onclick="acaoMBX(this)" style="background:rgba(255,255,255,.07);color:var(--gr)">'
-        + 'Reverter para pendente</button>';
-
-    h += '<div class="mbx-card" id="card-' + cid + '">'
-      + '<div class="card-top">'
-      + '<div><div class="card-nome">' + item.circuitoNome + '</div>'
-      + '<div class="card-fiscal">Fiscal: ' + item.fiscalNome + '</div></div>'
-      + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
-      + '<div class="mux-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' + item.trechos + ' trecho' + (item.trechos > 1 ? 's' : '') + '</div>'
-      + stBadge
-      + '</div></div>'
-      + '<div class="stats-grid">'
-      + '<div class="stat-box"><div class="stat-val cli">' + (item.clientes || '—') + '</div><div class="stat-lbl">Clientes</div></div>'
-      + '<div class="stat-box"><div class="stat-val kva">' + (item.potencia || '—') + '</div><div class="stat-lbl">kVA</div></div>'
-      + '<div class="stat-box"><div class="stat-val trc">' + item.trechos + '</div><div class="stat-lbl">Trechos MBX</div></div>'
-      + '</div>'
-      + '<div class="card-info">'
-      + '<div class="info-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Solicitado em <span>' + dt + '</span></div>'
-      + '<div class="info-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' + item.anomalias.length + ' apontamento' + (item.anomalias.length > 1 ? 's' : '') + '</div>'
-      + '</div>'
-      + '<div class="card-actions">' + btns + '</div>'
-      + '</div>';
-  });
-
-  el.innerHTML = h;
+    const btns = status==='pendente'
+      ? `<button class="btn-acao btn-mapeado" data-cid="${cid}" data-acao="mapeado" onclick="acaoMBX(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Ja e alvo mapeado</button>
+       <button class="btn-acao btn-tatico" data-cid="${cid}" data-acao="tatico" onclick="acaoMBX(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Enviar ao tatico</button>`
+      : `<button class="btn-acao btn-mapeado" data-cid="${cid}" data-acao="pendente" onclick="acaoMBX(this)" style="background:rgba(255,255,255,.07);color:var(--gr)">Reverter para pendente</button>`;
+    return `<div class="mbx-card" id="card-${cid}">
+      <div class="card-top">
+        <div><div class="card-nome">${item.circuitoNome}</div><div class="card-fiscal">Fiscal: ${item.fiscalNome}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="mux-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>${item.trechos} trecho${item.trechos>1?'s':''}</div>
+          ${stBadge}
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val cli">${item.clientes||'—'}</div><div class="stat-lbl">Clientes</div></div>
+        <div class="stat-box"><div class="stat-val kva">${item.potencia||'—'}</div><div class="stat-lbl">kVA</div></div>
+        <div class="stat-box"><div class="stat-val trc">${item.trechos}</div><div class="stat-lbl">Trechos MBX</div></div>
+      </div>
+      <div class="card-info">
+        <div class="info-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Solicitado em <span>${dt}</span></div>
+        <div class="info-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${item.anomalias.length} apontamento${item.anomalias.length>1?'s':''}</div>
+      </div>
+      <div class="card-actions">${btns}</div>
+    </div>`;
+  }).join('');
 }
 
-// ── acao (mapeado | tatico | pendente) ──
 window.acaoMBX = async function(btn) {
   const cid  = btn.dataset.cid;
   const acao = btn.dataset.acao;
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>';
-
   try {
-    // atualiza todas as anomalias deste circuito com o novo status
-    const item = dados.find(d => d.circuitoId === cid);
-    if (item) {
+    const item = dados.find(d => d.circuitoId===cid);
+    if (item && item.ids.length) {
+      // atualiza todas as anomalias do circuito em batch
       await Promise.all(item.ids.map(id =>
-        updateDoc(doc(db, 'anomalias', id), {
-          mbxStatus: acao,
-          mbxAtualizadoEm: serverTimestamp(),
-          mbxAdminId: cUser.uid
-        })
+        sb.from('anomalias').update({
+          mbx_status: acao,
+          mbx_atualizado_em: new Date().toISOString(),
+          mbx_admin_id: cUser.uid
+        }).eq('id', id)
       ));
-      // atualiza localmente
       item.status = acao;
     }
-
-    const subs = {
-      mapeado: 'Transformador marcado como alvo mapeado.',
-      tatico:  'Enviado ao tatico com sucesso.',
-      pendente:'Revertido para pendente.'
-    };
-    mostrarObrigado(subs[acao] || 'Atualizado.');
-
-    // remove o card com animacao se nao for filtro "todos"
+    const subs = { mapeado:'Transformador marcado como alvo mapeado.', tatico:'Enviado ao tatico com sucesso.', pendente:'Revertido para pendente.' };
+    mostrarObrigado(subs[acao]||'Atualizado.');
     if (filtro !== 'todos') {
-      const card = document.getElementById('card-' + cid);
-      if (card) {
-        card.classList.add('saindo');
-        setTimeout(() => renderLista(), 350);
-      }
-    } else {
-      renderLista();
-    }
-  } catch(e) {
-    console.error(e);
-    btn.disabled = false;
-    btn.textContent = 'Erro — tentar novamente';
-  }
+      const card = document.getElementById('card-'+cid);
+      if (card) { card.classList.add('saindo'); setTimeout(()=>renderLista(),350); }
+    } else { renderLista(); }
+  } catch(e) { console.error(e); btn.disabled=false; btn.textContent='Erro — tentar novamente'; }
 };
 
 function mostrarObrigado(sub) {
   document.getElementById('toastObgSub').textContent = sub;
   const t = document.getElementById('toastObg');
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 5000);
+  setTimeout(()=>t.classList.remove('show'),5000);
 }
 
 window.setFiltro = function(f, btn) {
-  filtro = f;
-  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  filtro=f;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderLista();
 };
@@ -452,14 +384,12 @@ window.setFiltro = function(f, btn) {
 function showSk() {
   document.getElementById('lista').innerHTML =
     '<div class="sk" style="height:200px;margin-bottom:12px"></div>'
-    + '<div class="sk" style="height:200px;margin-bottom:12px"></div>'
-    + '<div class="sk" style="height:200px"></div>';
+    +'<div class="sk" style="height:200px;margin-bottom:12px"></div>'
+    +'<div class="sk" style="height:200px"></div>';
 }
 function showErro(msg) {
-  document.getElementById('lista').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>' + msg + '</p></div>';
+  document.getElementById('lista').innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>'+msg+'</p></div>';
 }
-
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 </script>
 </body>
 </html>
