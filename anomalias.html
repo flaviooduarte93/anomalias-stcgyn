@@ -178,6 +178,13 @@
     .anomalia-card:hover { border-color: rgba(0,170,255,0.2); }
 
     .card-foto-wrap { position: relative; }
+    /* ── lightbox ── */
+    .lightbox{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;animation:lbIn .2s ease}
+    @keyframes lbIn{from{opacity:0}to{opacity:1}}
+    .lightbox img{max-width:94vw;max-height:90vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.7);object-fit:contain}
+    .lightbox-close{position:absolute;top:16px;right:20px;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:22px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .card-foto{cursor:zoom-in}
+    .foto-conclusao{cursor:zoom-in}
     .card-foto {
       width: 100%; height: 160px; object-fit: cover;
       display: block; background: rgba(255,255,255,0.04);
@@ -636,10 +643,10 @@
       const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
       const statusLabel={pendente:'⏳ Pendente',programado:'📋 Programado',concluido:'✓ Concluído'}[a.status]||a.status;
       const fotoHtml=a.foto_url
-        ?`<img class="card-foto" src="${cldThumb(a.foto_url)}" alt="Foto" loading="lazy"/>`
+        ?`<img class="card-foto" src="${cldThumb(a.foto_url)}" alt="Foto" loading="lazy" onclick="openLightbox('${a.foto_url}')"/>`
         :`<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
       const fotoConclusaoHtml=a.foto_concluido_url
-        ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao" src="${cldThumb(a.foto_concluido_url)}" alt="Foto conclusão" loading="lazy"/></div>`:'';
+        ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao" src="${cldThumb(a.foto_concluido_url)}" alt="Foto conclusão" loading="lazy" onclick="openLightbox(cldThumb(a.foto_concluido_url))"/></div>`:'';
       const equipeHtml=a.equipe_id
         ?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>${a.equipe_nome||'—'}</span></div>`:'';
 
@@ -833,5 +840,10 @@
   };
 </script>
 
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="Foto ampliada"/>
+</div>
 </body>
 </html>
