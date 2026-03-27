@@ -584,6 +584,20 @@
   </svg>
 </button>
 
+<!-- Botão: mostrar pendentes no mapa (admin/fiscal) -->
+<button id="btnMostrarPendentes" onclick="togglePendentesNoMapa(this)" title="Ver serviços pendentes no mapa"
+  style="position:fixed;bottom:calc(var(--nav-h) + 72px);right:16px;z-index:900;
+         width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,179,0,0.4);
+         background:rgba(10,22,40,0.92);color:#ffb300;cursor:pointer;
+         display:none;align-items:center;justify-content:center;
+         box-shadow:0 2px 12px rgba(0,0,0,0.4);transition:all .2s;backdrop-filter:blur(8px)"
+  title="Mostrar pendentes">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+</button>
+
 <!-- BOTTOM NAV -->
 <script>
   // Aplica nav ANTES do render — começa tudo visível, esconde conforme perfil
@@ -967,6 +981,9 @@
     if (perfil === 'fiscal' || perfil === 'admin') {
       document.getElementById('nav-anomalias').classList.remove('hidden');
       document.getElementById('nav-pendencias').classList.remove('hidden');
+      // mostra botão de pendentes
+      const btn = document.getElementById('btnMostrarPendentes');
+      if (btn) btn.style.display = 'flex';
     }
     if (perfil === 'admin') {
       document.getElementById('nav-dashboard').classList.remove('hidden');
@@ -1942,6 +1959,60 @@
   };
 
   // ── navegação (Google Maps / Waze) ──
+  // ── Pendentes no mapa (botão alerta) ──
+  let _pendentesAtivos = false;
+  let _pendentesMarkers = [];
+
+  window.togglePendentesNoMapa = async function(btn) {
+    _pendentesAtivos = !_pendentesAtivos;
+
+    // visual do botão
+    btn.style.borderColor   = _pendentesAtivos ? '#ffb300' : 'rgba(255,179,0,0.4)';
+    btn.style.background    = _pendentesAtivos ? 'rgba(255,179,0,0.15)' : 'rgba(10,22,40,0.92)';
+    btn.title = _pendentesAtivos ? 'Ocultar pendentes' : 'Mostrar pendentes';
+
+    // remove markers anteriores
+    _pendentesMarkers.forEach(m => map.removeLayer(m));
+    _pendentesMarkers = [];
+
+    if (!_pendentesAtivos) return;
+
+    // busca todas as anomalias pendentes (sem filtro de circuito)
+    showToast('Carregando pendentes...');
+    try {
+      const filters = currentPerfil === 'equipe'
+        ? { equipe_id: currentUser.uid, status: 'programado' }
+        : { status: 'pendente' };
+      const pendentes = await fetchAll('anomalias', { filters });
+
+      if (!pendentes.length) { showToast('Nenhum serviço pendente.'); _pendentesAtivos = false; btn.style.borderColor='rgba(255,179,0,0.4)'; btn.style.background='rgba(10,22,40,0.92)'; return; }
+
+      const tipoLabel = { poda:'Poda', espacador:'Espaçador', mux:'MBX', ramal:'Ramal', fora:'Fora Padrão', poste:'Sub. Poste', outros:'Outros' };
+      const iconMap = { poda:iconPoda, mux:iconMux, ramal:iconRamal, fora:iconFora, poste:iconSubPoste, outros:iconFora };
+
+      pendentes.forEach(a => {
+        if (!a.lat || !a.lng) return;
+        const icon = iconMap[a.tipo] || iconEspacador;
+        const m = L.marker([a.lat, a.lng], { icon }).addTo(map);
+        const tipo = tipoLabel[a.tipo] || a.tipo;
+        const circuito = a.circuito_nome || a.circuito_id || '—';
+        m.bindPopup(`
+          <div class="popup-title">⏳ ${tipo}</div>
+          <div class="popup-row">Circuito: <span>${circuito}</span></div>
+          <div class="popup-row">Entre postes: <span>${a.postes||'—'}</span></div>
+          ${a.texto_os?`<div class="popup-row" style="margin-top:6px;font-size:11px;color:#8a9bbf">${a.texto_os}</div>`:''}
+          ${a.observacao?`<div class="popup-row" style="font-size:11px;color:#8a9bbf">Obs: ${a.observacao}</div>`:''}
+        `, { maxWidth: 260 });
+        _pendentesMarkers.push(m);
+      });
+
+      showToast(`✓ ${_pendentesMarkers.length} pendente${_pendentesMarkers.length!==1?'s':''} no mapa`);
+    } catch(e) {
+      console.error(e);
+      showToast('Erro ao carregar pendentes.', true);
+    }
+  };
+
   // ── Reposicionar FAB acima do trafo-card ──
   function reposicionarFAB() {
     const fab  = document.getElementById('fabAnomalias');
