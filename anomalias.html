@@ -643,10 +643,10 @@
       const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
       const statusLabel={pendente:'⏳ Pendente',programado:'📋 Programado',concluido:'✓ Concluído'}[a.status]||a.status;
       const fotoHtml=a.foto_url
-        ?`<img class="card-foto" src="${cldThumb(a.foto_url)}" alt="Foto" loading="lazy" onclick="openLightbox('${a.foto_url}')"/>`
+        ?`<img class="card-foto lb-trigger" src="${cldThumb(a.foto_url)}" data-full="${a.foto_url}" alt="Foto" loading="lazy"/>`
         :`<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
       const fotoConclusaoHtml=a.foto_concluido_url
-        ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao" src="${cldThumb(a.foto_concluido_url)}" alt="Foto conclusão" loading="lazy" onclick="openLightbox(cldThumb(a.foto_concluido_url))"/></div>`:'';
+        ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao lb-trigger" src="${cldThumb(a.foto_concluido_url)}" data-full="${a.foto_concluido_url}" alt="Foto conclusão" loading="lazy"/></div>`:'';
       const equipeHtml=a.equipe_id
         ?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>${a.equipe_nome||'—'}</span></div>`:'';
 
@@ -838,6 +838,30 @@
     window.XLSX.writeFile(wb,'anomalias_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.xlsx');
     showToast(`✓ ${rows.length} anomalias exportadas para Excel.`);
   };
+
+  // ── lightbox ──
+  function openLightbox(url) {
+    const fullUrl = (url||'')
+      .replace('/upload/w_400,q_65,f_auto/', '/upload/')
+      .replace('/upload/w_1200,q_75,f_auto/', '/upload/');
+    document.getElementById('lightboxImg').src = fullUrl;
+    document.getElementById('lightbox').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  window.openLightbox = openLightbox;
+
+  window.closeLightbox = function() {
+    document.getElementById('lightbox').style.display = 'none';
+    document.getElementById('lightboxImg').src = '';
+    document.body.style.overflow = '';
+  };
+
+  // event delegation — funciona com innerHTML dinâmico
+  document.addEventListener('click', function(e) {
+    const el = e.target.closest('.lb-trigger');
+    if (el) { e.stopPropagation(); openLightbox(el.dataset.full || el.src); }
+  });
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
 </script>
 
 <!-- LIGHTBOX -->
