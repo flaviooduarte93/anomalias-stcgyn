@@ -160,12 +160,21 @@
     <!-- TROCAR SENHA -->
     <form id="formTrocar" class="form" onsubmit="handleTrocarSenha(event)">
       <div class="trocar-info">
-        <strong>🔑 Redefinir senha</strong>
-        Informe seu usuário e defina uma nova senha. Não é necessário saber a senha atual.
+        <strong>🔑 Trocar senha</strong>
+        Informe seu usuário, a senha atual (temporária) e a nova senha desejada.
       </div>
       <div class="field">
         <label>Usuário</label>
         <input id="trocarUser" type="text" placeholder="ex: flaviooduarte" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label>Senha atual</label>
+        <div class="input-wrap">
+          <input id="trocarSenhaAtual" type="password" placeholder="senha temporária" class="has-toggle" autocomplete="current-password" required />
+          <button type="button" class="toggle-pw" onclick="togglePw('trocarSenhaAtual',this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <div class="field">
         <label>Nova senha</label>
@@ -198,8 +207,6 @@
 <script>
   const SUPABASE_URL  = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
   const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
-  // service role key necessária para resetar senha sem autenticação prévia
-  const SERVICE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDU1ODE5NywiZXhwIjoyMDkwMTM0MTk3fQ.NUf0vyKtoKwJWDrfGpcoWD1ZiWmdVy-9Zt9M4ovrIDA';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   function toEmail(username) {
@@ -292,56 +299,39 @@
     }
   }
 
-  // ── TROCAR SENHA (sem precisar da senha atual) ──
+  // ── TROCAR SENHA ──
+  // Fluxo: login com senha atual → updateUser com nova senha → logout de sessão temporária
   async function handleTrocarSenha(e) {
     e.preventDefault();
     hideMsg();
-    const username = document.getElementById('trocarUser').value.trim();
-    const senha    = document.getElementById('trocarPass').value;
-    const senha2   = document.getElementById('trocarPass2').value;
-    if (!username || !senha) return showMsg('Preencha todos os campos.', 'error');
-    if (senha !== senha2)   return showMsg('As senhas não coincidem.', 'error');
-    if (senha.length < 6)  return showMsg('A senha deve ter no mínimo 6 caracteres.', 'error');
+    const username   = document.getElementById('trocarUser').value.trim();
+    const senhaAtual = document.getElementById('trocarSenhaAtual').value;
+    const senhaNova  = document.getElementById('trocarPass').value;
+    const senhaNova2 = document.getElementById('trocarPass2').value;
+    if (!username || !senhaAtual || !senhaNova) return showMsg('Preencha todos os campos.', 'error');
+    if (senhaNova !== senhaNova2) return showMsg('As novas senhas não coincidem.', 'error');
+    if (senhaNova.length < 6)    return showMsg('A nova senha deve ter no mínimo 6 caracteres.', 'error');
+    if (senhaAtual === senhaNova) return showMsg('A nova senha deve ser diferente da atual.', 'error');
     setLoading('btnTrocar', true);
     try {
-      const email = toEmail(username);
-
-      // 1. busca o auth_id do usuário pela tabela usuarios
-      const { data: u, error: errU } = await sb.from('usuarios')
-        .select('auth_id, nome')
-        .eq('email', email)
-        .single();
-
-      if (errU || !u) {
-        // tenta também por username
-        const { data: u2 } = await sb.from('usuarios').select('auth_id,nome').eq('username', username).single();
-        if (!u2) throw new Error('Usuário não encontrado.');
-        Object.assign(u || {}, u2);
-      }
-
-      const authId = (u || {}).auth_id;
-      if (!authId) throw new Error('Usuário sem auth_id. Contacte o administrador.');
-
-      // 2. usa a Admin API para trocar a senha sem precisar da atual
-      const resp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authId}`, {
-        method: 'PUT',
-        headers: {
-          'apikey':        SERVICE_KEY,
-          'Authorization': `Bearer ${SERVICE_KEY}`,
-          'Content-Type':  'application/json'
-        },
-        body: JSON.stringify({ password: senha })
+      // 1. faz login com a senha atual para obter sessão válida
+      const { data: loginData, error: loginErr } = await sb.auth.signInWithPassword({
+        email: toEmail(username), password: senhaAtual
       });
+      if (loginErr) throw new Error('Usuário ou senha atual incorretos.');
 
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.message || 'Erro ao trocar senha.');
-      }
+      // 2. dentro da sessão ativa, troca para a nova senha
+      const { error: updateErr } = await sb.auth.updateUser({ password: senhaNova });
+      if (updateErr) throw new Error('Erro ao definir nova senha. Tente novamente.');
+
+      // 3. faz logout da sessão temporária (usuário vai fazer login normalmente)
+      await sb.auth.signOut();
 
       showMsg('✓ Senha alterada com sucesso! Faça login com a nova senha.', 'success');
-      document.getElementById('trocarUser').value  = '';
-      document.getElementById('trocarPass').value  = '';
-      document.getElementById('trocarPass2').value = '';
+      document.getElementById('trocarUser').value       = '';
+      document.getElementById('trocarSenhaAtual').value = '';
+      document.getElementById('trocarPass').value       = '';
+      document.getElementById('trocarPass2').value      = '';
       setTimeout(() => switchTab('login'), 2500);
     } catch(err) {
       showMsg(err.message || 'Erro ao trocar senha.', 'error');
