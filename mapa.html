@@ -959,7 +959,7 @@
     setupNav(data.perfil);
     await loadCircuitos();
     await loadPendenciasBadge();
-  });
+  })();
 
   // ── nav ──
   function setupNav(perfil) {
@@ -1921,12 +1921,12 @@
         try {
           const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
           const json = await res.json();
-          const _updFields = {
+          await sb.from('anomalias').update({
             status: 'concluido',
             foto_concluido_url: cldSave(json.secure_url),
             concluido_em: new Date().toISOString(),
             equipe_id: currentUser.uid
-          });
+          }).eq('id', anomaliaId);
           showToast('Serviço concluído!');
           map.closePopup();
           await loadAnomaliasNoMapa(currentCircuitoId);
