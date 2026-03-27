@@ -40,13 +40,15 @@
     .card.pendente{border-left:3px solid var(--wa)}
     .card.concluido{border-left:3px solid var(--su);cursor:pointer}
     .card.concluido:hover{border-color:rgba(0,229,160,.4);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,229,160,.1)}
-    .card.concluido::after{content:'👁 ver resumo';position:absolute;bottom:12px;right:14px;font-size:10px;color:var(--su);opacity:.6;font-weight:600;letter-spacing:.4px}
+    .card.concluido .resumo-hint{position:absolute;bottom:8px;right:14px;font-size:10px;color:var(--su);opacity:.7;font-weight:600;letter-spacing:.4px;pointer-events:none}
     .card.urgente::before{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 20px 20px 0;border-color:transparent var(--er) transparent transparent}
     .ctop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
     .cnome{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;line-height:1.2;background:linear-gradient(90deg,#fff,var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .spill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;flex-shrink:0;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
     .spill.pendente{background:rgba(255,179,0,.12);color:var(--wa);border:1px solid rgba(255,179,0,.25)}
     .spill.concluido{background:rgba(0,229,160,.12);color:var(--su);border:1px solid rgba(0,229,160,.25)}
+    .spill.cancelado{background:rgba(138,155,191,.1);color:var(--gr);border:1px solid rgba(138,155,191,.2)}
+    .card.cancelado{border-left:3px solid var(--gr);opacity:.7}
     .cmeta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
     .mi{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--gr)}
     .mi svg{width:13px;height:13px;flex-shrink:0}.mi span{color:var(--wh)}
@@ -128,7 +130,8 @@
   <div class="filtros hidden" id="filtrosWrap">
     <button class="fbtn active" onclick="setFiltro('todos',this)">Todos</button>
     <button class="fbtn" onclick="setFiltro('pendente',this)">Pendentes</button>
-    <button class="fbtn" onclick="setFiltro('concluido',this)">Concluidos</button>
+    <button class="fbtn" onclick="setFiltro('concluido',this)">Concluídos</button>
+    <button class="fbtn" onclick="setFiltro('cancelado',this)">Histórico</button>
   </div>
   <div class="sumrow">
     <div class="sumcard t"><div class="sumval" id="sTotal">-</div><div class="sumlbl">Total</div></div>
@@ -367,7 +370,11 @@
     else if(filtro!=='todos') itens=itens.filter(x=>x.status===filtro);
     document.getElementById('cntPill').textContent=itens.length;
     document.getElementById('secTtl').textContent=
-      cPerf==='fiscal'?'Inspecoes pendentes':filtro==='pendente'?'Inspecoes pendentes':filtro==='concluido'?'Inspecoes concluidas':'Todas as inspecoes';
+      cPerf==='fiscal'?'Inspecoes pendentes':
+      filtro==='pendente'?'Inspecoes pendentes':
+      filtro==='concluido'?'Inspecoes concluidas':
+      filtro==='cancelado'?'Histórico / Redelegadas':
+      'Todas as inspecoes';
     if(!itens.length){
       el.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>'+(cPerf==='fiscal'?'Nenhuma inspecao pendente. Tudo em dia!':'Nenhuma inspecao encontrada.')+'</p></div>';
       return;
@@ -471,15 +478,17 @@
           btnAcao+=`<button class="bsm b-suc" onclick="event.stopPropagation();abreMConc('${iid}','${iNome.replace(/'/g,"&#39;")}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>`;
         if(cPerf==='admin')
           btnAcao+=`<button class="bsm b-dan" onclick="event.stopPropagation();abreMCanc('${iid}','${iNome.replace(/'/g,"&#39;")}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancelar</button>`;
-      } else if(insp.status==='concluido'&&cPerf==='admin'){
-        btnAcao+=`<button class="bsm b-out" onclick="event.stopPropagation();abreNovaInsp('${cid}','${iNome.replace(/'/g,"&#39;")}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova inspecao</button>`;
+      } else if(insp.status==='concluido'){
+        btnAcao+=`<button class="bsm b-out" onclick="event.stopPropagation();goMapa('${cid}','${iid}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>`;
+        if(cPerf==='admin') btnAcao+=`<button class="bsm b-out" onclick="event.stopPropagation();abreNovaInsp('${cid}','${iNome.replace(/'/g,"&#39;")}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova inspecao</button>`;
       }
 
       const clickHandler=insp.status==='concluido'?`onclick="abreResumo('${iid}')"`:'';
-      return `<div class="card ${insp.status}${urgente?' urgente':''}" ${clickHandler}>
+      const statusLbl=insp.status==='pendente'?'Pendente':insp.status==='concluido'?'Concluido':'Redelegada';
+      return `<div class="card ${insp.status}${urgente?' urgente':''}" ${clickHandler} style="${insp.status==='concluido'?'padding-bottom:28px':''}">
         <div class="ctop">
           <div><div class="cnome">${nome}</div>${dBadge?'<div style="margin-top:4px">'+dBadge+'</div>':''}</div>
-          <span class="spill ${insp.status}">${insp.status==='pendente'?'Pendente':'Concluido'}</span>
+          <span class="spill ${insp.status}">${statusLbl}</span>
         </div>
         <div class="cmeta">
           <div class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Delegado: <span>${dtStr}</span></div>
@@ -487,6 +496,7 @@
         </div>
         ${inspExtra}${concInfo}
         ${btnAcao?`<div class="cacts" style="margin-top:10px">${btnAcao}</div>`:''}
+        ${insp.status==='concluido'?'<div class="resumo-hint">👁 clique para ver resumo</div>':''}
       </div>`;
     }).join('');
   }
@@ -510,6 +520,15 @@
     const foraList=anomInsp.filter(a=>a.tipo==='fora');
 
     const row=(label,val)=>val&&val!=='—'?`<tr><td>${label}</td><td>${val}</td></tr>`:'';
+
+    // textos das anomalias agrupados por tipo
+    const tipoLabel2={poda:'Poda',espacador:'Espaçador',mux:'MBX',ramal:'Ramal',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'};
+    const anomTextos=anomInsp.map(a=>{
+      const tipo=tipoLabel2[a.tipo]||a.tipo;
+      const texto=a.texto_os||'';
+      const obs=a.observacao||a.fora_obs||'';
+      return{tipo,texto,obs,postes:a.postes||'',quantidade:a.quantidade||1};
+    });
 
     let html=`<div class="resumo-section">
       <div class="resumo-section-ttl">Inspeção</div>
@@ -538,12 +557,41 @@
       </table>
     </div>`;
 
+    if(anomTextos.length>0){
+      html+=`<div class="resumo-section">
+        <div class="resumo-section-ttl">Textos das anomalias (${anomTextos.length})</div>
+        <table class="resumo-table">
+          ${anomTextos.map((a,i)=>`<tr>
+            <td style="color:var(--cy);white-space:nowrap;font-size:11px">${a.tipo}</td>
+            <td>${a.texto?`<div style="margin-bottom:${a.obs?'3px':'0'}">${a.texto}</div>`:''}${a.obs?`<div style="color:var(--gr);font-size:11px">Obs: ${a.obs}</div>`:''}</td>
+          </tr>`).join('')}
+        </table>
+      </div>`;
+    }
+
     if(foraList.length>0){
       html+=`<div class="resumo-section">
         <div class="resumo-section-ttl">Clientes fora do padrão (${foraList.length})</div>
         <table class="resumo-table">
           <tr><th>UC</th><th>Medidor</th><th>Observação</th></tr>
           ${foraList.map(a=>`<tr><td>${a.fora_uc||'—'}</td><td>${a.fora_medidor||'—'}</td><td>${a.fora_obs||'—'}</td></tr>`).join('')}
+        </table>
+      </div>`;
+    }
+
+    // ── todas as anomalias com texto/observação ──
+    const tipoLabel={poda:'Poda',espacador:'Espaçador',mux:'MBX',ramal:'Ramal',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'};
+    const anomComTexto=anomInsp.filter(a=>a.texto_os||a.observacao||a.fora_obs);
+    if(anomComTexto.length>0){
+      html+=`<div class="resumo-section">
+        <div class="resumo-section-ttl">Detalhamento das anomalias (${anomComTexto.length})</div>
+        <table class="resumo-table">
+          <tr><th>Tipo</th><th>Descrição / Observação</th></tr>
+          ${anomComTexto.map(a=>{
+            const tipo=tipoLabel[a.tipo]||a.tipo;
+            const desc=a.texto_os||a.observacao||a.fora_obs||'—';
+            return `<tr><td>${tipo}</td><td>${desc}</td></tr>`;
+          }).join('')}
         </table>
       </div>`;
     }
@@ -581,6 +629,16 @@
       txt+='\n=== CLIENTES FORA DO PADRÃO ===\n';
       foraList.forEach((a,i)=>{
         txt+=`${i+1}. UC: ${a.fora_uc||'—'} | Medidor: ${a.fora_medidor||'—'} | Obs: ${a.fora_obs||'—'}\n`;
+      });
+    }
+    // textos das anomalias
+    const anomAll2=anomInsp.filter(a=>a.texto_os||a.observacao||a.fora_obs);
+    if(anomAll2.length>0){
+      txt+='\n=== TEXTOS DAS ANOMALIAS ===\n';
+      anomAll2.forEach((a,i)=>{
+        const tipoL={poda:'Poda',espacador:'Espaçador',mux:'MBX',ramal:'Ramal',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'}[a.tipo]||a.tipo;
+        if(a.texto_os) txt+=`${tipoL}: ${a.texto_os}\n`;
+        if(a.observacao||a.fora_obs) txt+=`  Obs: ${a.observacao||a.fora_obs}\n`;
       });
     }
     return txt;
