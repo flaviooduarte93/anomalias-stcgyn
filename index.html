@@ -4,243 +4,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Anomalias STCGYN — Login</title>
-  <!-- No-cache: sempre busca versão mais recente -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --eq-blue-dark:  #0a1628;
-      --eq-blue:       #0d3b8e;
-      --eq-blue-mid:   #1a56c4;
-      --eq-cyan:       #00aaff;
-      --eq-purple:     #5b2d8e;
-      --eq-purple-mid: #7c3fc0;
-      --eq-white:      #f0f4ff;
-      --eq-gray:       #8a9bbf;
-      --eq-error:      #ff4d6d;
-      --eq-success:    #00e5a0;
+      --eq-blue-dark:#0a1628;--eq-blue:#0d3b8e;--eq-blue-mid:#1a56c4;
+      --eq-cyan:#00aaff;--eq-purple:#5b2d8e;--eq-purple-mid:#7c3fc0;
+      --eq-white:#f0f4ff;--eq-gray:#8a9bbf;--eq-error:#ff4d6d;--eq-success:#00e5a0;
     }
-
-    html, body {
-      height: 100%;
-      font-family: 'Barlow', sans-serif;
-      background: var(--eq-blue-dark);
-      color: var(--eq-white);
-      overflow-x: hidden;
-      overflow-y: auto;
-    }
-
-    /* ── animated background ── */
-    .bg {
-      position: fixed; inset: 0; z-index: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(13,59,142,0.55) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(91,45,142,0.45) 0%, transparent 55%),
-        radial-gradient(ellipse 40% 40% at 60% 40%, rgba(0,170,255,0.10) 0%, transparent 50%),
-        #0a1628;
-    }
-    .bg-grid {
-      position: fixed; inset: 0; z-index: 0;
-      background-image:
-        linear-gradient(rgba(0,170,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,170,255,0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
-      animation: gridMove 20s linear infinite;
-    }
-    @keyframes gridMove {
-      0%   { background-position: 0 0; }
-      100% { background-position: 48px 48px; }
-    }
-
-    /* ── orb particles ── */
-    .orb {
-      position: fixed; border-radius: 50%; filter: blur(80px); z-index: 0; pointer-events: none;
-      animation: orbFloat linear infinite;
-    }
-    .orb-1 { width:320px; height:320px; top:-80px; left:-60px; background:rgba(13,59,142,0.4); animation-duration:18s; }
-    .orb-2 { width:220px; height:220px; bottom:-40px; right:-40px; background:rgba(91,45,142,0.35); animation-duration:14s; animation-delay:-6s; }
-    .orb-3 { width:140px; height:140px; top:40%; left:60%; background:rgba(0,170,255,0.15); animation-duration:22s; animation-delay:-10s; }
-    @keyframes orbFloat {
-      0%,100% { transform: translate(0,0) scale(1); }
-      33%      { transform: translate(30px,-20px) scale(1.05); }
-      66%      { transform: translate(-15px,25px) scale(0.96); }
-    }
-
-    /* ── layout ── */
-    .page {
-      position: relative; z-index: 1;
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px;
-    }
-
-    .card {
-      width: 100%; max-width: 420px;
-      background: rgba(10,22,40,0.75);
-      border: 1px solid rgba(0,170,255,0.18);
-      border-radius: 20px;
-      padding: 44px 40px 40px;
-      backdrop-filter: blur(24px);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 32px 80px rgba(0,0,0,0.5);
-      animation: cardIn .6s cubic-bezier(.16,1,.3,1) both;
-    }
-    @keyframes cardIn {
-      from { opacity:0; transform: translateY(32px) scale(.97); }
-      to   { opacity:1; transform: translateY(0) scale(1); }
-    }
-
-    /* ── logo ── */
-    .logo-wrap {
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      margin-bottom: 32px;
-    }
-    .logo-icon {
-      width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 24px rgba(0,170,255,0.25);
-    }
-    .logo-icon svg { width: 30px; height: 30px; }
-    .logo-name {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px; font-weight: 700; letter-spacing: 3px;
-      color: var(--eq-gray); text-transform: uppercase;
-    }
-    .logo-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 22px; font-weight: 700; letter-spacing: 1px;
-      color: var(--eq-white);
-      background: linear-gradient(90deg, #fff, var(--eq-cyan));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    /* ── tabs ── */
-    .tabs {
-      display: flex; background: rgba(255,255,255,0.05);
-      border-radius: 10px; padding: 4px; margin-bottom: 28px;
-    }
-    .tab {
-      flex: 1; padding: 9px 0; text-align: center;
-      font-size: 14px; font-weight: 600; letter-spacing: .5px;
-      border-radius: 7px; cursor: pointer; border: none; background: transparent;
-      color: var(--eq-gray); transition: all .25s;
-    }
-    .tab.active {
-      background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid));
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(0,170,255,0.2);
-    }
-
-    /* ── forms ── */
-    .form { display: none; flex-direction: column; gap: 16px; }
-    .form.visible { display: flex; animation: fadeUp .35s ease both; }
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(10px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    label { font-size: 12px; font-weight: 600; letter-spacing: .8px; color: var(--eq-gray); text-transform: uppercase; }
-
-    .input-wrap { position: relative; }
-    input {
-      width: 100%; padding: 13px 16px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; color: var(--eq-white);
-      font-family: 'Barlow', sans-serif; font-size: 15px;
-      outline: none; transition: border-color .2s, box-shadow .2s;
-    }
-    input::placeholder { color: rgba(138,155,191,0.5); }
-    input:focus {
-      border-color: var(--eq-cyan);
-      box-shadow: 0 0 0 3px rgba(0,170,255,0.12);
-    }
-    input.has-toggle { padding-right: 48px; }
-
-    .toggle-pw {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer; color: var(--eq-gray);
-      padding: 4px; display: flex; align-items: center; transition: color .2s;
-    }
-    .toggle-pw:hover { color: var(--eq-cyan); }
-
-    /* perfil select */
-    .select-wrap { position: relative; }
-    select {
-      width: 100%; padding: 13px 16px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; color: var(--eq-white);
-      font-family: 'Barlow', sans-serif; font-size: 15px;
-      outline: none; appearance: none; cursor: pointer;
-      transition: border-color .2s, box-shadow .2s;
-    }
-    select:focus {
-      border-color: var(--eq-cyan);
-      box-shadow: 0 0 0 3px rgba(0,170,255,0.12);
-    }
-    select option { background: #0d1f3c; color: #fff; }
-    .select-arrow {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      pointer-events: none; color: var(--eq-gray);
-    }
-
-    /* ── button ── */
-    .btn-primary {
-      width: 100%; padding: 14px;
-      background: linear-gradient(135deg, var(--eq-blue-mid) 0%, var(--eq-purple-mid) 100%);
-      border: none; border-radius: 10px;
-      color: #fff; font-family: 'Barlow Condensed', sans-serif;
-      font-size: 16px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-      cursor: pointer; margin-top: 6px;
-      transition: opacity .2s, transform .15s, box-shadow .2s;
-      box-shadow: 0 6px 20px rgba(0,170,255,0.2);
-    }
-    .btn-primary:hover  { opacity:.9; box-shadow: 0 8px 28px rgba(0,170,255,0.35); }
-    .btn-primary:active { transform: scale(.98); }
-    .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
-
-    /* ── messages ── */
-    .msg {
-      font-size: 13px; padding: 11px 14px; border-radius: 8px;
-      display: none; align-items: center; gap: 8px;
-    }
-    .msg.error   { display:flex; background:rgba(255,77,109,0.12); border:1px solid rgba(255,77,109,0.3); color:var(--eq-error); }
-    .msg.success { display:flex; background:rgba(0,229,160,0.10); border:1px solid rgba(0,229,160,0.25); color:var(--eq-success); }
-
-    /* ── divider ── */
-    .divider {
-      display: flex; align-items: center; gap: 12px; margin: 4px 0;
-      color: var(--eq-gray); font-size: 12px;
-    }
-    .divider::before, .divider::after {
-      content:''; flex:1; height:1px; background:rgba(255,255,255,0.08);
-    }
-
-    /* ── footer ── */
-    .card-footer {
-      margin-top: 24px; text-align: center;
-      font-size: 12px; color: rgba(138,155,191,0.6);
-    }
-    .card-footer span { color: var(--eq-cyan); }
-
-    /* ── loading spinner ── */
-    .spinner {
-      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff; border-radius: 50%;
-      animation: spin .7s linear infinite; display: inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--eq-blue-dark);color:var(--eq-white);overflow-x:hidden;overflow-y:auto;}
+    .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(13,59,142,0.55) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 90%,rgba(91,45,142,0.45) 0%,transparent 55%),radial-gradient(ellipse 40% 40% at 60% 40%,rgba(0,170,255,0.10) 0%,transparent 50%),#0a1628;}
+    .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,170,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,0.04) 1px,transparent 1px);background-size:48px 48px;animation:gridMove 20s linear infinite;}
+    @keyframes gridMove{0%{background-position:0 0}100%{background-position:48px 48px}}
+    .orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none;animation:orbFloat linear infinite;}
+    .orb-1{width:320px;height:320px;top:-80px;left:-60px;background:rgba(13,59,142,0.4);animation-duration:18s;}
+    .orb-2{width:220px;height:220px;bottom:-40px;right:-40px;background:rgba(91,45,142,0.35);animation-duration:14s;animation-delay:-6s;}
+    .orb-3{width:140px;height:140px;top:40%;left:60%;background:rgba(0,170,255,0.15);animation-duration:22s;animation-delay:-10s;}
+    @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-15px,25px) scale(0.96)}}
+    .page{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .card{width:100%;max-width:420px;background:rgba(10,22,40,0.75);border:1px solid rgba(0,170,255,0.18);border-radius:20px;padding:44px 40px 40px;backdrop-filter:blur(24px);box-shadow:0 0 0 1px rgba(255,255,255,0.04),0 32px 80px rgba(0,0,0,0.5);animation:cardIn .6s cubic-bezier(.16,1,.3,1) both;}
+    @keyframes cardIn{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:32px;}
+    .logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--eq-blue-mid),var(--eq-purple-mid));border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,170,255,0.25);}
+    .logo-icon svg{width:30px;height:30px;}
+    .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;color:var(--eq-gray);text-transform:uppercase;}
+    .logo-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--eq-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .tabs{display:flex;background:rgba(255,255,255,0.05);border-radius:10px;padding:4px;margin-bottom:28px;}
+    .tab{flex:1;padding:9px 0;text-align:center;font-size:14px;font-weight:600;letter-spacing:.5px;border-radius:7px;cursor:pointer;border:none;background:transparent;color:var(--eq-gray);transition:all .25s;}
+    .tab.active{background:linear-gradient(135deg,var(--eq-blue-mid),var(--eq-purple-mid));color:#fff;box-shadow:0 4px 12px rgba(0,170,255,0.2);}
+    .form{display:none;flex-direction:column;gap:16px;}
+    .form.visible{display:flex;animation:fadeUp .35s ease both;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .field{display:flex;flex-direction:column;gap:6px;}
+    label{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--eq-gray);text-transform:uppercase;}
+    .input-wrap{position:relative;}
+    input{width:100%;padding:13px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;}
+    input::placeholder{color:rgba(138,155,191,0.5);}
+    input:focus{border-color:var(--eq-cyan);box-shadow:0 0 0 3px rgba(0,170,255,0.12);}
+    input.has-toggle{padding-right:48px;}
+    .toggle-pw{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--eq-gray);padding:4px;display:flex;align-items:center;transition:color .2s;}
+    .toggle-pw:hover{color:var(--eq-cyan);}
+    .select-wrap{position:relative;}
+    select{width:100%;padding:13px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:15px;outline:none;appearance:none;cursor:pointer;transition:border-color .2s,box-shadow .2s;}
+    select:focus{border-color:var(--eq-cyan);box-shadow:0 0 0 3px rgba(0,170,255,0.12);}
+    select option{background:#0d1f3c;color:#fff;}
+    .select-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--eq-gray);}
+    .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--eq-blue-mid) 0%,var(--eq-purple-mid) 100%);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:opacity .2s,transform .15s,box-shadow .2s;box-shadow:0 6px 20px rgba(0,170,255,0.2);}
+    .btn-primary:hover{opacity:.9;box-shadow:0 8px 28px rgba(0,170,255,0.35);}
+    .btn-primary:active{transform:scale(.98);}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+    .msg{font-size:13px;padding:11px 14px;border-radius:8px;display:none;align-items:center;gap:8px;}
+    .msg.error{display:flex;background:rgba(255,77,109,0.12);border:1px solid rgba(255,77,109,0.3);color:var(--eq-error);}
+    .msg.success{display:flex;background:rgba(0,229,160,0.10);border:1px solid rgba(0,229,160,0.25);color:var(--eq-success);}
+    .card-footer{margin-top:24px;text-align:center;font-size:12px;color:rgba(138,155,191,0.6);}
+    .card-footer span{color:var(--eq-cyan);}
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
-
 <div class="bg"></div>
 <div class="bg-grid"></div>
 <div class="orb orb-1"></div>
@@ -249,8 +75,6 @@
 
 <div class="page">
   <div class="card">
-
-    <!-- Logo -->
     <div class="logo-wrap">
       <div class="logo-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -261,47 +85,41 @@
       <div class="logo-title">STCGYN — Anomalias</div>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" onclick="switchTab('login')">Entrar</button>
       <button class="tab" onclick="switchTab('cadastro')">Criar conta</button>
     </div>
 
-    <!-- Mensagem global -->
     <div id="msgGlobal" class="msg"></div>
 
-    <!-- ── FORM LOGIN ── -->
+    <!-- LOGIN -->
     <form id="formLogin" class="form visible" onsubmit="handleLogin(event)">
       <div class="field">
         <label>Usuário</label>
         <input id="loginUser" type="text" placeholder="ex: flaviooduarte93" autocomplete="username" required />
       </div>
-
       <div class="field">
         <label>Senha</label>
         <div class="input-wrap">
           <input id="loginPass" type="password" placeholder="••••••••" class="has-toggle" autocomplete="current-password" required />
-          <button type="button" class="toggle-pw" onclick="togglePw('loginPass', this)">
-            <svg id="eyeLogin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <button type="button" class="toggle-pw" onclick="togglePw('loginPass',this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
-
       <button type="submit" class="btn-primary" id="btnLogin">Entrar</button>
     </form>
 
-    <!-- ── FORM CADASTRO ── -->
+    <!-- CADASTRO -->
     <form id="formCadastro" class="form" onsubmit="handleCadastro(event)">
       <div class="field">
         <label>Usuário</label>
         <input id="cadUser" type="text" placeholder="ex: flaviooduarte93" autocomplete="username" required />
       </div>
-
       <div class="field">
         <label>Nome completo</label>
         <input id="cadNome" type="text" placeholder="Seu nome completo" required />
       </div>
-
       <div class="field">
         <label>Perfil</label>
         <div class="select-wrap">
@@ -311,32 +129,27 @@
             <option value="equipe">Equipe</option>
             <option value="admin">Admin</option>
           </select>
-          <span class="select-arrow">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
+          <span class="select-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
         </div>
       </div>
-
       <div class="field">
         <label>Senha</label>
         <div class="input-wrap">
           <input id="cadPass" type="password" placeholder="mínimo 6 caracteres" class="has-toggle" autocomplete="new-password" required minlength="6"/>
-          <button type="button" class="toggle-pw" onclick="togglePw('cadPass', this)">
+          <button type="button" class="toggle-pw" onclick="togglePw('cadPass',this)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
-
       <div class="field">
         <label>Confirmar senha</label>
         <div class="input-wrap">
           <input id="cadPass2" type="password" placeholder="repita a senha" class="has-toggle" autocomplete="new-password" required minlength="6"/>
-          <button type="button" class="toggle-pw" onclick="togglePw('cadPass2', this)">
+          <button type="button" class="toggle-pw" onclick="togglePw('cadPass2',this)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
-
       <button type="submit" class="btn-primary" id="btnCadastro">Criar conta</button>
     </form>
 
@@ -344,33 +157,18 @@
       Sistema de apontamento de anomalias<br/>
       <span>Grupo Equatorial Energia</span>
     </div>
-
   </div>
 </div>
 
-<!-- Firebase SDKs -->
-<script type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script>
+  // ── Supabase ──
+  const SUPABASE_URL = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
-    authDomain: "anomalias-stcgyn.firebaseapp.com",
-    projectId: "anomalias-stcgyn",
-    storageBucket: "anomalias-stcgyn.firebasestorage.app",
-    messagingSenderId: "247707729519",
-    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a",
-    measurementId: "G-K638EM6EJB"
-  };
-
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  // Converte username → email interno (Firebase exige email)
+  // username → email interno
   function toEmail(username) {
-    return username.trim().toLowerCase() + "@anomalias-stcgyn.app";
+    return username.trim().toLowerCase() + '@stcgyn.app';
   }
 
   function showMsg(text, type) {
@@ -381,60 +179,57 @@
       : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
     ) + text;
   }
-
-  function hideMsg() {
-    document.getElementById('msgGlobal').className = 'msg';
-  }
+  function hideMsg() { document.getElementById('msgGlobal').className = 'msg'; }
 
   function setLoading(btnId, loading) {
     const btn = document.getElementById(btnId);
     btn.disabled = loading;
-    btn.innerHTML = loading
-      ? '<span class="spinner"></span>'
+    btn.innerHTML = loading ? '<span class="spinner"></span>'
       : (btnId === 'btnLogin' ? 'Entrar' : 'Criar conta');
   }
 
-  // Redireciona conforme perfil e salva perfil no sessionStorage para nav instantânea
   function redirect(perfil) {
     sessionStorage.setItem('userPerfil', perfil);
-    const routes = {
-      admin:  'dashboard.html',
-      fiscal: 'pendencias.html',
-      equipe: 'pendencias.html'
-    };
+    const routes = { admin: 'dashboard.html', fiscal: 'pendencias.html', equipe: 'pendencias.html' };
     window.location.href = routes[perfil] || 'index.html';
   }
 
-  // LOGIN
-  window.handleLogin = async function(e) {
+  // ── LOGIN ──
+  async function handleLogin(e) {
     e.preventDefault();
     hideMsg();
     const username = document.getElementById('loginUser').value.trim();
     const senha    = document.getElementById('loginPass').value;
     if (!username || !senha) return showMsg('Preencha todos os campos.', 'error');
-
     setLoading('btnLogin', true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, toEmail(username), senha);
-      const snap = await getDoc(doc(db, 'usuarios', cred.user.uid));
-      if (!snap.exists()) throw new Error('Usuário não encontrado.');
-      const { perfil } = snap.data();
+      const { data, error } = await sb.auth.signInWithPassword({ email: toEmail(username), password: senha });
+      if (error) throw error;
+
+      // busca perfil na tabela usuarios
+      const { data: usuario, error: err2 } = await sb.from('usuarios')
+        .select('perfil, nome')
+        .eq('auth_id', data.user.id)
+        .single();
+      if (err2 || !usuario) throw new Error('Usuário não encontrado na base.');
+
+      sessionStorage.setItem('userNome', usuario.nome);
       showMsg('Acesso liberado! Redirecionando...', 'success');
-      setTimeout(() => redirect(perfil), 1200);
-    } catch (err) {
+      setTimeout(() => redirect(usuario.perfil), 1200);
+    } catch(err) {
       const msgs = {
-        'auth/invalid-credential': 'Usuário ou senha incorretos.',
-        'auth/user-not-found':     'Usuário não encontrado.',
-        'auth/wrong-password':     'Senha incorreta.',
-        'auth/too-many-requests':  'Muitas tentativas. Tente novamente em breve.',
+        'invalid_credentials': 'Usuário ou senha incorretos.',
+        'Invalid login credentials': 'Usuário ou senha incorretos.',
+        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
+        'Too many requests': 'Muitas tentativas. Aguarde um momento.',
       };
-      showMsg(msgs[err.code] || err.message, 'error');
+      showMsg(msgs[err.message] || err.message || 'Erro ao entrar.', 'error');
       setLoading('btnLogin', false);
     }
-  };
+  }
 
-  // CADASTRO
-  window.handleCadastro = async function(e) {
+  // ── CADASTRO ──
+  async function handleCadastro(e) {
     e.preventDefault();
     hideMsg();
     const username = document.getElementById('cadUser').value.trim();
@@ -450,33 +245,41 @@
 
     setLoading('btnCadastro', true);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, toEmail(username), senha);
-      await setDoc(doc(db, 'usuarios', cred.user.uid), {
-        username, nome, perfil,
-        criadoEm: new Date().toISOString()
+      // cria conta no Supabase Auth
+      const { data, error } = await sb.auth.signUp({
+        email: toEmail(username),
+        password: senha,
+        options: { emailRedirectTo: null }
       });
+      if (error) throw error;
+
+      // insere na tabela usuarios
+      const { error: err2 } = await sb.from('usuarios').insert({
+        auth_id:   data.user.id,
+        nome,
+        perfil,
+        email:     toEmail(username),
+        criado_em: new Date().toISOString()
+      });
+      if (err2) throw err2;
+
+      sessionStorage.setItem('userNome', nome);
       showMsg('Conta criada com sucesso! Redirecionando...', 'success');
       setTimeout(() => redirect(perfil), 1400);
-    } catch (err) {
+    } catch(err) {
       const msgs = {
-        'auth/email-already-in-use': 'Esse usuário já está cadastrado.',
-        'auth/weak-password':        'Senha muito fraca. Use pelo menos 6 caracteres.',
+        'User already registered': 'Esse usuário já está cadastrado.',
+        'Password should be at least 6 characters': 'Senha muito fraca.',
       };
-      showMsg(msgs[err.code] || err.message, 'error');
+      showMsg(msgs[err.message] || err.message || 'Erro ao criar conta.', 'error');
       setLoading('btnCadastro', false);
     }
-  };
-</script>
-
-<script>
-  // Registra Service Worker para cache busting
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
+  // ── UI helpers ──
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0) === (tab==='login')));
-    document.getElementById('formLogin').classList.toggle('visible',    tab === 'login');
+    document.getElementById('formLogin').classList.toggle('visible', tab === 'login');
     document.getElementById('formCadastro').classList.toggle('visible', tab === 'cadastro');
     document.getElementById('msgGlobal').className = 'msg';
   }
@@ -489,7 +292,15 @@
       ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
       : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
   }
-</script>
 
+  // redireciona se já estiver logado
+  (async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data: u } = await sb.from('usuarios').select('perfil,nome').eq('auth_id', session.user.id).single();
+      if (u) { sessionStorage.setItem('userNome', u.nome); redirect(u.perfil); }
+    }
+  })();
+</script>
 </body>
 </html>
