@@ -318,6 +318,10 @@
     .modal-select:focus { border-color: var(--eq-cyan); }
     .modal-select option { background: #0d1f3c; }
     .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .modal-info-item { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:8px; padding:8px 10px; }
+    .modal-info-item.full { grid-column:1/-1; }
+    .info-label { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--eq-gray); margin-bottom:3px; }
+    .info-val { font-size:13px; color:var(--eq-white); font-weight:500; }
     .btn-cancel {
       flex: 1; padding: 13px; background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--eq-gray);
@@ -536,6 +540,43 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModalProgramar()">Cancelar</button>
       <button class="btn-save" id="btnProgramarConfirmar" onclick="confirmarProgramar()">Programar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: concluir serviço (admin) -->
+<div class="modal-overlay" id="modalConcluir">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Concluir Serviço</div>
+    <div class="modal-sub" id="modalConcluirSub">Preencha os dados para registrar a conclusão.</div>
+
+    <div class="modal-info-grid" id="modalConcluirInfoGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px"></div>
+
+    <div id="modalConcluirEquipeWrap" style="display:none;margin-bottom:14px">
+      <label class="modal-label">Equipe executora</label>
+      <select class="modal-select" id="selectEquipeConc">
+        <option value="">Selecione a equipe...</option>
+      </select>
+    </div>
+
+    <label class="modal-label">Foto de conclusão (obrigatória)</label>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn-foto" id="btnCameraConc" onclick="abrirFotoConc('camera')" style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);cursor:pointer;font-size:13px;transition:all .2s">
+        📷 Câmera
+      </button>
+      <button class="btn-foto" id="btnGaleriaConc" onclick="abrirFotoConc('galeria')" style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);cursor:pointer;font-size:13px;transition:all .2s">
+        🖼 Galeria
+      </button>
+    </div>
+    <img id="fotoPreviewConc" src="" alt="Preview" style="display:none;width:100%;border-radius:8px;margin-bottom:10px;max-height:200px;object-fit:cover"/>
+
+    <label class="modal-label">Observações (opcional)</label>
+    <textarea id="obsConc" placeholder="Observações sobre a conclusão..." style="width:100%;padding:10px 12px;min-height:70px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;resize:none;outline:none;margin-bottom:14px"></textarea>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalConcluir()">Cancelar</button>
+      <button class="btn-save" id="btnConcluirConfirmar" onclick="confirmarConcluir()">✓ Concluir</button>
     </div>
   </div>
 </div>
