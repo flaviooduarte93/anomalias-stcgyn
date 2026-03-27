@@ -579,23 +579,6 @@
       </div>`;
     }
 
-    // ── todas as anomalias com texto/observação ──
-    const tipoLabel={poda:'Poda',espacador:'Espaçador',mux:'MBX',ramal:'Ramal',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'};
-    const anomComTexto=anomInsp.filter(a=>a.texto_os||a.observacao||a.fora_obs);
-    if(anomComTexto.length>0){
-      html+=`<div class="resumo-section">
-        <div class="resumo-section-ttl">Detalhamento das anomalias (${anomComTexto.length})</div>
-        <table class="resumo-table">
-          <tr><th>Tipo</th><th>Descrição / Observação</th></tr>
-          ${anomComTexto.map(a=>{
-            const tipo=tipoLabel[a.tipo]||a.tipo;
-            const desc=a.texto_os||a.observacao||a.fora_obs||'—';
-            return `<tr><td>${tipo}</td><td>${desc}</td></tr>`;
-          }).join('')}
-        </table>
-      </div>`;
-    }
-
     document.getElementById('mResumoBody').innerHTML=html;
     // guarda texto plano para copiar
     window._resumoTexto=montarTextoResumo(insp,anomInsp,nome,nPoda,nEsp,nMux,nRamal,nFora,nPoste,nOutros,foraList);
