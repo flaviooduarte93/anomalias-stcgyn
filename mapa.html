@@ -842,23 +842,33 @@
 
 <!-- SCRIPTS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  const SUPABASE_URL = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
-    authDomain: "anomalias-stcgyn.firebaseapp.com",
-    projectId: "anomalias-stcgyn",
-    storageBucket: "anomalias-stcgyn.firebasestorage.app",
-    messagingSenderId: "247707729519",
-    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
-  };
+  // ── fetchAll: loop de 1000 em 1000 ──
+  async function fetchAll(table, opts = {}) {
+    const { select = '*', filters = {}, order = null } = opts;
+    let results = [], offset = 0, limit = 1000;
+    while (true) {
+      let q = sb.from(table).select(select).range(offset, offset + limit - 1);
+      for (const [col, val] of Object.entries(filters)) {
+        if (val === null)          q = q.is(col, null);
+        else if (Array.isArray(val)) q = q.in(col, val);
+        else                        q = q.eq(col, val);
+      }
+      if (order) q = q.order(order.col, { ascending: order.asc ?? true });
+      const { data, error } = await q;
+      if (error) { console.error(`fetchAll(${table}):`, error); break; }
+      results = results.concat(data || []);
+      if ((data || []).length < limit) break;
+      offset += limit;
+    }
+    return results;
+  }
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth  = getAuth(app);
-  const db    = getFirestore(app);
 
   // ── estado global ──
   let currentUser = null;
@@ -932,12 +942,13 @@
   });
 
   // ── auth ──
-  onAuthStateChanged(auth, async user => {
-    if (!user) { window.location.href = 'index.html'; return; }
-    const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
-    const data = snap.data();
-    currentUser   = { uid: user.uid, ...data };
+  (async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+    const user = session.user;
+    const { data } = await sb.from('usuarios').select('*').eq('auth_id', user.id).single();
+    if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
+    currentUser   = { uid: data.id, ...data };
     currentPerfil = data.perfil;
 
     // UI
@@ -971,7 +982,7 @@
   };
 
   window.logout = async function() {
-    await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html';
+    await sb.auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html';
   };
 
   // ── carregar circuitos do Firestore ──
@@ -980,22 +991,20 @@
   async function loadCircuitos() {
     // equipe: só vê circuitos que têm anomalia programada para ela
     if (currentPerfil === 'equipe') {
-      const anomSnap = await getDocs(
-        query(collection(db, 'anomalias'),
-          where('equipeId', '==', currentUser.uid),
-          where('status', '==', 'programado'))
-      );
-      const idsComPendencia = [...new Set(anomSnap.docs.map(d => d.data().circuitoId).filter(Boolean))];
+      const _eqAnomFinal = await fetchAll('anomalias', { filters: { equipe_id: currentUser.uid, status: 'programado' } });
+      const idsComPendencia = [...new Set(_eqAnomFinal.map(d => d.circuito_id).filter(Boolean))];
       todosCircuitos = [];
       for (const id of idsComPendencia) {
-        const cSnap = await getDoc(doc(db, 'circuitos', id));
-        if (cSnap.exists()) {
+        const { data: _cdata } = await sb.from('circuitos').select('*').eq('id', id).single();
+        const cSnap = { exists: () => !!_cdata, data: () => _cdata || {} };
+        if (!!_cdata) {
           const d = cSnap.data();
           todosCircuitos.push({ id, nome: d.nome, postes: d.postes, clientes: d.clientes });
         }
       }
     } else {
-      const snap = await getDocs(collection(db, 'circuitos'));
+      const _circAll = await fetchAll('circuitos', { filters: { ativo: true }, order: { col: 'nome' } });
+      const snap = { docs: _circAll.map(d => ({ id: d.id, data: () => d })) };
       // só metadados — htmlContent só é carregado no loadCircuitById
       todosCircuitos = snap.docs.map(d => {
         const data = d.data();
@@ -1119,8 +1128,9 @@
       reposicionarFAB();
     showToast('Carregando circuito…');
 
-    const snap = await getDoc(doc(db, 'circuitos', id));
-    if (!snap.exists()) return showToast('Circuito não encontrado.', true);
+    const { data: _snapdata } = await sb.from('circuitos').select('*').eq('id', id).single();
+    const snap = { exists: () => !!_snapdata, data: () => _snapdata || {} };
+    if (!!!_snapdata) return showToast('Circuito não encontrado.', true);
     const data = snap.data();
 
     // yield para não travar a UI antes de renderizar
@@ -1174,7 +1184,8 @@
         const decoDiv = document.getElementById('trafoDecoBadge');
         decoDiv.style.display = 'none';
         decoDiv.innerHTML = '';
-        const decoSnap = await getDocs(query(collection(db,'decometro'), where('equipamento','==', data.nome)));
+        const _decoArr = await fetchAll('decometro', { filters: { equipamento: data.nome } });
+        const decoSnap = { docs: _decoArr.map(d => ({ id: d.id, data: () => d })) };
         if (!decoSnap.empty) {
           const all = decoSnap.docs[0].data().ocorrencias || [];
           const hoje = new Date();
@@ -1332,16 +1343,11 @@
 
     let q;
     if (currentPerfil === 'equipe') {
-      q = query(collection(db, 'anomalias'),
-        where('circuitoId', '==', circuitoId),
-        where('equipeId', '==', currentUser.uid),
-        where('status', '==', 'programado'));
+      _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId, equipe_id: currentUser.uid, status: 'programado' } });
     } else {
-      q = query(collection(db, 'anomalias'), where('circuitoId', '==', circuitoId));
+      _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId } });
     }
-
-    const snap = await getDocs(q);
-    snap.forEach(d => plotarAnomalia(d.id, d.data()));
+    _anomaliasData.forEach(d => plotarAnomalia(d.id, d));
   }
 
   function plotarAnomalia(id, data) {
@@ -1364,17 +1370,17 @@
       ${data.quantidade ? `<div class="popup-row">Quantidade: <span>${data.quantidade}</span></div>` : ''}
       ${data.observacao ? `<div class="popup-row">Obs: <span>${data.observacao}</span></div>` : ''}
       <div class="popup-row">Status: <span>${data.status || 'pendente'}</span></div>
-      <div class="popup-row">Por: <span>${data.fiscalNome || '—'}</span></div>`;
+      <div class="popup-row">Por: <span>${data.fiscal_nome || '—'}</span></div>`;
 
-    if (data.textoOS && currentPerfil === 'admin') {
+    if (data.texto_os && currentPerfil === 'admin') {
       html += `<div style="margin:8px 0 4px;font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.6px">Texto OS</div>
         <div style="
           padding:8px 10px; background:rgba(0,170,255,0.06);
           border:1px solid rgba(0,170,255,0.2); border-radius:8px;
           font-size:12px; color:var(--eq-white); line-height:1.4;
           margin-bottom:4px; user-select:all; cursor:text;
-        ">${data.textoOS}</div>
-        <button onclick="navigator.clipboard.writeText(this.dataset.texto).then(()=>showToast('Copiado!'))" data-texto="${(data.textoOS||'').replace(/"/g,'&quot;')}" style="
+        ">${data.texto_os}</div>
+        <button onclick="navigator.clipboard.writeText(this.dataset.texto).then(()=>showToast('Copiado!'))" data-texto="${(data.texto_os||'').replace(/"/g,'&quot;')}" style="
           background:none; border:1px solid rgba(0,170,255,0.3); border-radius:6px;
           padding:3px 8px; color:var(--eq-cyan); font-size:11px; cursor:pointer; margin-bottom:4px;
         ">
@@ -1382,12 +1388,12 @@
         </button>`;
     }
 
-    if (data.fotoUrl) {
-      html += `<img class="popup-foto" src="${cldThumb(data.fotoUrl)}" alt="Foto"/>`;
+    if (data.foto_url) {
+      html += `<img class="popup-foto" src="${cldThumb(data.foto_url)}" alt="Foto"/>`;
     }
-    if (data.fotoConcluidoUrl) {
+    if (data.foto_concluido_url) {
       html += `<div class="popup-row" style="margin-top:6px;color:var(--eq-success)">✓ Foto de conclusão:</div>
-        <img class="popup-foto" src="${cldThumb(data.fotoConcluidoUrl)}" alt="Foto conclusão"/>`;
+        <img class="popup-foto" src="${cldThumb(data.foto_concluido_url)}" alt="Foto conclusão"/>`;
     }
 
     // botões por perfil
@@ -1407,7 +1413,7 @@
     }
     // excluir — admin ou fiscal que apontou, nunca concluído
     if (data.status !== 'concluido' &&
-        (currentPerfil === 'admin' || (currentPerfil === 'fiscal' && data.fiscalId === currentUser?.uid))) {
+        (currentPerfil === 'admin' || (currentPerfil === 'fiscal' && data.fiscal_id === currentUser?.uid))) {
       html += `<button class="popup-btn popup-btn-del" onclick="excluirAnomaliaDoMapa('${id}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir anomalia
       </button>`;
@@ -1743,30 +1749,31 @@
       const foraUC   = selectedTipo === 'fora'  ? (document.getElementById('foraUC').value.trim() || '') : '';
       const foraObs  = selectedTipo === 'fora'  ? (document.getElementById('foraObs').value.trim() || '') : '';
       const docData = {
-        circuitoId:  currentCircuitoId,
-        circuitoNome: currentTrafoNome || currentCircuitoId || '',
+        circuito_id: currentCircuitoId,
+        circuito_nome: currentTrafoNome || currentCircuitoId || '',
         tipo:        selectedTipo,
         lat:         currentAnomaliaPos.lat,
         lng:         currentAnomaliaPos.lng,
         endereco:    currentAnomaliaPos.endereco || '',
         postes:      currentAnomaliaPostes || '',
         quantidade:  qty,
-        textoOS,
-        fotoUrl,
-        fiscalId:    currentUser.uid,
-        fiscalNome:  currentUser.nome,
-        status:      'pendente',
-        criadoEm:    serverTimestamp()
+        texto_os: textoOS,
+        foto_url: fotoUrl,
+        fiscal_id:   currentUser.uid,
+        fiscal_nome: currentUser.nome,
+        status: 'pendente',
+        criado_em: new Date().toISOString()
       };
-      if (ramalMed) docData.ramalMedidor = ramalMed;
-      if (ramalUC)  docData.ramalUC  = ramalUC;
-      if (foraMed)  docData.foraMedidor = foraMed;
-      if (foraUC)   docData.foraUC   = foraUC;
-      if (foraObs)  docData.foraObs  = foraObs;
-      if (selectedTipo === 'mux' && window._muxTodo) docData.muxCircuitoTodo = true;
+      if (ramalMed) docData.ramal_medidor = ramalMed;
+      if (ramalUC)  docData.ramal_uc = ramalUC;
+      if (foraMed)  docData.fora_medidor = foraMed;
+      if (foraUC)   docData.fora_uc = foraUC;
+      if (foraObs)  docData.fora_obs = foraObs;
+      if (selectedTipo === 'mux' && window._muxTodo) docData.mux_circuito_todo = true;
       const obsGeral = document.getElementById('obsAnomalia')?.value.trim() || '';
       if (obsGeral) docData.observacao = obsGeral;
-      await addDoc(collection(db, 'anomalias'), docData);
+      const { data: _newAnom, error: _newErr } = await sb.from('anomalias').insert(docData).select().single();
+      if (_newErr) throw _newErr;
 
       closeModalAnomalia();
       // reset botão ANTES de fechar para próxima abertura
@@ -1786,9 +1793,10 @@
     programarAnomaliaId = anomaliaId;
 
     // busca dados completos da anomalia para pegar textoOS e quantidade
-    const anoSnap = await getDoc(doc(db, 'anomalias', anomaliaId));
+    const { data: _anodata } = await sb.from('anomalias').select('*').eq('id', anomaliaId).single();
+    const anoSnap = { exists: () => !!_anodata, data: () => _anodata || {} };
     const anoData = anoSnap.exists() ? anoSnap.data() : {};
-    const textoOS   = anoData.textoOS   || '';
+    const textoOS   = anoData.texto_os   || '';
     const quantidade = anoData.quantidade || 1;
 
     document.getElementById('programarInfo').innerHTML =
@@ -1804,7 +1812,8 @@
     // carrega equipes
     const sel = document.getElementById('selectEquipe');
     sel.innerHTML = '<option value="">Carregando...</option>';
-    const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil','==','equipe')));
+    const _equipeList = await fetchAll('usuarios', { filters: { perfil: 'equipe' }, order: { col: 'nome' } });
+    const snap = { docs: _equipeList.map(d => ({ id: d.id, data: () => d })) };
     sel.innerHTML = '';
     snap.forEach(d => {
       const opt = document.createElement('option');
@@ -1838,9 +1847,7 @@
     const equipeId = document.getElementById('selectEquipe').value;
     if (!equipeId) return showToast('Selecione uma equipe.', true);
     try {
-      await updateDoc(doc(db, 'anomalias', programarAnomaliaId), {
-        status: 'programado', equipeId, programadoEm: serverTimestamp()
-      });
+      await sb.from('anomalias').update({ status: 'programado', equipe_id: equipeId, programado_em: new Date().toISOString() }).eq('id', programarAnomaliaId);
       closeModalProgramar();
       showToast('Serviço programado!');
       await loadAnomaliasNoMapa(currentCircuitoId);
@@ -1854,14 +1861,15 @@
     if (!confirm('Excluir este registro de anomalia?\nEsta ação não pode ser desfeita.')) return;
     try {
       // valida status antes de deletar
-      const snap = await getDoc(doc(db, 'anomalias', anomaliaId));
-      if (!snap.exists()) return showToast('Anomalia não encontrada.', true);
+      const { data: _concdata } = await sb.from('anomalias').select('*').eq('id', anomaliaId).single();
+      const snap = { exists: () => !!_concdata, data: () => _concdata || {} };
+      if (!!!_snapdata) return showToast('Anomalia não encontrada.', true);
       const d = snap.data();
       if (d.status === 'concluido') return showToast('Não é possível excluir anomalias concluídas.', true);
       if (currentPerfil === 'fiscal' && d.fiscalId !== currentUser.uid)
         return showToast('Você só pode excluir anomalias que apontou.', true);
 
-      await deleteDoc(doc(db, 'anomalias', anomaliaId));
+      await sb.from('anomalias').delete().eq('id', anomaliaId);
 
       // remove marcador do mapa sem recarregar tudo
       anomaliaMarkers = anomaliaMarkers.filter(m => {
@@ -1913,11 +1921,11 @@
         try {
           const res  = await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload', { method:'POST', body: formData });
           const json = await res.json();
-          await updateDoc(doc(db, 'anomalias', anomaliaId), {
+          const _updFields = {
             status: 'concluido',
-            fotoConcluidoUrl: cldSave(json.secure_url),
-            concluidoEm: serverTimestamp(),
-            equipeConcluidoId: currentUser.uid
+            foto_concluido_url: cldSave(json.secure_url),
+            concluido_em: new Date().toISOString(),
+            equipe_id: currentUser.uid
           });
           showToast('Serviço concluído!');
           map.closePopup();
@@ -1992,16 +2000,15 @@
     badge.style.display = 'none';
     let q;
     if (currentPerfil === 'admin') {
-      q = query(collection(db, 'inspecoes'), where('status', '==', 'pendente'));
+      _badgeData = await fetchAll('inspecoes', { filters: { status: 'pendente' } });
     } else if (currentPerfil === 'fiscal') {
-      q = query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid), where('status', '==', 'pendente'));
+      _badgeData = await fetchAll('inspecoes', { filters: { fiscal_id: currentUser.uid, status: 'pendente' } });
     } else {
       // equipe: conta anomalias programadas para ela que ainda não concluiu
-      q = query(collection(db, 'anomalias'), where('equipeId', '==', currentUser.uid), where('status', '==', 'programado'));
+      _badgeData = await fetchAll('anomalias', { filters: { equipe_id: currentUser.uid, status: 'programado' } });
     }
-    const snap = await getDocs(q);
-    if (snap.size > 0) {
-      badge.textContent = snap.size;
+    if (_badgeData.length > 0) {
+      badge.textContent = _badgeData.length;
       badge.style.display = 'flex';
     }
   }
@@ -2103,21 +2110,22 @@
   async function carregarEstadoInspTrafo() {
     if (!currentInspecaoId) return;
     try {
-      const snap = await getDoc(doc(db, 'inspecoes', currentInspecaoId));
-      if (!snap.exists()) return;
+      const { data: _inspdata } = await sb.from('inspecoes').select('*').eq('id', currentInspecaoId).single();
+      const snap = { exists: () => !!_inspdata, data: () => _inspdata || {} };
+      if (!!!_snapdata) return;
       const d = snap.data();
       // Easy Trafo
       const lblET = document.getElementById('btnEasyTrafoLbl');
       if (lblET) {
-        if (d.easyTrafo === true)  lblET.textContent = '✓ Easy Trafo';
-        else if (d.easyTrafo === false) lblET.textContent = '✗ Sem Easy Trafo';
+        if (d.easy_trafo === true)  lblET.textContent = '✓ Easy Trafo';
+        else if (d.easy_trafo === false) lblET.textContent = '✗ Sem Easy Trafo';
         else lblET.textContent = 'Easy Trafo';
       }
       // Anel
       const lblA = document.getElementById('btnAnelLbl');
       if (lblA) {
-        if (d.fechadoEmAnel === true)  lblA.textContent = '✓ Anel: Sim';
-        else if (d.fechadoEmAnel === false) lblA.textContent = '✗ Anel: Não';
+        if (d.fechado_em_anel === true)  lblA.textContent = '✓ Anel: Sim';
+        else if (d.fechado_em_anel === false) lblA.textContent = '✗ Anel: Não';
         else lblA.textContent = 'Anel';
       }
     } catch(e) { console.error('carregarEstadoInspTrafo:', e); }
@@ -2183,9 +2191,9 @@
         const json = await res.json();
         fotoUrl = cldSave(json.secure_url);
       }
-      const update = { easyTrafo: easyTrafoSelecionado, easyTrafoAtualizadoEm: serverTimestamp() };
+      const update = { easy_trafo: easyTrafoSelecionado, easyTrafoAtualizadoEm: new Date().toISOString() };
       if (fotoUrl) update.easyTrafoFotoUrl = fotoUrl;
-      await updateDoc(doc(db, 'inspecoes', currentInspecaoId), update);
+      await sb.from('inspecoes').update(update).eq('id', currentInspecaoId);
       closeModalEasyTrafo();
       await carregarEstadoInspTrafo();
       showToast('✓ Easy Trafo registrado!');
@@ -2229,9 +2237,9 @@
     const btn = document.getElementById('btnSalvarAnel');
     btn.disabled = true; btn.textContent = 'Salvando...';
     try {
-      const update = { fechadoEmAnel: anelSelecionado, anelAtualizadoEm: serverTimestamp() };
-      if (obs) update.anelObservacao = obs;
-      await updateDoc(doc(db, 'inspecoes', currentInspecaoId), update);
+      const update = { fechadoEmAnel: anelSelecionado, anelAtualizadoEm: new Date().toISOString() };
+      if (obs) update.anel_observacao = obs;
+      await sb.from('inspecoes').update(update).eq('id', currentInspecaoId);
       closeModalAnel();
       await carregarEstadoInspTrafo();
       showToast('✓ Informação de anel registrada!');
