@@ -10,60 +10,63 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
       --eq-blue-dark:#0a1628;--eq-blue:#0d3b8e;--eq-blue-mid:#1a56c4;
       --eq-cyan:#00aaff;--eq-purple:#5b2d8e;--eq-purple-mid:#7c3fc0;
       --eq-white:#f0f4ff;--eq-gray:#8a9bbf;--eq-error:#ff4d6d;--eq-success:#00e5a0;
     }
-    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--eq-blue-dark);color:var(--eq-white);overflow-x:hidden;overflow-y:auto;}
-    .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(13,59,142,0.55) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 90%,rgba(91,45,142,0.45) 0%,transparent 55%),radial-gradient(ellipse 40% 40% at 60% 40%,rgba(0,170,255,0.10) 0%,transparent 50%),#0a1628;}
-    .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,170,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,0.04) 1px,transparent 1px);background-size:48px 48px;animation:gridMove 20s linear infinite;}
+    html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--eq-blue-dark);color:var(--eq-white);overflow-x:hidden;overflow-y:auto}
+    .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(13,59,142,.55) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 90%,rgba(91,45,142,.45) 0%,transparent 55%),radial-gradient(ellipse 40% 40% at 60% 40%,rgba(0,170,255,.10) 0%,transparent 50%),#0a1628}
+    .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,170,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,.04) 1px,transparent 1px);background-size:48px 48px;animation:gridMove 20s linear infinite}
     @keyframes gridMove{0%{background-position:0 0}100%{background-position:48px 48px}}
-    .orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none;animation:orbFloat linear infinite;}
-    .orb-1{width:320px;height:320px;top:-80px;left:-60px;background:rgba(13,59,142,0.4);animation-duration:18s;}
-    .orb-2{width:220px;height:220px;bottom:-40px;right:-40px;background:rgba(91,45,142,0.35);animation-duration:14s;animation-delay:-6s;}
-    .orb-3{width:140px;height:140px;top:40%;left:60%;background:rgba(0,170,255,0.15);animation-duration:22s;animation-delay:-10s;}
-    @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-15px,25px) scale(0.96)}}
-    .page{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-    .card{width:100%;max-width:420px;background:rgba(10,22,40,0.75);border:1px solid rgba(0,170,255,0.18);border-radius:20px;padding:44px 40px 40px;backdrop-filter:blur(24px);box-shadow:0 0 0 1px rgba(255,255,255,0.04),0 32px 80px rgba(0,0,0,0.5);animation:cardIn .6s cubic-bezier(.16,1,.3,1) both;}
+    .orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none;animation:orbFloat linear infinite}
+    .orb-1{width:320px;height:320px;top:-80px;left:-60px;background:rgba(13,59,142,.4);animation-duration:18s}
+    .orb-2{width:220px;height:220px;bottom:-40px;right:-40px;background:rgba(91,45,142,.35);animation-duration:14s;animation-delay:-6s}
+    .orb-3{width:140px;height:140px;top:40%;left:60%;background:rgba(0,170,255,.15);animation-duration:22s;animation-delay:-10s}
+    @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-15px,25px) scale(.96)}}
+    .page{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{width:100%;max-width:420px;background:rgba(10,22,40,.75);border:1px solid rgba(0,170,255,.18);border-radius:20px;padding:44px 40px 40px;backdrop-filter:blur(24px);box-shadow:0 0 0 1px rgba(255,255,255,.04),0 32px 80px rgba(0,0,0,.5);animation:cardIn .6s cubic-bezier(.16,1,.3,1) both}
     @keyframes cardIn{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-    .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:32px;}
-    .logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--eq-blue-mid),var(--eq-purple-mid));border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,170,255,0.25);}
-    .logo-icon svg{width:30px;height:30px;}
-    .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;color:var(--eq-gray);text-transform:uppercase;}
-    .logo-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--eq-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .tabs{display:flex;background:rgba(255,255,255,0.05);border-radius:10px;padding:4px;margin-bottom:28px;}
-    .tab{flex:1;padding:9px 0;text-align:center;font-size:14px;font-weight:600;letter-spacing:.5px;border-radius:7px;cursor:pointer;border:none;background:transparent;color:var(--eq-gray);transition:all .25s;}
-    .tab.active{background:linear-gradient(135deg,var(--eq-blue-mid),var(--eq-purple-mid));color:#fff;box-shadow:0 4px 12px rgba(0,170,255,0.2);}
-    .form{display:none;flex-direction:column;gap:16px;}
-    .form.visible{display:flex;animation:fadeUp .35s ease both;}
+    .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:32px}
+    .logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--eq-blue-mid),var(--eq-purple-mid));border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,170,255,.25)}
+    .logo-icon svg{width:30px;height:30px}
+    .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;color:var(--eq-gray);text-transform:uppercase}
+    .logo-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--eq-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .tabs{display:flex;background:rgba(255,255,255,.05);border-radius:10px;padding:4px;margin-bottom:28px;gap:2px}
+    .tab{flex:1;padding:9px 4px;text-align:center;font-size:13px;font-weight:600;letter-spacing:.4px;border-radius:7px;cursor:pointer;border:none;background:transparent;color:var(--eq-gray);transition:all .25s;white-space:nowrap}
+    .tab.active{background:linear-gradient(135deg,var(--eq-blue-mid),var(--eq-purple-mid));color:#fff;box-shadow:0 4px 12px rgba(0,170,255,.2)}
+    .form{display:none;flex-direction:column;gap:16px}
+    .form.visible{display:flex;animation:fadeUp .35s ease both}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-    .field{display:flex;flex-direction:column;gap:6px;}
-    label{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--eq-gray);text-transform:uppercase;}
-    .input-wrap{position:relative;}
-    input{width:100%;padding:13px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;}
-    input::placeholder{color:rgba(138,155,191,0.5);}
-    input:focus{border-color:var(--eq-cyan);box-shadow:0 0 0 3px rgba(0,170,255,0.12);}
-    input.has-toggle{padding-right:48px;}
-    .toggle-pw{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--eq-gray);padding:4px;display:flex;align-items:center;transition:color .2s;}
-    .toggle-pw:hover{color:var(--eq-cyan);}
-    .select-wrap{position:relative;}
-    select{width:100%;padding:13px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:15px;outline:none;appearance:none;cursor:pointer;transition:border-color .2s,box-shadow .2s;}
-    select:focus{border-color:var(--eq-cyan);box-shadow:0 0 0 3px rgba(0,170,255,0.12);}
-    select option{background:#0d1f3c;color:#fff;}
-    .select-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--eq-gray);}
-    .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--eq-blue-mid) 0%,var(--eq-purple-mid) 100%);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:opacity .2s,transform .15s,box-shadow .2s;box-shadow:0 6px 20px rgba(0,170,255,0.2);}
-    .btn-primary:hover{opacity:.9;box-shadow:0 8px 28px rgba(0,170,255,0.35);}
-    .btn-primary:active{transform:scale(.98);}
-    .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-    .msg{font-size:13px;padding:11px 14px;border-radius:8px;display:none;align-items:center;gap:8px;}
-    .msg.error{display:flex;background:rgba(255,77,109,0.12);border:1px solid rgba(255,77,109,0.3);color:var(--eq-error);}
-    .msg.success{display:flex;background:rgba(0,229,160,0.10);border:1px solid rgba(0,229,160,0.25);color:var(--eq-success);}
-    .card-footer{margin-top:24px;text-align:center;font-size:12px;color:rgba(138,155,191,0.6);}
-    .card-footer span{color:var(--eq-cyan);}
-    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:12px;font-weight:600;letter-spacing:.8px;color:var(--eq-gray);text-transform:uppercase}
+    .input-wrap{position:relative}
+    input{width:100%;padding:13px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s}
+    input::placeholder{color:rgba(138,155,191,.5)}
+    input:focus{border-color:var(--eq-cyan);box-shadow:0 0 0 3px rgba(0,170,255,.12)}
+    input.has-toggle{padding-right:48px}
+    .toggle-pw{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--eq-gray);padding:4px;display:flex;align-items:center;transition:color .2s}
+    .toggle-pw:hover{color:var(--eq-cyan)}
+    .select-wrap{position:relative}
+    select{width:100%;padding:13px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:15px;outline:none;appearance:none;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+    select:focus{border-color:var(--eq-cyan);box-shadow:0 0 0 3px rgba(0,170,255,.12)}
+    select option{background:#0d1f3c;color:#fff}
+    .select-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--eq-gray)}
+    .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--eq-blue-mid) 0%,var(--eq-purple-mid) 100%);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:opacity .2s,transform .15s,box-shadow .2s;box-shadow:0 6px 20px rgba(0,170,255,.2)}
+    .btn-primary:hover{opacity:.9;box-shadow:0 8px 28px rgba(0,170,255,.35)}
+    .btn-primary:active{transform:scale(.98)}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+    .msg{font-size:13px;padding:11px 14px;border-radius:8px;display:none;align-items:center;gap:8px}
+    .msg.error{display:flex;background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.3);color:var(--eq-error)}
+    .msg.success{display:flex;background:rgba(0,229,160,.10);border:1px solid rgba(0,229,160,.25);color:var(--eq-success)}
+    .card-footer{margin-top:24px;text-align:center;font-size:12px;color:rgba(138,155,191,.6)}
+    .card-footer span{color:var(--eq-cyan)}
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* ── trocar senha ── */
+    .trocar-info{background:rgba(0,170,255,.06);border:1px solid rgba(0,170,255,.15);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--eq-gray);line-height:1.5;margin-bottom:4px}
+    .trocar-info strong{color:var(--eq-cyan);display:block;margin-bottom:4px;font-size:14px}
   </style>
 </head>
 <body>
@@ -86,8 +89,9 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('login')">Entrar</button>
-      <button class="tab" onclick="switchTab('cadastro')">Criar conta</button>
+      <button class="tab active" id="tabLogin"    onclick="switchTab('login')">Entrar</button>
+      <button class="tab"        id="tabCadastro" onclick="switchTab('cadastro')">Criar conta</button>
+      <button class="tab"        id="tabTrocar"   onclick="switchTab('trocar')">Trocar senha</button>
     </div>
 
     <div id="msgGlobal" class="msg"></div>
@@ -96,7 +100,7 @@
     <form id="formLogin" class="form visible" onsubmit="handleLogin(event)">
       <div class="field">
         <label>Usuário</label>
-        <input id="loginUser" type="text" placeholder="ex: flaviooduarte93" autocomplete="username" required />
+        <input id="loginUser" type="text" placeholder="ex: flaviooduarte" autocomplete="username" required />
       </div>
       <div class="field">
         <label>Senha</label>
@@ -114,7 +118,7 @@
     <form id="formCadastro" class="form" onsubmit="handleCadastro(event)">
       <div class="field">
         <label>Usuário</label>
-        <input id="cadUser" type="text" placeholder="ex: flaviooduarte93" autocomplete="username" required />
+        <input id="cadUser" type="text" placeholder="ex: flaviooduarte" autocomplete="username" required />
       </div>
       <div class="field">
         <label>Nome completo</label>
@@ -153,6 +157,37 @@
       <button type="submit" class="btn-primary" id="btnCadastro">Criar conta</button>
     </form>
 
+    <!-- TROCAR SENHA -->
+    <form id="formTrocar" class="form" onsubmit="handleTrocarSenha(event)">
+      <div class="trocar-info">
+        <strong>🔑 Redefinir senha</strong>
+        Informe seu usuário e defina uma nova senha. Não é necessário saber a senha atual.
+      </div>
+      <div class="field">
+        <label>Usuário</label>
+        <input id="trocarUser" type="text" placeholder="ex: flaviooduarte" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label>Nova senha</label>
+        <div class="input-wrap">
+          <input id="trocarPass" type="password" placeholder="mínimo 6 caracteres" class="has-toggle" autocomplete="new-password" required minlength="6"/>
+          <button type="button" class="toggle-pw" onclick="togglePw('trocarPass',this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Confirmar nova senha</label>
+        <div class="input-wrap">
+          <input id="trocarPass2" type="password" placeholder="repita a nova senha" class="has-toggle" autocomplete="new-password" required minlength="6"/>
+          <button type="button" class="toggle-pw" onclick="togglePw('trocarPass2',this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" id="btnTrocar">Salvar nova senha</button>
+    </form>
+
     <div class="card-footer">
       Sistema de apontamento de anomalias<br/>
       <span>Grupo Equatorial Energia</span>
@@ -161,12 +196,12 @@
 </div>
 
 <script>
-  // ── Supabase ──
-  const SUPABASE_URL = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
+  const SUPABASE_URL  = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
+  const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
+  // service role key necessária para resetar senha sem autenticação prévia
+  const SERVICE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDU1ODE5NywiZXhwIjoyMDkwMTM0MTk3fQ.NUf0vyKtoKwJWDrfGpcoWD1ZiWmdVy-9Zt9M4ovrIDA';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // username → email interno
   function toEmail(username) {
     return username.trim().toLowerCase() + '@stcgyn.app';
   }
@@ -183,14 +218,14 @@
 
   function setLoading(btnId, loading) {
     const btn = document.getElementById(btnId);
+    const labels = { btnLogin:'Entrar', btnCadastro:'Criar conta', btnTrocar:'Salvar nova senha' };
     btn.disabled = loading;
-    btn.innerHTML = loading ? '<span class="spinner"></span>'
-      : (btnId === 'btnLogin' ? 'Entrar' : 'Criar conta');
+    btn.innerHTML = loading ? '<span class="spinner"></span>' : labels[btnId];
   }
 
   function redirect(perfil) {
     sessionStorage.setItem('userPerfil', perfil);
-    const routes = { admin: 'dashboard.html', fiscal: 'pendencias.html', equipe: 'pendencias.html' };
+    const routes = { admin:'dashboard.html', fiscal:'pendencias.html', equipe:'pendencias.html' };
     window.location.href = routes[perfil] || 'index.html';
   }
 
@@ -205,25 +240,18 @@
     try {
       const { data, error } = await sb.auth.signInWithPassword({ email: toEmail(username), password: senha });
       if (error) throw error;
-
-      // busca perfil na tabela usuarios
-      const { data: usuario, error: err2 } = await sb.from('usuarios')
-        .select('perfil, nome')
-        .eq('auth_id', data.user.id)
-        .single();
-      if (err2 || !usuario) throw new Error('Usuário não encontrado na base.');
-
-      sessionStorage.setItem('userNome', usuario.nome);
+      const { data: u } = await sb.from('usuarios').select('perfil,nome').eq('auth_id', data.user.id).single();
+      if (!u) throw new Error('Usuário não encontrado na base.');
+      sessionStorage.setItem('userNome', u.nome);
       showMsg('Acesso liberado! Redirecionando...', 'success');
-      setTimeout(() => redirect(usuario.perfil), 1200);
+      setTimeout(() => redirect(u.perfil), 1200);
     } catch(err) {
       const msgs = {
-        'invalid_credentials': 'Usuário ou senha incorretos.',
-        'Invalid login credentials': 'Usuário ou senha incorretos.',
-        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-        'Too many requests': 'Muitas tentativas. Aguarde um momento.',
+        'invalid_credentials':        'Usuário ou senha incorretos.',
+        'Invalid login credentials':  'Usuário ou senha incorretos.',
+        'Too many requests':          'Muitas tentativas. Aguarde um momento.',
       };
-      showMsg(msgs[err.message] || err.message || 'Erro ao entrar.', 'error');
+      showMsg(msgs[err.message] || 'Usuário ou senha incorretos.', 'error');
       setLoading('btnLogin', false);
     }
   }
@@ -237,51 +265,101 @@
     const perfil   = document.getElementById('cadPerfil').value;
     const senha    = document.getElementById('cadPass').value;
     const senha2   = document.getElementById('cadPass2').value;
-
     if (!username || !nome || !perfil || !senha) return showMsg('Preencha todos os campos.', 'error');
-    if (senha !== senha2) return showMsg('As senhas não coincidem.', 'error');
-    if (senha.length < 6)  return showMsg('A senha deve ter no mínimo 6 caracteres.', 'error');
+    if (senha !== senha2)    return showMsg('As senhas não coincidem.', 'error');
+    if (senha.length < 6)   return showMsg('A senha deve ter no mínimo 6 caracteres.', 'error');
     if (!/^[a-z0-9_]+$/i.test(username)) return showMsg('Usuário só pode ter letras, números e underscore.', 'error');
-
     setLoading('btnCadastro', true);
     try {
-      // cria conta no Supabase Auth
       const { data, error } = await sb.auth.signUp({
-        email: toEmail(username),
-        password: senha,
+        email: toEmail(username), password: senha,
         options: { emailRedirectTo: null }
       });
       if (error) throw error;
-
-      // insere na tabela usuarios
       const { error: err2 } = await sb.from('usuarios').insert({
-        auth_id:   data.user.id,
-        nome,
-        perfil,
-        email:     toEmail(username),
+        auth_id: data.user.id, nome, perfil,
+        email: toEmail(username), username,
         criado_em: new Date().toISOString()
       });
       if (err2) throw err2;
-
       sessionStorage.setItem('userNome', nome);
-      showMsg('Conta criada com sucesso! Redirecionando...', 'success');
+      showMsg('Conta criada! Redirecionando...', 'success');
       setTimeout(() => redirect(perfil), 1400);
     } catch(err) {
-      const msgs = {
-        'User already registered': 'Esse usuário já está cadastrado.',
-        'Password should be at least 6 characters': 'Senha muito fraca.',
-      };
+      const msgs = { 'User already registered': 'Esse usuário já está cadastrado.' };
       showMsg(msgs[err.message] || err.message || 'Erro ao criar conta.', 'error');
       setLoading('btnCadastro', false);
     }
   }
 
+  // ── TROCAR SENHA (sem precisar da senha atual) ──
+  async function handleTrocarSenha(e) {
+    e.preventDefault();
+    hideMsg();
+    const username = document.getElementById('trocarUser').value.trim();
+    const senha    = document.getElementById('trocarPass').value;
+    const senha2   = document.getElementById('trocarPass2').value;
+    if (!username || !senha) return showMsg('Preencha todos os campos.', 'error');
+    if (senha !== senha2)   return showMsg('As senhas não coincidem.', 'error');
+    if (senha.length < 6)  return showMsg('A senha deve ter no mínimo 6 caracteres.', 'error');
+    setLoading('btnTrocar', true);
+    try {
+      const email = toEmail(username);
+
+      // 1. busca o auth_id do usuário pela tabela usuarios
+      const { data: u, error: errU } = await sb.from('usuarios')
+        .select('auth_id, nome')
+        .eq('email', email)
+        .single();
+
+      if (errU || !u) {
+        // tenta também por username
+        const { data: u2 } = await sb.from('usuarios').select('auth_id,nome').eq('username', username).single();
+        if (!u2) throw new Error('Usuário não encontrado.');
+        Object.assign(u || {}, u2);
+      }
+
+      const authId = (u || {}).auth_id;
+      if (!authId) throw new Error('Usuário sem auth_id. Contacte o administrador.');
+
+      // 2. usa a Admin API para trocar a senha sem precisar da atual
+      const resp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authId}`, {
+        method: 'PUT',
+        headers: {
+          'apikey':        SERVICE_KEY,
+          'Authorization': `Bearer ${SERVICE_KEY}`,
+          'Content-Type':  'application/json'
+        },
+        body: JSON.stringify({ password: senha })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.message || 'Erro ao trocar senha.');
+      }
+
+      showMsg('✓ Senha alterada com sucesso! Faça login com a nova senha.', 'success');
+      document.getElementById('trocarUser').value  = '';
+      document.getElementById('trocarPass').value  = '';
+      document.getElementById('trocarPass2').value = '';
+      setTimeout(() => switchTab('login'), 2500);
+    } catch(err) {
+      showMsg(err.message || 'Erro ao trocar senha.', 'error');
+    } finally {
+      setLoading('btnTrocar', false);
+    }
+  }
+
   // ── UI helpers ──
   function switchTab(tab) {
-    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0) === (tab==='login')));
-    document.getElementById('formLogin').classList.toggle('visible', tab === 'login');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tabLogin').classList.toggle('active',   tab === 'login');
+    document.getElementById('tabCadastro').classList.toggle('active', tab === 'cadastro');
+    document.getElementById('tabTrocar').classList.toggle('active',   tab === 'trocar');
+    document.getElementById('formLogin').classList.toggle('visible',    tab === 'login');
     document.getElementById('formCadastro').classList.toggle('visible', tab === 'cadastro');
-    document.getElementById('msgGlobal').className = 'msg';
+    document.getElementById('formTrocar').classList.toggle('visible',   tab === 'trocar');
+    hideMsg();
   }
 
   function togglePw(inputId, btn) {
