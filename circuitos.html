@@ -880,8 +880,12 @@
     try{
       const{data:fiscal}=await sb.from('usuarios').select('nome').eq('id',fiscalId).single();
       const fiscalNome=fiscal?.nome||'—';
-      // remove inspeção anterior se existir
-      await sb.from('inspecoes').delete().eq('circuito_id',delegarCircuitoId);
+      // NÃO apaga inspeção anterior — mantém histórico
+      // apenas marca as inspeções pendentes anteriores como canceladas
+      await sb.from('inspecoes')
+        .update({status:'cancelado',observacoes:'Redelegado para outro fiscal'})
+        .eq('circuito_id',delegarCircuitoId)
+        .eq('status','pendente');
       // cria nova inspeção
       await sb.from('inspecoes').insert({
         circuito_id:delegarCircuitoId,circuito_nome:delegarCircuitoNome,
