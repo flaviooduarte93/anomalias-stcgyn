@@ -530,178 +530,129 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, getDocs, deleteDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  const SUPABASE_URL = 'https://oyqgfvvnbwuodyfcvojx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAuzI6L_8FZhZxt1FyJd-Cw0wA3kvPdWzI",
-    authDomain: "anomalias-stcgyn.firebaseapp.com",
-    projectId: "anomalias-stcgyn",
-    storageBucket: "anomalias-stcgyn.firebasestorage.app",
-    messagingSenderId: "247707729519",
-    appId: "1:247707729519:web:c3dcaf6d9e707fee59979a"
-  };
+  async function fetchAll(table, opts={}) {
+    const {select='*',filters={},order=null}=opts;
+    let results=[],offset=0,limit=1000;
+    while(true){
+      let q=sb.from(table).select(select).range(offset,offset+limit-1);
+      for(const[col,val]of Object.entries(filters)){
+        if(val===null)q=q.is(col,null);
+        else if(Array.isArray(val))q=q.in(col,val);
+        else q=q.eq(col,val);
+      }
+      if(order)q=q.order(order.col,{ascending:order.asc??true});
+      const{data,error}=await q;
+      if(error){console.error(`fetchAll(${table}):`,error);break;}
+      results=results.concat(data||[]);
+      if((data||[]).length<limit)break;
+      offset+=limit;
+    }
+    return results;
+  }
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+  function cldThumb(url){return url?url.replace('/upload/','/upload/w_400,q_65,f_auto/'):url;}
+  function fmtDate(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('pt-BR');}
 
-  let currentUser    = null;
+  let currentUser=null, currentPerfil=null, todasAnomalias=[];
+  let filtroTipo='todos', filtroStatus='todos', programarId=null;
 
-  // ── Cloudinary: miniatura para cards ──
-  function cldThumb(url) { return url ? url.replace('/upload/', '/upload/w_400,q_65,f_auto/') : url; }
-  let currentPerfil  = null;
-  let todasAnomalias = [];
-  let filtroTipo     = 'todos';
-  let filtroStatus   = 'todos';
-  let programarId    = null;
-
-  onAuthStateChanged(auth, async user => {
-    if (!user) { window.location.href = 'index.html'; return; }
-    const snap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!snap.exists()) { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; return; }
-    const data = snap.data();
-    if (data.perfil === 'equipe') { window.location.href = 'mapa.html'; return; }
-
-    currentUser   = { uid: user.uid, ...data };
-    currentPerfil = data.perfil;
-    sessionStorage.setItem('userPerfil', data.perfil);
-    document.getElementById('avatarEl').textContent = data.nome.charAt(0).toUpperCase();
-
-    if (currentPerfil === 'admin') {
+  (async()=>{
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){window.location.href='index.html';return;}
+    const{data:u}=await sb.from('usuarios').select('*').eq('auth_id',session.user.id).single();
+    if(!u){await sb.auth.signOut();window.location.href='index.html';return;}
+    if(u.perfil==='equipe'){window.location.href='mapa.html';return;}
+    currentUser={uid:u.id,...u};
+    currentPerfil=u.perfil;
+    sessionStorage.setItem('userPerfil',u.perfil);
+    document.getElementById('avatarEl').textContent=u.nome.charAt(0).toUpperCase();
+    if(currentPerfil==='admin'){
       document.getElementById('nav-dashboard').classList.remove('hidden');
       document.getElementById('nav-circuitos').classList.remove('hidden');
-      document.getElementById('pageSub').textContent = 'Todas as anomalias registradas';
-      const btnExp = document.getElementById('btnExportarPendentes');
-      if (btnExp) btnExp.style.display = 'flex';
+      document.getElementById('pageSub').textContent='Todas as anomalias registradas';
+      const btnExp=document.getElementById('btnExportarPendentes');
+      if(btnExp)btnExp.style.display='flex';
     } else {
-      document.getElementById('pageSub').textContent = 'Anomalias que você registrou';
+      document.getElementById('pageSub').textContent='Anomalias que você registrou';
     }
-
     await carregarAnomalias();
     await carregarBadgePendencias();
-  });
+  })();
 
-  window.logout = async () => { await signOut(auth); sessionStorage.removeItem('userPerfil'); window.location.href = 'index.html'; };
+  window.logout=async()=>{await sb.auth.signOut();sessionStorage.clear();window.location.href='index.html';};
 
-  async function carregarAnomalias() {
-    let q;
-    if (currentPerfil === 'admin') {
-      q = collection(db, 'anomalias');
-    } else {
-      q = query(collection(db, 'anomalias'), where('fiscalId', '==', currentUser.uid));
-    }
-
-    const snap = await getDocs(q);
-
-    // busca nomes dos circuitos
-    const circuitosCache = {};
-    const promises = snap.docs.map(async d => {
-      const data = d.data();
-      if (!circuitosCache[data.circuitoId]) {
-        try {
-          const cs = await getDoc(doc(db, 'circuitos', data.circuitoId));
-          circuitosCache[data.circuitoId] = cs.data()?.nome || data.circuitoId;
-        } catch { circuitosCache[data.circuitoId] = data.circuitoId; }
-      }
-      return { id: d.id, ...data, circuitoNome: circuitosCache[data.circuitoId] };
-    });
-
-    todasAnomalias = await Promise.all(promises);
-    // ordena mais recentes primeiro
-    todasAnomalias.sort((a, b) => {
-      const ta = a.criadoEm?.toDate ? a.criadoEm.toDate().getTime() : 0;
-      const tb = b.criadoEm?.toDate ? b.criadoEm.toDate().getTime() : 0;
-      return tb - ta;
-    });
-
+  async function carregarAnomalias(){
+    const filters=currentPerfil==='admin'?{}:{fiscal_id:currentUser.uid};
+    todasAnomalias=await fetchAll('anomalias',{filters,order:{col:'criado_em',asc:false}});
     atualizarSumario();
     renderLista();
   }
 
-  function atualizarSumario() {
-    document.getElementById('sumTotal').textContent     = todasAnomalias.length;
-    document.getElementById('sumPendente').textContent  = todasAnomalias.filter(a => a.status === 'pendente').length;
-    document.getElementById('sumProgramado').textContent= todasAnomalias.filter(a => a.status === 'programado').length;
-    document.getElementById('sumConcluido').textContent = todasAnomalias.filter(a => a.status === 'concluido').length;
-    document.getElementById('sumPoda').textContent      = todasAnomalias.filter(a => a.tipo === 'poda').length;
-    document.getElementById('sumEspacador').textContent = todasAnomalias.filter(a => a.tipo === 'espacador').length;
-    document.getElementById('sumRamal').textContent     = todasAnomalias.filter(a => a.tipo === 'ramal').length;
-    document.getElementById('sumMux').textContent       = todasAnomalias.filter(a => a.tipo === 'mux').length;
+  function atualizarSumario(){
+    document.getElementById('sumTotal').textContent=todasAnomalias.length;
+    document.getElementById('sumPendente').textContent=todasAnomalias.filter(a=>a.status==='pendente').length;
+    document.getElementById('sumProgramado').textContent=todasAnomalias.filter(a=>a.status==='programado').length;
+    document.getElementById('sumConcluido').textContent=todasAnomalias.filter(a=>a.status==='concluido').length;
+    document.getElementById('sumPoda').textContent=todasAnomalias.filter(a=>a.tipo==='poda').length;
+    document.getElementById('sumEspacador').textContent=todasAnomalias.filter(a=>a.tipo==='espacador').length;
+    document.getElementById('sumRamal').textContent=todasAnomalias.filter(a=>a.tipo==='ramal').length;
+    document.getElementById('sumMux').textContent=todasAnomalias.filter(a=>a.tipo==='mux').length;
   }
 
-  window.renderLista = function() {
-    const busca = document.getElementById('searchInput').value.toLowerCase().trim();
-    let itens = todasAnomalias;
-
-    if (filtroTipo !== 'todos')   itens = itens.filter(a => a.tipo === filtroTipo);
-    if (filtroStatus !== 'todos') itens = itens.filter(a => a.status === filtroStatus);
-    if (busca) {
-      itens = itens.filter(a =>
-        (a.endereco || '').toLowerCase().includes(busca) ||
-        (a.circuitoNome || '').toLowerCase().includes(busca) ||
-        (a.postes || '').toLowerCase().includes(busca) ||
-        (a.fiscalNome || '').toLowerCase().includes(busca)
-      );
-    }
-
-    document.getElementById('countPill').textContent = itens.length;
-    document.getElementById('sectionTitle').textContent =
-      filtroTipo !== 'todos' ? ({
-        poda: '✂ Podas', espacador: '⊕ Espaçadores', ramal: '🏠 Ramais', mux: '🔄 MBX'
-      }[filtroTipo] || filtroTipo) : 'Todos os registros';
-
-    const lista = document.getElementById('listaAnomalias');
-    if (itens.length === 0) {
-      lista.innerHTML = `<div class="empty">
-        <div class="empty-icon">🔍</div>
-        <p>Nenhuma anomalia encontrada<br/>para os filtros aplicados.</p>
-      </div>`;
+  window.renderLista=function(){
+    const busca=document.getElementById('searchInput').value.toLowerCase().trim();
+    let itens=todasAnomalias;
+    if(filtroTipo!=='todos')itens=itens.filter(a=>a.tipo===filtroTipo);
+    if(filtroStatus!=='todos')itens=itens.filter(a=>a.status===filtroStatus);
+    if(busca)itens=itens.filter(a=>
+      (a.endereco||'').toLowerCase().includes(busca)||
+      (a.circuito_nome||'').toLowerCase().includes(busca)||
+      (a.postes||'').toLowerCase().includes(busca)||
+      (a.fiscal_nome||'').toLowerCase().includes(busca)
+    );
+    document.getElementById('countPill').textContent=itens.length;
+    const tipoLabelMap={poda:'✂ Podas',espacador:'⊕ Espaçadores',ramal:'🏠 Ramais',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Postes',outros:'📋 Outros'};
+    document.getElementById('sectionTitle').textContent=filtroTipo!=='todos'?(tipoLabelMap[filtroTipo]||filtroTipo):'Todos os registros';
+    const lista=document.getElementById('listaAnomalias');
+    if(!itens.length){
+      lista.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>Nenhuma anomalia encontrada<br/>para os filtros aplicados.</p></div>`;
       return;
     }
+    lista.innerHTML='';
+    itens.forEach(a=>{
+      const dataStr=fmtDate(a.criado_em);
+      const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
+      const statusLabel={pendente:'⏳ Pendente',programado:'📋 Programado',concluido:'✓ Concluído'}[a.status]||a.status;
+      const fotoHtml=a.foto_url
+        ?`<img class="card-foto" src="${cldThumb(a.foto_url)}" alt="Foto" loading="lazy"/>`
+        :`<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
+      const fotoConclusaoHtml=a.foto_concluido_url
+        ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao" src="${cldThumb(a.foto_concluido_url)}" alt="Foto conclusão" loading="lazy"/></div>`:'';
+      const equipeHtml=a.equipe_id
+        ?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>${a.equipe_nome||'—'}</span></div>`:'';
 
-    lista.innerHTML = '';
-    itens.forEach(a => {
-      const dataStr = a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—';
-      const tipoLabel = { poda: '✂ Poda', espacador: '⊕ Espaçador', ramal: '🏠 Ramal', mux: '🔄 MBX', fora: '⚠️ Fora Padrão', poste: '🪵 Sub. Poste', outros: '📋 Outros' }[a.tipo] || a.tipo;
-      const statusLabel = { pendente: '⏳ Pendente', programado: '📋 Programado', concluido: '✓ Concluído' }[a.status] || a.status;
-
-      const fotoHtml = a.fotoUrl
-        ? `<img class="card-foto" src="${cldThumb(a.fotoUrl)}" alt="Foto anomalia" loading="lazy"/>`
-        : `<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
-
-      const fotoConclusaoHtml = a.fotoConcluidoUrl
-        ? `<div class="foto-conclusao-wrap">
-            <div class="foto-conclusao-label">✓ Foto de conclusão</div>
-            <img class="foto-conclusao" src="${cldThumb(a.fotoConcluidoUrl)}" alt="Foto conclusão" loading="lazy"/>
-          </div>` : '';
-
-      const equipeHtml = a.equipeId
-        ? `<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span id="equipe-${a.id}">carregando...</span></div>` : '';
-
-      // botões por perfil e status
-      let botoesHtml = `<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuitoId}')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
-        Ver no mapa
-      </button>`;
-
-      if (currentPerfil === 'admin' && a.status === 'pendente') {
-        botoesHtml += `<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${a.id}', '${a.tipo}', '${(a.postes||'').replace(/'/g,"\\'")}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          Programar
-        </button>`;
+      let botoesHtml=`<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuito_id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>`;
+      if(currentPerfil==='admin'&&a.status==='pendente'){
+        botoesHtml+=`<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${a.id}','${a.tipo}','${(a.postes||'').replace(/'/g,"\'")}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>`;
       }
-      if ((currentPerfil === 'admin' || (currentPerfil === 'fiscal' && a.fiscalId === currentUser.uid))
-          && a.status !== 'concluido') {
-        botoesHtml += `<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${a.id}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          Excluir
-        </button>`;
+      if(currentPerfil==='admin'&&a.status!=='concluido'){
+        botoesHtml+=`<button class="btn-sm btn-success-sm" onclick="openModalConcluir('${a.id}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>`;
+      }
+      if((currentPerfil==='admin'||(currentPerfil==='fiscal'&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido'){
+        botoesHtml+=`<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${a.id}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>`;
       }
 
-      lista.innerHTML += `
+      lista.innerHTML+=`
         <div class="anomalia-card">
           <div class="card-foto-wrap">
             ${fotoHtml}
@@ -709,200 +660,171 @@
             <span class="card-status-badge ${a.status}">${statusLabel}</span>
           </div>
           <div class="card-body">
-            <div class="card-circuito">${a.circuitoNome || a.circuitoId}</div>
+            <div class="card-circuito">${a.circuito_nome||a.circuito_id}</div>
             <div class="card-meta">
-              <div class="meta-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
-                <span>${a.endereco || '—'}</span>
-              </div>
-              <div class="meta-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>
-                Entre postes: <span>${a.postes || '—'}</span>
-              </div>
-              <div class="meta-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Registrado em <span>${dataStr}</span>
-              </div>
-              ${currentPerfil === 'admin' ? `<div class="meta-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Fiscal: <span>${a.fiscalNome || '—'}</span>
-              </div>` : ''}
+              <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg><span>${a.endereco||'—'}</span></div>
+              <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>Entre postes: <span>${a.postes||'—'}</span></div>
+              <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Registrado em <span>${dataStr}</span></div>
+              ${currentPerfil==='admin'?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Fiscal: <span>${a.fiscal_nome||'—'}</span></div>`:''}
               ${equipeHtml}
             </div>
             ${fotoConclusaoHtml}
-            ${(a.observacao || a.foraObs) ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4">
-              <span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>
-              ${a.observacao || a.foraObs}
-            </div>` : ''}
+            ${(a.observacao||a.fora_obs)?`<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>${a.observacao||a.fora_obs}</div>`:''}
             <div class="card-actions">${botoesHtml}</div>
           </div>
         </div>`;
-
-      // carrega nome da equipe se houver
-      if (a.equipeId) {
-        getDoc(doc(db, 'usuarios', a.equipeId)).then(s => {
-          const el = document.getElementById(`equipe-${a.id}`);
-          if (el) el.textContent = s.data()?.nome || '—';
-        });
-      }
     });
   };
 
-  // ── filtros ──
-  window.setFiltroTipo = function(tipo, btn) {
-    filtroTipo = tipo;
-    document.querySelectorAll('#filtrosTipo .filtro-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderLista();
-  };
-  window.setFiltroStatus = function(status, btn) {
-    filtroStatus = status;
-    document.querySelectorAll('#filtrosStatus .filtro-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderLista();
-  };
+  window.setFiltroTipo=function(tipo,btn){filtroTipo=tipo;document.querySelectorAll('#filtrosTipo .filtro-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLista();};
+  window.setFiltroStatus=function(status,btn){filtroStatus=status;document.querySelectorAll('#filtrosStatus .filtro-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLista();};
+  window.verNoMapa=function(cid){sessionStorage.setItem('circuitoSelecionado',cid);window.location.href='mapa.html';};
 
-  // ── ver no mapa ──
-  window.verNoMapa = function(circuitoId) {
-    sessionStorage.setItem('circuitoSelecionado', circuitoId);
-    window.location.href = 'mapa.html';
-  };
-
-  // ── excluir anomalia ──
-  window.excluirAnomalia = async function(id) {
-    if (!confirm('Excluir este registro de anomalia?')) return;
-    try {
-      await deleteDoc(doc(db, 'anomalias', id));
-      todasAnomalias = todasAnomalias.filter(a => a.id !== id);
-      atualizarSumario();
-      renderLista();
+  window.excluirAnomalia=async function(id){
+    if(!confirm('Excluir este registro de anomalia?'))return;
+    try{
+      await sb.from('anomalias').delete().eq('id',id);
+      todasAnomalias=todasAnomalias.filter(a=>a.id!==id);
+      atualizarSumario();renderLista();
       showToast('Anomalia excluída.');
-    } catch {
-      showToast('Erro ao excluir.', true);
-    }
+    }catch{showToast('Erro ao excluir.',true);}
   };
 
-  // ── modal programar ──
-  window.openModalProgramar = async function(anomaliaId, tipo, postes) {
-    programarId = anomaliaId;
-    document.getElementById('modalProgramarSub').textContent =
-      `Tipo: ${tipo === 'poda' ? '✂ Poda' : '⊕ Espaçador'} | Postes: ${postes || '—'}`;
-
-    const sel = document.getElementById('selectEquipe');
-    sel.innerHTML = '<option value="">Carregando...</option>';
+  window.openModalProgramar=async function(anomaliaId,tipo,postes){
+    programarId=anomaliaId;
+    const tipoLbl={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[tipo]||tipo;
+    document.getElementById('modalProgramarSub').textContent=`Tipo: ${tipoLbl} | Postes: ${postes||'—'}`;
+    const sel=document.getElementById('selectEquipe');
+    sel.innerHTML='<option value="">Carregando...</option>';
     document.getElementById('modalProgramar').classList.add('open');
-
-    const snap = await getDocs(query(collection(db, 'usuarios'), where('perfil', '==', 'equipe')));
-    sel.innerHTML = snap.empty ? '<option value="">Nenhuma equipe cadastrada</option>' : '';
-    snap.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id; opt.textContent = d.data().nome;
-      sel.appendChild(opt);
-    });
+    const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
+    sel.innerHTML=equipes.length?'':'<option value="">Nenhuma equipe cadastrada</option>';
+    equipes.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.nome;sel.appendChild(o);});
+  };
+  window.closeModalProgramar=function(){document.getElementById('modalProgramar').classList.remove('open');};
+  window.confirmarProgramar=async function(){
+    const equipeId=document.getElementById('selectEquipe').value;
+    if(!equipeId)return showToast('Selecione uma equipe.',true);
+    const btn=document.getElementById('btnProgramarConfirmar');
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+    try{
+      await sb.from('anomalias').update({status:'programado',equipe_id:equipeId,programado_em:new Date().toISOString()}).eq('id',programarId);
+      closeModalProgramar();showToast('Serviço programado!');await carregarAnomalias();
+    }catch{showToast('Erro ao programar.',true);}
+    finally{btn.disabled=false;btn.textContent='Programar';}
   };
 
-  window.closeModalProgramar = function() {
-    document.getElementById('modalProgramar').classList.remove('open');
+  // ── modal concluir ──
+  let concluirId=null, fotoConcluirFile=null;
+  window.openModalConcluir=async function(anomaliaId){
+    concluirId=anomaliaId; fotoConcluirFile=null;
+    document.getElementById('fotoPreviewConc').style.display='none';
+    document.getElementById('fotoPreviewConc').src='';
+    document.getElementById('obsConc').value='';
+    document.getElementById('btnCameraConc').classList.remove('selected');
+    document.getElementById('btnGaleriaConc').classList.remove('selected');
+    const{data:a}=await sb.from('anomalias').select('*').eq('id',anomaliaId).single();
+    const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
+    document.getElementById('modalConcluirSub').textContent='Preencha os dados para registrar a conclusão.';
+    document.getElementById('modalConcluirInfoGrid').innerHTML=`
+      <div class="modal-info-item full"><div class="info-label">Endereço</div><div class="info-val">${a.endereco||'—'}</div></div>
+      <div class="modal-info-item"><div class="info-label">Tipo</div><div class="info-val">${tipoLabel}</div></div>
+      <div class="modal-info-item"><div class="info-label">Quantidade</div><div class="info-val">${a.quantidade||'—'}</div></div>
+      <div class="modal-info-item"><div class="info-label">Data conclusão</div><div class="info-val">${new Date().toLocaleDateString('pt-BR')}</div></div>
+      <div class="modal-info-item"><div class="info-label">Postes</div><div class="info-val">${a.postes||'—'}</div></div>`;
+    const equipeWrap=document.getElementById('modalConcluirEquipeWrap');
+    if(currentPerfil==='admin'){
+      equipeWrap.style.display='block';
+      const sel=document.getElementById('selectEquipeConc');
+      sel.innerHTML='<option value="">Carregando...</option>';
+      const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
+      sel.innerHTML='<option value="">Selecione a equipe...</option>';
+      equipes.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.nome;if(u.id===a.equipe_id)o.selected=true;sel.appendChild(o);});
+    } else { equipeWrap.style.display='none'; }
+    document.getElementById('modalConcluir').classList.add('open');
+  };
+  window.closeModalConcluir=function(){document.getElementById('modalConcluir').classList.remove('open');concluirId=null;fotoConcluirFile=null;};
+  window.abrirFotoConc=function(origem){
+    const input=document.createElement('input');input.type='file';input.accept='image/*';
+    if(origem==='camera')input.capture='environment';
+    input.onchange=e=>{
+      const file=e.target.files[0];if(!file)return;fotoConcluirFile=file;
+      const prev=document.getElementById('fotoPreviewConc');
+      prev.src=URL.createObjectURL(file);prev.style.display='block';
+      document.getElementById('btnCameraConc').classList.toggle('selected',origem==='camera');
+      document.getElementById('btnGaleriaConc').classList.toggle('selected',origem==='galeria');
+    };input.click();
+  };
+  window.confirmarConcluir=async function(){
+    if(!fotoConcluirFile)return showToast('Foto de conclusão é obrigatória.',true);
+    let equipeId=null,equipeNome=null;
+    if(currentPerfil==='admin'){
+      equipeId=document.getElementById('selectEquipeConc').value;
+      if(!equipeId)return showToast('Selecione a equipe executora.',true);
+      const{data:eu}=await sb.from('usuarios').select('nome').eq('id',equipeId).single();
+      equipeNome=eu?.nome||'—';
+    } else { equipeId=currentUser.uid; equipeNome=currentUser.nome||'—'; }
+    const btn=document.getElementById('btnConcluirConfirmar');
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Salvando...';
+    try{
+      const fd=new FormData();fd.append('file',fotoConcluirFile);fd.append('upload_preset','anomalias-stcgyn');
+      const res=await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload',{method:'POST',body:fd});
+      const json=await res.json();
+      const fotoUrl=json.secure_url?json.secure_url.replace('/upload/','/upload/w_1200,q_75,f_auto/'):null;
+      if(!fotoUrl)throw new Error('Falha no upload.');
+      const obs=document.getElementById('obsConc').value.trim();
+      const upd={status:'concluido',foto_concluido_url:fotoUrl,equipe_id:equipeId,equipe_nome:equipeNome,concluido_em:new Date().toISOString(),concluido_por:currentUser.uid};
+      if(obs)upd.observacao_conclusao=obs;
+      await sb.from('anomalias').update(upd).eq('id',concluirId);
+      closeModalConcluir();showToast('✓ Serviço concluído com sucesso!');await carregarAnomalias();
+    }catch(e){console.error(e);showToast('Erro ao concluir serviço.',true);}
+    finally{btn.disabled=false;btn.textContent='✓ Concluir';}
   };
 
-  window.confirmarProgramar = async function() {
-    const equipeId = document.getElementById('selectEquipe').value;
-    if (!equipeId) return showToast('Selecione uma equipe.', true);
-    const btn = document.getElementById('btnProgramarConfirmar');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-    try {
-      await updateDoc(doc(db, 'anomalias', programarId), {
-        status: 'programado', equipeId, programadoEm: serverTimestamp()
-      });
-      closeModalProgramar();
-      showToast('Serviço programado!');
-      await carregarAnomalias();
-    } catch {
-      showToast('Erro ao programar.', true);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Programar';
-    }
-  };
-
-  // badge pendências — filtrado por perfil, só mostra se > 0
-  async function carregarBadgePendencias() {
-    const badge = document.getElementById('badgePendencias');
-    badge.style.display = 'none';
-    let q;
-    if (currentPerfil === 'admin') {
-      q = query(collection(db, 'inspecoes'), where('status', '==', 'pendente'));
-    } else if (currentPerfil === 'fiscal') {
-      q = query(collection(db, 'inspecoes'), where('fiscalId', '==', currentUser.uid), where('status', '==', 'pendente'));
-    } else {
-      q = query(collection(db, 'anomalias'), where('equipeId', '==', currentUser.uid), where('status', '==', 'programado'));
-    }
-    const snap = await getDocs(q);
-    if (snap.size > 0) {
-      badge.textContent = snap.size;
-      badge.style.display = 'flex';
+  async function carregarBadgePendencias(){
+    const badge=document.getElementById('badgePendencias');
+    badge.style.display='none';
+    if(currentPerfil==='admin'){
+      const{count}=await sb.from('inspecoes').select('*',{count:'exact',head:true}).eq('status','pendente');
+      if(count>0){badge.textContent=count;badge.style.display='flex';}
+    } else if(currentPerfil==='fiscal'){
+      const{count}=await sb.from('inspecoes').select('*',{count:'exact',head:true}).eq('status','pendente').eq('fiscal_id',currentUser.uid);
+      if(count>0){badge.textContent=count;badge.style.display='flex';}
     }
   }
 
-  window.showToast = function(msg, isError = false) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast' + (isError ? ' error' : '') + ' show';
-    setTimeout(() => t.classList.remove('show'), 3000);
+  window.showToast=function(msg,isError=false){
+    const t=document.getElementById('toast');t.textContent=msg;
+    t.className='toast'+(isError?' error':'')+' show';
+    setTimeout(()=>t.classList.remove('show'),3000);
   };
 
-  // ── Exportar anomalias (todas) para Excel ──
-  window.exportarPendentes = async function() {
-    if (!todasAnomalias.length) return showToast('Nenhuma anomalia para exportar.', true);
-
-    // carrega SheetJS dinamicamente se não estiver carregado
-    if (!window.XLSX) {
-      await new Promise((res, rej) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      });
+  window.exportarPendentes=async function(){
+    if(!todasAnomalias.length)return showToast('Nenhuma anomalia para exportar.',true);
+    if(!window.XLSX){
+      await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
     }
-
-    const tipoLabel = { poda: 'Poda', espacador: 'Espaçador', ramal: 'Ramal', mux: 'MBX', fora: 'Fora do Padrão', poste: 'Sub. Poste', outros: 'Outros' };
-    const statusLabel = { pendente: 'Pendente', programado: 'Programado', concluido: 'Concluído' };
-
-    const rows = todasAnomalias.map(a => ({
-      'Circuito':         a.circuitoNome || a.circuitoId || '—',
-      'Tipo':             tipoLabel[a.tipo] || a.tipo || '—',
-      'Status':           statusLabel[a.status] || a.status || '—',
-      'Endereço':         a.endereco || '—',
-      'Entre Postes':     a.postes || '—',
-      'Quantidade':       a.quantidade || 1,
-      'Medidor (Ramal)':  a.ramalMedidor || '—',
-      'UC (Ramal)':       a.ramalUC || '—',
-      'Medidor (Fora)':   a.foraMedidor || '—',
-      'UC (Fora)':        a.foraUC || '—',
-      'Obs. Irregularidade': a.foraObs || '—',
-      'Observação':       a.observacao || '—',
-      'MBX Circuito Todo': a.muxCircuitoTodo ? 'Sim' : '—',
-      'Fiscal':           a.fiscalNome || '—',
-      'Equipe':           a.equipeNome || '—',
-      'Registrado em':    a.criadoEm?.toDate ? a.criadoEm.toDate().toLocaleDateString('pt-BR') : '—',
-      'Concluído em':     a.concluidoEm?.toDate ? a.concluidoEm.toDate().toLocaleDateString('pt-BR') : '—',
-      'Lat':              a.lat || '',
-      'Lng':              a.lng || ''
+    const tipoLabel={poda:'Poda',espacador:'Espaçador',ramal:'Ramal',mux:'MBX',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'};
+    const statusLabel={pendente:'Pendente',programado:'Programado',concluido:'Concluído'};
+    const rows=todasAnomalias.map(a=>({
+      'Circuito':a.circuito_nome||a.circuito_id||'—','Tipo':tipoLabel[a.tipo]||a.tipo||'—',
+      'Status':statusLabel[a.status]||a.status||'—','Endereço':a.endereco||'—',
+      'Entre Postes':a.postes||'—','Quantidade':a.quantidade||1,
+      'Medidor (Ramal)':a.ramal_medidor||'—','UC (Ramal)':a.ramal_uc||'—',
+      'Medidor (Fora)':a.fora_medidor||'—','UC (Fora)':a.fora_uc||'—',
+      'Obs. Irregularidade':a.fora_obs||'—','Observação':a.observacao||'—',
+      'MBX Circuito Todo':a.mux_circuito_todo?'Sim':'—',
+      'Fiscal':a.fiscal_nome||'—','Equipe':a.equipe_nome||'—',
+      'Registrado em':fmtDate(a.criado_em),'Concluído em':fmtDate(a.concluido_em),
+      'Lat':a.lat||'','Lng':a.lng||''
     }));
-
-    const ws = window.XLSX.utils.json_to_sheet(rows);
-    const wb = window.XLSX.utils.book_new();
-    window.XLSX.utils.book_append_sheet(wb, ws, 'Anomalias');
-
-    // auto-width
-    const cols = Object.keys(rows[0] || {}).map(k => ({ wch: Math.max(k.length, 12) }));
-    ws['!cols'] = cols;
-
-    const fname = 'anomalias_' + new Date().toLocaleDateString('pt-BR').replace(/\//g,'-') + '.xlsx';
-    window.XLSX.writeFile(wb, fname);
+    const ws=window.XLSX.utils.json_to_sheet(rows);
+    const wb=window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb,ws,'Anomalias');
+    ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:Math.max(k.length,12)}));
+    window.XLSX.writeFile(wb,'anomalias_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.xlsx');
     showToast(`✓ ${rows.length} anomalias exportadas para Excel.`);
   };
-
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 </script>
 
 </body>
