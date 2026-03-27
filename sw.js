@@ -1,51 +1,85 @@
-// Service Worker — Anomalias STCGYN
-// Estrategia: HTML sempre da rede, assets podem usar cache
+// ── STCGYN Service Worker — v3 (Supabase) ──
+// Incrementar CACHE_VERSION a cada deploy para forçar atualização
+const CACHE_VERSION = 'stcgyn-v3';
 
-const CACHE = 'stcgyn-v4';
+const STATIC_ASSETS = [
+  './',
+  './index.html',
+  './mapa.html',
+  './anomalias.html',
+  './pendencias.html',
+  './dashboard.html',
+  './mbx.html',
+  './circuitos.html',
+];
 
-// Instala e ativa imediatamente
-self.addEventListener('install', () => self.skipWaiting());
-
-self.addEventListener('activate', e => {
-  // Remove caches antigos
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+// ── install: pré-cacheia assets estáticos ──
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_VERSION)
+      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting()) // ativa imediatamente sem esperar aba fechar
   );
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+// ── activate: remove caches antigos ──
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_VERSION)
+          .map(key => {
+            console.log('[SW] Removendo cache antigo:', key);
+            return caches.delete(key);
+          })
+      )
+    ).then(() => self.clients.claim()) // assume controle imediato de todas as abas
+  );
+});
 
-  const url = new URL(e.request.url);
+// ── fetch: estratégia Network First para HTML, Cache First para assets estáticos ──
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
 
-  // Arquivos HTML: SEMPRE busca da rede, nunca usa cache
-  if (url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
-    e.respondWith(
-      fetch(e.request, { cache: 'no-store' })
-        .catch(() => caches.match(e.request)) // fallback offline
+  // Nunca intercepta chamadas para Supabase, Cloudinary, CDNs externos
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('cloudinary.com') ||
+    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('jsdelivr.net') ||
+    url.hostname.includes('cdnjs.cloudflare.com') ||
+    url.hostname.includes('nominatim.openstreetmap.org') ||
+    url.hostname.includes('tile.openstreetmap.org') ||
+    url.hostname.includes('unpkg.com') ||
+    !url.hostname.includes(self.location.hostname)
+  ) {
+    return; // deixa o browser tratar normalmente
+  }
+
+  // Para páginas HTML: Network First (sempre busca versão mais recente)
+  if (event.request.mode === 'navigate' || event.request.headers.get('Accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // atualiza o cache com a versão mais recente
+          const clone = response.clone();
+          caches.open(CACHE_VERSION).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request)) // fallback para cache se offline
     );
     return;
   }
 
-  // Firebase, Firestore, APIs externas: sempre rede
-  if (url.hostname.includes('firebaseapp') ||
-      url.hostname.includes('googleapis') ||
-      url.hostname.includes('gstatic') ||
-      url.hostname.includes('cloudinary')) {
-    e.respondWith(fetch(e.request));
-    return;
-  }
-
-  // Demais assets (fontes, imagens): cache-first
-  e.respondWith(
-    caches.match(e.request).then(cached => {
+  // Para outros assets: Cache First (fonts, ícones, etc.)
+  event.respondWith(
+    caches.match(event.request).then(cached => {
       if (cached) return cached;
-      return fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
+      return fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_VERSION).then(cache => cache.put(event.request, clone));
+        return response;
       });
     })
   );
