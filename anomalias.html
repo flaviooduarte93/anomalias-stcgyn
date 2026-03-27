@@ -394,7 +394,13 @@
 <!-- CONTEÚDO -->
 <div class="content">
   <div class="page-title">Anomalias</div>
-  <div class="page-sub" id="pageSub">Carregando...</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="page-sub" id="pageSub" style="margin-bottom:0">Carregando...</div>
+    <button id="btnExportarPendentes" onclick="exportarPendentes()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);border-radius:8px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;transition:background .2s">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Excel
+    </button>
+  </div>
 
   <!-- busca -->
   <div class="search-wrap">
@@ -639,7 +645,7 @@
 
       let botoesHtml=`<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuito_id}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>`;
-      if(currentPerfil==='admin'&&a.status==='pendente'){
+      if(currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux'){
         botoesHtml+=`<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${a.id}','${a.tipo}','${(a.postes||'').replace(/'/g,"\'")}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>`;
       }
