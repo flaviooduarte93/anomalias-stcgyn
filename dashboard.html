@@ -369,6 +369,16 @@
     </div>
   </div>
 
+  <!-- RANKING EQUIPES -->
+  <div class="ranking-section">
+    <div class="ranking-title">🔧 Equipes — serviços concluídos</div>
+    <div id="rankingEquipes">
+      <div class="skeleton" style="height:44px;margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:44px;margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:44px;"></div>
+    </div>
+  </div>
+
   <!-- TRANSFORMADORES FINALIZADOS -->
   <div class="trafo-section">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
@@ -625,6 +635,7 @@
     renderKPIs();
     renderGrafico();
     renderRanking();
+    renderRankingEquipes();
     await carregarDecoDash();
     renderTrafo();
     await carregarBadgePendencias();
@@ -720,6 +731,50 @@
           <div class="rstat"><div class="rstat-val">${f.total}</div><div class="rstat-label">Total</div></div>
           <div class="rstat"><div class="rstat-val" style="color:var(--eq-warning)">${f.podas}</div><div class="rstat-label">Podas</div></div>
           <div class="rstat"><div class="rstat-val" style="color:#bf7fff">${f.espacadores}</div><div class="rstat-label">Espaç.</div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── RANKING EQUIPES (serviços concluídos) ──
+  function renderRankingEquipes() {
+    const equipesMap = {};
+    for (const a of anomalias) {
+      if (a.status !== 'concluido' || !a.equipe_id) continue;
+      if (!equipesMap[a.equipe_id]) {
+        equipesMap[a.equipe_id] = {
+          nome: a.equipe_nome || '—',
+          total: 0, podas: 0, espacadores: 0, ramais: 0, postes: 0, outros: 0
+        };
+      }
+      equipesMap[a.equipe_id].total++;
+      if (a.tipo === 'poda')      equipesMap[a.equipe_id].podas++;
+      if (a.tipo === 'espacador') equipesMap[a.equipe_id].espacadores++;
+      if (a.tipo === 'ramal')     equipesMap[a.equipe_id].ramais++;
+      if (a.tipo === 'poste')     equipesMap[a.equipe_id].postes++;
+      if (a.tipo === 'outros' || a.tipo === 'fora') equipesMap[a.equipe_id].outros++;
+    }
+    const ranking = Object.values(equipesMap).sort((a,b) => b.total - a.total);
+    const el = document.getElementById('rankingEquipes');
+    if (!ranking.length) {
+      el.innerHTML = '<p style="color:var(--eq-gray);font-size:13px;padding:8px 0">Nenhum serviço concluído ainda.</p>';
+      return;
+    }
+    el.innerHTML = ranking.map((e, i) => {
+      const posClass = ['p1','p2','p3'][i] || 'pn';
+      const detalhes = [
+        e.podas      ? `<div class="rstat"><div class="rstat-val" style="color:var(--eq-warning)">${e.podas}</div><div class="rstat-label">Podas</div></div>` : '',
+        e.espacadores? `<div class="rstat"><div class="rstat-val" style="color:#bf7fff">${e.espacadores}</div><div class="rstat-label">Espaç.</div></div>` : '',
+        e.ramais     ? `<div class="rstat"><div class="rstat-val" style="color:var(--eq-success)">${e.ramais}</div><div class="rstat-label">Ramais</div></div>` : '',
+        e.postes     ? `<div class="rstat"><div class="rstat-val" style="color:#c8864a">${e.postes}</div><div class="rstat-label">Postes</div></div>` : '',
+        e.outros     ? `<div class="rstat"><div class="rstat-val" style="color:var(--eq-gray)">${e.outros}</div><div class="rstat-label">Outros</div></div>` : '',
+      ].filter(Boolean).join('');
+      return `<div class="ranking-item">
+        <div class="ranking-pos ${posClass}">${i+1}</div>
+        <div class="ranking-nome">${e.nome}</div>
+        <div class="ranking-stats">
+          <div class="rstat"><div class="rstat-val">${e.total}</div><div class="rstat-label">Total</div></div>
+          ${detalhes}
         </div>
       </div>`;
     }).join('');
