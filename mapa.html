@@ -1507,6 +1507,7 @@
     document.getElementById('modalEndereco').classList.add('loading');
     document.getElementById('modalCoords').textContent = '—';
     document.getElementById('modalPostes').value = '';
+    currentAnomaliaPostes = null; // reset explícito — evita postes de abertura anterior
     document.getElementById('qtyValor').textContent = '1';
     document.getElementById('qtyFieldWrap').style.display = 'block';
     document.getElementById('textoOrdemWrap').style.display = 'none';
@@ -1575,6 +1576,7 @@
         });
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
         document.getElementById('modalPostes').value = currentAnomaliaPostes;
+        // gera texto se tipo já foi selecionado antes do GPS retornar
         gerarTextoOS();
       }
 
@@ -1586,9 +1588,12 @@
         document.getElementById('modalEndereco').textContent = end;
         document.getElementById('modalEndereco').classList.remove('loading');
         currentAnomaliaPos.endereco = end;
+        // re-gera texto caso tipo tenha sido selecionado enquanto geocode rodava
+        gerarTextoOS();
       } catch {
         document.getElementById('modalEndereco').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         document.getElementById('modalEndereco').classList.remove('loading');
+        gerarTextoOS();
       }
     }, () => {
       // GPS indisponível — usa coordenadas do trafo/primeiro poste do circuito
@@ -1737,13 +1742,18 @@
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
-    if (!selectedTipo || (!currentAnomaliaPostes && !isRamal && !isMuxTodo)) {
+    // sincroniza postes do campo caso não esteja em currentAnomaliaPostes
+    const postesField = document.getElementById('modalPostes');
+    if (postesField && postesField.value.trim() && !currentAnomaliaPostes) {
+      currentAnomaliaPostes = postesField.value.trim();
+    }
+    const postes = currentAnomaliaPostes || (postesField ? postesField.value.trim() : '');
+    if (!selectedTipo || (!postes && !isRamal && !isMuxTodo)) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
     const qty    = parseInt(document.getElementById('qtyValor').textContent) || 1;
     const trafo  = currentTrafoNome || currentCircuitoId || '—';
-    const postes = currentAnomaliaPostes;
     let texto;
     if (selectedTipo === 'poda') {
       texto = trafo + ' - Realizar ' + qty + ' poda' + (qty > 1 ? 's' : '') + ' de arvore entre os postes ' + postes;
@@ -1826,6 +1836,14 @@
     btn.innerHTML = '<span class="spinner"></span>';
 
     try {
+      // ── garante que currentAnomaliaPostes está sincronizado com o campo ──
+      const postesField = document.getElementById('modalPostes');
+      if (postesField && postesField.value.trim()) {
+        currentAnomaliaPostes = postesField.value.trim();
+      }
+      // regera o texto para garantir que está atualizado com postes/qty atuais
+      gerarTextoOS();
+
       // upload Cloudinary
       const formData = new FormData();
       formData.append('file', fotoFile);
