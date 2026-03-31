@@ -1354,20 +1354,46 @@
 
   // ── anomalias no mapa ──
   async function loadAnomaliasNoMapa(circuitoId) {
-    // limpa markers de anomalia anteriores antes de replotar
     anomaliaMarkers.forEach(m => map.removeLayer(m));
     anomaliaMarkers = [];
 
-    let q;
     if (currentPerfil === 'equipe') {
       _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId, equipe_id: currentUser.uid, status: 'programado' } });
     } else {
       _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId } });
     }
-    _anomaliasData.forEach(d => plotarAnomalia(d.id, d));
+
+    // conta quantas anomalias existem em cada coordenada para aplicar spread
+    const coordCount = {};
+    _anomaliasData.forEach(d => {
+      if (!d.lat || !d.lng) return;
+      const key = `${d.lat.toFixed(6)},${d.lng.toFixed(6)}`;
+      coordCount[key] = (coordCount[key] || 0) + 1;
+    });
+
+    // controla índice de cada posição para o spread
+    const coordIdx = {};
+    _anomaliasData.forEach(d => plotarAnomalia(d.id, d, coordCount, coordIdx));
   }
 
-  function plotarAnomalia(id, data) {
+  // calcula offset em espiral para separar markers sobrepostos
+  function spreadOffset(key, total, coordIdx) {
+    if (total <= 1) return { lat: 0, lng: 0 };
+    const idx = coordIdx[key] || 0;
+    coordIdx[key] = idx + 1;
+    if (idx === 0) return { lat: 0, lng: 0 }; // primeiro fica no lugar
+    // raio cresce levemente com índice, ângulo distribui em volta
+    const radius = 0.000045 * Math.ceil(idx / 6); // ~5m por nível
+    const angle  = (idx * (Math.PI * 2 / Math.min(total - 1, 6)));
+    return {
+      lat: Math.sin(angle) * radius,
+      lng: Math.cos(angle) * radius
+    };
+  }
+
+  function plotarAnomalia(id, data, coordCount, coordIdx) {
+    if (!data.lat || !data.lng) return;
+
     const icon = data.tipo === 'poda'   ? iconPoda
       : data.tipo === 'mux'    ? iconMux
       : data.tipo === 'ramal'  ? iconRamal
@@ -1375,7 +1401,18 @@
       : data.tipo === 'poste'  ? iconSubPoste
       : data.tipo === 'outros' ? iconFora
       : iconEspacador;
-    const m = L.marker([data.lat, data.lng], { icon }).addTo(map);
+
+    // aplica spread se houver sobreposição
+    let lat = data.lat, lng = data.lng;
+    if (coordCount && coordIdx) {
+      const key = `${data.lat.toFixed(6)},${data.lng.toFixed(6)}`;
+      const total = coordCount[key] || 1;
+      const off = spreadOffset(key, total, coordIdx);
+      lat += off.lat;
+      lng += off.lng;
+    }
+
+    const m = L.marker([lat, lng], { icon }).addTo(map);
     m._anomaliaId = id;
     anomaliaMarkers.push(m);
 
@@ -1481,25 +1518,51 @@
       const gpsLat = pos.coords.latitude;
       const gpsLng = pos.coords.longitude;
 
-      // usa coordenadas do poste mais próximo do GPS como posição da anomalia
-      // (mais preciso que o GPS do dispositivo, que pode ter deriva)
-      let lat = gpsLat, lng = gpsLng;
+      // ── validação de distância: fiscal deve estar a no máximo 500m do circuito ──
+      if (window._postesAtivos && window._postesAtivos.length > 0) {
+        // calcula distância em metros usando fórmula de Haversine
+        function haversineM(lat1, lng1, lat2, lng2) {
+          const R = 6371000; // raio da Terra em metros
+          const dLat = (lat2-lat1) * Math.PI/180;
+          const dLng = (lng2-lng1) * Math.PI/180;
+          const a = Math.sin(dLat/2)**2 +
+                    Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // distância até o ponto mais próximo do circuito
+        const distMinima = Math.min(
+          ...window._postesAtivos.map(p => haversineM(gpsLat, gpsLng, p.lat, p.lng))
+        );
+
+        if (distMinima > 500) {
+          document.getElementById('modalEndereco').textContent =
+            `⛔ Você está a ${Math.round(distMinima)}m do circuito. Limite: 500m.`;
+          document.getElementById('modalEndereco').classList.remove('loading');
+          document.getElementById('modalCoords').textContent = `${gpsLat.toFixed(6)}, ${gpsLng.toFixed(6)}`;
+          // bloqueia o botão salvar e exibe aviso
+          document.getElementById('btnSalvarAnomalia').disabled = true;
+          showToast(`Você está a ${Math.round(distMinima)}m do circuito. Aproxime-se para registrar.`, true);
+          return; // não prossegue
+        }
+      }
+
+      // dentro do raio — usa GPS real como posição da anomalia
+      const lat = gpsLat, lng = gpsLng;
+      currentAnomaliaPos = { lat, lng };
+      document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      // identifica os dois postes mais próximos para o campo "entre postes"
       if (window._postesAtivos && window._postesAtivos.length > 0) {
         const sorted = [...window._postesAtivos].sort((a,b) => {
           const da = Math.hypot(a.lat-gpsLat, a.lng-gpsLng);
-          const db2 = Math.hypot(b.lat-gpsLat, b.lng-gpsLng);
-          return da - db2;
+          const db = Math.hypot(b.lat-gpsLat, b.lng-gpsLng);
+          return da - db;
         });
-        const maisProximo = sorted[0];
-        lat = maisProximo.lat;
-        lng = maisProximo.lng;
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
         document.getElementById('modalPostes').value = currentAnomaliaPostes;
         gerarTextoOS();
       }
-
-      currentAnomaliaPos = { lat, lng };
-      document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
       // geocode reverso
       try {
@@ -1522,9 +1585,9 @@
         const sorted = [...window._postesAtivos];
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
         document.getElementById('modalPostes').value = currentAnomaliaPostes;
-        document.getElementById('modalEndereco').textContent = 'GPS indisponível — usando posição do circuito';
+        document.getElementById('modalEndereco').textContent = '⚠ GPS indisponível — posição aproximada do circuito';
       } else {
-        document.getElementById('modalEndereco').textContent = 'Localização não disponível';
+        document.getElementById('modalEndereco').textContent = '⚠ GPS indisponível — posição não obtida';
       }
       document.getElementById('modalEndereco').classList.remove('loading');
     }, { enableHighAccuracy: true });
@@ -1990,10 +2053,20 @@
       const tipoLabel = { poda:'Poda', espacador:'Espaçador', mux:'MBX', ramal:'Ramal', fora:'Fora Padrão', poste:'Sub. Poste', outros:'Outros' };
       const iconMap = { poda:iconPoda, mux:iconMux, ramal:iconRamal, fora:iconFora, poste:iconSubPoste, outros:iconFora };
 
+      // spread para não sobrepor markers
+      const pCoordCount = {}, pCoordIdx = {};
+      pendentes.forEach(a => {
+        if (!a.lat || !a.lng) return;
+        const key = `${a.lat.toFixed(6)},${a.lng.toFixed(6)}`;
+        pCoordCount[key] = (pCoordCount[key] || 0) + 1;
+      });
+
       pendentes.forEach(a => {
         if (!a.lat || !a.lng) return;
         const icon = iconMap[a.tipo] || iconEspacador;
-        const m = L.marker([a.lat, a.lng], { icon }).addTo(map);
+        const key = `${a.lat.toFixed(6)},${a.lng.toFixed(6)}`;
+        const off = spreadOffset(key, pCoordCount[key] || 1, pCoordIdx);
+        const m = L.marker([a.lat + off.lat, a.lng + off.lng], { icon }).addTo(map);
         const tipo = tipoLabel[a.tipo] || a.tipo;
         const circuito = a.circuito_nome || a.circuito_id || '—';
         m.bindPopup(`
