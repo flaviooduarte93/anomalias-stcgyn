@@ -105,7 +105,7 @@
     .badge{position:absolute;top:4px;right:calc(50% - 18px);background:var(--er);color:#fff;border-radius:10px;padding:1px 5px;font-size:9px;font-weight:700;min-width:16px;text-align:center;display:none}
     .sk{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:sh 1.5s infinite;border-radius:14px}
     @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-    .toast{position:fixed;bottom:calc(var(--nh) + 16px);left:50%;transform:translateX(-50%) translateY(20px);z-index:3000;background:rgba(10,22,40,.97);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:500;border:1px solid rgba(0,229,160,.3);color:var(--su);opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .toast{position:fixed;bottom:calc(var(--nh) + 16px);left:50%;transform:translateX(-50%) translateY(20px);z-index:3000;background:rgba(10,22,40,.97);border-radius:10px;padding:12px 20px;font-size:13px;font-weight:500;border:1px solid rgba(0,229,160,.3);color:var(--su);opacity:0;transition:all .3s;white-space:normal;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4)}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.error{border-color:rgba(255,77,109,.3);color:var(--er)}
     .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:middle}
     @keyframes sp{to{transform:rotate(360deg)}}
@@ -674,7 +674,21 @@
   window.togCheck=function(el){el.classList.toggle('checked');};
   window.confirmConc=async function(){
     const checks=document.querySelectorAll('.chi');
-    if([...checks].filter(c=>c.classList.contains('checked')).length<checks.length){showToast('Marque todos os itens.',true);return;}
+    if([...checks].filter(c=>c.classList.contains('checked')).length<checks.length){
+      showToast('Marque todos os itens.',true,5000);return;
+    }
+
+    // ── valida Easy Trafo e Anel (obrigatórios) ──
+    const{data:insp}=await sb.from('inspecoes').select('easy_trafo,fechado_em_anel').eq('id',idConc).single();
+    if(!insp){showToast('Erro ao verificar inspeção.',true,5000);return;}
+    const faltando=[];
+    if(insp.easy_trafo===null||insp.easy_trafo===undefined) faltando.push('Easy Trafo');
+    if(insp.fechado_em_anel===null||insp.fechado_em_anel===undefined) faltando.push('Fechado em Anel');
+    if(faltando.length>0){
+      showToast(`⚠ Não é possível concluir: preencha ${faltando.join(' e ')} no mapa antes de encerrar.`,true,5000);
+      return;
+    }
+
     const obs=document.getElementById('obsConc').value.trim();
     const btn=document.getElementById('btnConc');
     btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
@@ -741,10 +755,10 @@
   // ── helpers ──
   function showSk(){document.getElementById('lista').innerHTML='<div class="sk" style="height:130px;margin-bottom:10px"></div><div class="sk" style="height:130px;margin-bottom:10px"></div><div class="sk" style="height:130px"></div>';}
   function showErr(msg){document.getElementById('lista').innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><p>'+msg+'</p></div>';}
-  window.showToast=function(msg,isErr){
+  window.showToast=function(msg,isErr,duration=3000){
     const t=document.getElementById('toast');t.textContent=msg;
     t.className='toast'+(isErr?' error':'')+' show';
-    setTimeout(()=>t.classList.remove('show'),3000);
+    setTimeout(()=>t.classList.remove('show'),duration);
   };
 </script>
 </body>
