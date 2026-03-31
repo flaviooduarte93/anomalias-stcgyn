@@ -421,7 +421,7 @@
 </div>
 
 <!-- MODAL: RESUMO DECÔMETRO -->
-<div class="modal-overlay" id="modalDecometro">
+<div class="modal-overlay" id="modalDecometro" onclick="if(event.target===this)fecharModalDeco()">
   <div class="modal" style="max-width:700px;max-height:80vh;overflow-y:auto">
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -491,7 +491,7 @@
 </nav>
 
 <!-- MODAL: DELEGAR INSPEÇÃO -->
-<div class="modal-overlay" id="modalDelegarInspecao">
+<div class="modal-overlay" id="modalDelegarInspecao" onclick="if(event.target===this)fecharModalDelegarInspecao()">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">Delegar Inspeção</div>
@@ -510,7 +510,7 @@
 </div>
 
 <!-- MODAL: Matriz de um circuito específico -->
-<div class="modal-overlay" id="modalMatriz">
+<div class="modal-overlay" id="modalMatriz" onclick="if(event.target===this)fecharModalMatriz()">
   <div class="modal" style="max-width:540px;max-height:85vh;overflow-y:auto">
     <div class="modal-handle"></div>
     <div class="modal-title">⊞ Matriz de Impacto</div>
@@ -523,15 +523,18 @@
 </div>
 
 <!-- MODAL: Matriz geral — todos os equipamentos do decômetro -->
-<div class="modal-overlay" id="modalMatrizGeral">
+<div class="modal-overlay" id="modalMatrizGeral" onclick="if(event.target===this)fecharMatrizGeral()">
   <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto;width:96vw">
     <div class="modal-handle"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <div class="modal-title" style="margin:0">⊞ Matriz de Impacto — Todos os Equipamentos</div>
-      <button onclick="exportarMatriz()" style="display:flex;align-items:center;gap:5px;padding:7px 12px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:7px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Excel
-      </button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px;flex-wrap:wrap">
+      <div class="modal-title" style="margin:0">⊞ Matriz de Impacto</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="exportarMatriz()" style="display:flex;align-items:center;gap:5px;padding:7px 12px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:7px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Excel
+        </button>
+        <button onclick="fecharMatrizGeral()" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:var(--eq-gray);cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+      </div>
     </div>
     <div class="modal-sub" style="margin-bottom:12px">Clique em um equipamento para ver detalhes · Clique nos desarmes para expandir</div>
     <div style="display:flex;gap:8px;margin-bottom:12px;font-size:11px;flex-wrap:wrap">
@@ -949,18 +952,21 @@
   function matrizBadgeHtml(nome, clientes){
     const ocs=decometroCache[nome]||null;
     const nc=nivelClientes(clientes||0);
-    const nd=ocs!==null?nivelDesarmes(ocs):null;
-    if(nd===null)return''; // sem dados decometro — não mostra
+    // sem dados decômetro = 0 desarmes = nível 3
+    const nd=nivelDesarmes(ocs||[]);
+    const semDeco=ocs===null;
+    if(false)return''; // sempre mostra
     const {bg,border,color,lbl}=matrizCor(nc,nd);
-    return`<span class="matriz-badge" style="background:${bg};border:1px solid ${border};color:${color};display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirMatrizCard('${nome}',${clientes||0})" title="Ver matriz completa">
-      ⊞ ${matrizLabel(nc,nd)} · ${lbl}
+    return`<span class="matriz-badge" style="background:${bg};border:1px solid ${border};color:${color};display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirMatrizCard('${nome}',${clientes||0})" title="${semDeco?'Sem dados decômetro — 0 desarmes considerado':'Ver matriz completa'}">
+      ⊞ ${matrizLabel(nc,nd)} · ${lbl}${semDeco?' <span style=\"opacity:.6;font-weight:400\">(sem deco)</span>':''}
     </span>`;
   }
 
   // ─── MODAL MATRIZ CIRCUITO ──────────────────────────────────────────────────
   window.abrirMatrizCard=function(nome,clientes){
-    const ocs=decometroCache[nome]||[];
-    const ocsSemPTP=desarmesSemPTP(ocs);
+    const ocs=decometroCache[nome]||null;
+    const temDeco=ocs!==null;
+    const ocsSemPTP=desarmesSemPTP(ocs||[]);
     const nc=nivelClientes(clientes);
     const nd=nivelDesarmes(ocs);
     const {bg,border,color,lbl}=matrizCor(nc,nd);
@@ -1004,7 +1010,7 @@
         </div>
       </div>
       ${ocsSemPTP.length>0?`
-      <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Desarmes (clique para expandir)</div>
+      <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Desarmes – clique para expandir</div>
       <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:rgba(255,255,255,.04)">
@@ -1017,7 +1023,7 @@
           <tbody>${rows}</tbody>
         </table>
       </div>${ptpInfo}`
-      :`<div style="color:var(--eq-success);font-size:13px;padding:10px 0">✓ Nenhum desarme registrado</div>`}
+      :`<div style="color:${temDeco?'var(--eq-success)':'var(--eq-gray)'};font-size:13px;padding:10px 0">${temDeco?'✓ Nenhum desarme registrado':'⚠ Sem dados no Decômetro — 0 desarmes considerado (nível 3)'}</div>`}
     `;
     document.getElementById('modalMatriz').classList.add('open');
   };
