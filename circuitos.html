@@ -693,7 +693,7 @@
     // ordena: mais críticos primeiro (menor soma de níveis)
     const sorted = Object.values(valoresPresentes).sort((a,b) => (a.nc+a.nd) - (b.nc+b.nd));
 
-    const btnBase = 'padding:5px 12px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:all .2s;border:1px solid';
+    const btnBase = "padding:5px 12px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:all .2s;border:1px solid";
     const btnTodas = `<button class="fmatriz-btn" onclick="setFiltroMatriz('todas',this)" style="${btnBase} rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--eq-white)">
       Todas <span style="opacity:.6;font-weight:400">(${todosCircuitosCache.length})</span>
     </button>`;
