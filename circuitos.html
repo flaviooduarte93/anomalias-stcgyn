@@ -359,7 +359,19 @@
 <!-- CONTEÚDO -->
 <div class="content">
   <div class="page-title">Circuitos</div>
-  <div class="page-sub">Gerencie os transformadores e delegue inspeções</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+    <div class="page-sub" style="margin-bottom:0">Gerencie os transformadores e delegue inspeções</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="abrirMatrizGeral()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.25);border-radius:8px;color:var(--eq-cyan);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Ver Matriz
+      </button>
+      <button onclick="exportarMatriz()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:8px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Matriz
+      </button>
+    </div>
+  </div>
 
   <!-- UPLOAD -->
   <div class="upload-area" id="uploadArea">
@@ -497,6 +509,43 @@
   </div>
 </div>
 
+<!-- MODAL: Matriz de um circuito específico -->
+<div class="modal-overlay" id="modalMatriz">
+  <div class="modal" style="max-width:540px;max-height:85vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⊞ Matriz de Impacto</div>
+    <div class="modal-sub" id="mMatrizNome" style="font-weight:700;font-size:15px;color:var(--eq-white)"></div>
+    <div id="mMatrizBody" style="margin-top:12px"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="fecharModalMatriz()" style="flex:1">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Matriz geral — todos os equipamentos do decômetro -->
+<div class="modal-overlay" id="modalMatrizGeral">
+  <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto;width:96vw">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="modal-title" style="margin:0">⊞ Matriz de Impacto — Todos os Equipamentos</div>
+      <button onclick="exportarMatriz()" style="display:flex;align-items:center;gap:5px;padding:7px 12px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:7px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel
+      </button>
+    </div>
+    <div class="modal-sub" style="margin-bottom:12px">Clique em um equipamento para ver detalhes · Clique nos desarmes para expandir</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;font-size:11px;flex-wrap:wrap">
+      <span style="background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--eq-error);padding:3px 8px;border-radius:5px;font-weight:700">● Crítico — soma ≤ 2</span>
+      <span style="background:rgba(255,179,0,.1);border:1px solid rgba(255,179,0,.3);color:var(--eq-warning);padding:3px 8px;border-radius:5px;font-weight:700">● Mediano — soma 3-4</span>
+      <span style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:var(--eq-success);padding:3px 8px;border-radius:5px;font-weight:700">● Baixo — soma 5-6</span>
+    </div>
+    <div id="mMatrizGeralBody"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="fecharMatrizGeral()" style="flex:1">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -529,7 +578,7 @@
   }
 
   let currentUser=null, delegarCircuitoId=null, delegarCircuitoNome=null;
-  let todosCircuitosCache=[], decometroCache={}, anomaliasCache={}, inspecoesCache={};
+  let todosCircuitosCache=[], decometroCache={}, decoCltsMedia={}, anomaliasCache={}, inspecoesCache={};
   let paginaAtual=1, listaFiltrada=[];
   let decoOrdem={col:'chi',asc:false}, decoAtualNome='';
   const POR_PAGINA=10;
@@ -590,7 +639,7 @@
     ]);
     // cache decômetro
     decometroCache={};
-    decoAll.forEach(d=>{if(d.equipamento)decometroCache[d.equipamento]=d.ocorrencias||[];});
+    decoAll.forEach(d=>{if(d.equipamento){decometroCache[d.equipamento]=d.ocorrencias||[];decoCltsMedia[d.equipamento]=d.clts_media||null;}});
     // cache anomalias pendentes por circuito
     anomaliasCache={};
     anoAll.forEach(a=>{
@@ -599,8 +648,17 @@
     // cache inspeções por circuito (última por circuito)
     inspecoesCache={};
     inspAll.forEach(i=>{
-      if(i.circuito_id&&!inspecoesCache[i.circuito_id])
-        inspecoesCache[i.circuito_id]={status:i.status||'pendente',fiscalNome:i.fiscal_nome||'—'};
+      if(i.circuito_id&&(!inspecoesCache[i.circuito_id]||
+        // prefere mais recente
+        new Date(i.delegado_em||0)>new Date(inspecoesCache[i.circuito_id]._delegadoEm||0)
+      ))
+        inspecoesCache[i.circuito_id]={
+          status:i.status||'pendente',
+          fiscalNome:i.fiscal_nome||'—',
+          concluidoEm:i.concluido_em||null,
+          inspId:i.id,
+          _delegadoEm:i.delegado_em||null
+        };
     });
     todosCircuitosCache=circAll.map(c=>({...c,_id:c.id}));
     document.getElementById('countBadge').textContent=todosCircuitosCache.length;
@@ -630,12 +688,13 @@
       const statusInsp=insp?insp.status:'armazenado';
       const fiscalNome=insp?insp.fiscalNome:'—';
       const dataStr=c.criado_em?new Date(c.criado_em).toLocaleDateString('pt-BR'):'—';
-      const statusLabel={armazenado:'Armazenado',pendente:'Inspeção Pendente',concluido:'Inspecionado'}[statusInsp]||statusInsp;
+      const statusLabel={armazenado:'Armazenado',pendente:'Inspeção Pendente',concluido:'Finalizado',cancelado:'Redelegada'}[statusInsp]||statusInsp;
+      const concluidoEm=insp?.concluidoEm?new Date(insp.concluidoEm).toLocaleDateString('pt-BR'):null;
       const nomeEsc=(c.nome||id).replace(/'/g,"\'");
       const temDeco=decometroCache.hasOwnProperty(c.nome);
       return`<div class="circuito-card" id="card-${id}">
         <div class="card-header">
-          <div><div class="card-nome">${c.nome||id}</div><div class="card-data">Adicionado em ${dataStr}</div></div>
+          <div><div class="card-nome">${c.nome||id}</div><div class="card-data">Adicionado em ${dataStr}${concluidoEm?` · Finalizado em ${concluidoEm}`:''}</div></div>
           <span class="status-pill ${statusInsp}">${statusLabel}</span>
         </div>
         <div class="card-stats">
@@ -644,7 +703,10 @@
           <div class="cstat"><div class="cstat-val" style="color:${qtdAno>0?'var(--eq-warning)':'var(--eq-success)'}">${qtdAno}</div><div class="cstat-label">Anomalias</div></div>
           ${statusInsp!=='armazenado'?`<div class="cstat"><div class="cstat-val" style="font-size:13px;color:var(--eq-gray)">${fiscalNome.split(' ')[0]}</div><div class="cstat-label">Fiscal</div></div>`:''}
         </div>
-        <div style="margin:8px 0 4px">${decoBadgeHtml(c.nome)}</div>
+        <div style="margin:8px 0 4px;display:flex;gap:6px;flex-wrap:wrap">
+          ${decoBadgeHtml(c.nome)}
+          ${matrizBadgeHtml(c.nome, c.clientes||0)}
+        </div>
         <div class="card-actions">
           <button class="btn-sm btn-outline-sm" onclick="verNoMapa('${id}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa
@@ -656,6 +718,9 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Delegar inspeção
           </button>`:''}
           ${statusInsp==='pendente'?`<button class="btn-sm btn-outline-sm" style="color:var(--eq-warning);border-color:rgba(255,179,0,0.3)" onclick="openModalDelegarInspecao('${id}','${nomeEsc}')">Redelegar</button>`:''}
+          ${statusInsp==='concluido'?`<button class="btn-sm btn-primary-sm" onclick="openModalDelegarInspecao('${id}','${nomeEsc}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova inspeção
+          </button>`:''}
           <button class="btn-sm btn-danger-sm" onclick="excluirCircuito('${id}','${nomeEsc}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir
           </button>
@@ -741,13 +806,25 @@
         const col=k=>h.indexOf(k);
         const iNum=col('Número'),iIni=col('Data Início'),iFim=col('Data Fim'),iCausa=col('Causa'),iChi=col('CHI'),iCd=col('CD');
         const iSit=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('SITUA')||String(c||'').trim().toUpperCase().includes('ESTADO'));
+        // Clts Af Max — para média de clientes na matriz de impacto
+        const iCltsMax=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('CLTS')&&String(c||'').trim().toUpperCase().includes('MAX'));
         if([iNum,iIni,iFim,iChi,iCd].some(x=>x<0)){showToast('Colunas obrigatórias não encontradas.',true);return;}
         onProgress?.(45,'Agrupando equipamentos…');
         const ocorsPorEquip={};
+        const cltsPorEquip={};  // soma e contagem para média de Clts Af Max
         for(const r of rows.slice(hIdx+1)){
           if(iSit>=0){const sit=String(r[iSit]||'').trim().toUpperCase();if(!sit.includes('FINALIZ'))continue;}
           const equip=String(r[iCd]||'').trim();
-          if(!equip||equip==='---'||!equip.startsWith('GN'))continue;
+          // considera apenas equipamentos GN onde chars 2-3 formam "11" (GN11...)
+          if(!equip||equip==='---')continue;
+          // aceita qualquer equipamento cujos chars 3-4 (índices 2-3) formem "11"
+          if(equip.length<4||equip.substring(2,4)!=='11')continue;
+          // captura Clts Af Max para média
+          if(iCltsMax>=0){
+            const clts=parseInt(r[iCltsMax])||0;
+            if(!cltsPorEquip[equip])cltsPorEquip[equip]={soma:0,cnt:0};
+            if(clts>0){cltsPorEquip[equip].soma+=clts;cltsPorEquip[equip].cnt++;}
+          }
           if(!ocorsPorEquip[equip])ocorsPorEquip[equip]={};
           const num=String(r[iNum]||'').trim();if(!num)continue;
           if(!ocorsPorEquip[equip][num])ocorsPorEquip[equip][num]={numero:num,inicio:String(r[iIni]||'').trim(),fim:String(r[iFim]||'').trim(),causa:String(r[iCausa]||'').trim(),chi:parseFloat(r[iChi])||0};
@@ -758,6 +835,8 @@
           const[equip,ocsMap]=equipList[i];
           onProgress?.(50+Math.round((i/Math.max(equipList.length,1))*45),`Salvando ${equip}…`);
           const ocorrencias=Object.values(ocsMap);
+          const cltsInfo=cltsPorEquip[equip]||{soma:0,cnt:0};
+          const cltsMedia=cltsInfo.cnt>0?Math.round(cltsInfo.soma/cltsInfo.cnt):null;
           // busca existente
           const{data:existArr}=await sb.from('decometro').select('id,ocorrencias').eq('equipamento',equip);
           if(existArr&&existArr.length>0){
@@ -765,9 +844,13 @@
             const existMap={};
             existOcs.forEach(o=>{existMap[o.numero]=o;});
             ocorrencias.forEach(o=>{existMap[o.numero]=o;});
-            await sb.from('decometro').update({ocorrencias:Object.values(existMap),atualizado_em:new Date().toISOString()}).eq('id',existArr[0].id);
+            const upd={ocorrencias:Object.values(existMap),atualizado_em:new Date().toISOString()};
+            if(cltsMedia!==null)upd.clts_media=cltsMedia;
+            await sb.from('decometro').update(upd).eq('id',existArr[0].id);
           } else {
-            await sb.from('decometro').insert({equipamento:equip,ocorrencias,criado_em:new Date().toISOString()});
+            const ins={equipamento:equip,ocorrencias,criado_em:new Date().toISOString()};
+            if(cltsMedia!==null)ins.clts_media=cltsMedia;
+            await sb.from('decometro').insert(ins);
           }
           salvos++;
         }
@@ -848,6 +931,188 @@
     }
     setProgress(100,'Tudo pronto! ✓');hideProgress();await carregarCircuitos();
   });
+
+  // ─── MATRIZ DE IMPACTO ───────────────────────────────────────────────────────
+  // Nível clientes: >=85 → 1, >=50 → 2, else → 3
+  function nivelClientes(n){ return n>=85?1:n>=50?2:3; }
+  // Nível desarmes (desconsiderando causas com "PTP"): >=2 → 1, 1 → 2, 0 → 3
+  function desarmesSemPTP(ocs){ return (ocs||[]).filter(o=>!String(o.causa||'').toUpperCase().includes('PTP')); }
+  function nivelDesarmes(ocs){ const n=desarmesSemPTP(ocs).length; return n>=2?1:n===1?2:3; }
+  function matrizLabel(nc,nd){ return`${nc} - ${nd}`; }
+  function matrizCor(nc,nd){
+    const sum=nc+nd;
+    if(sum<=2)return{bg:'rgba(255,77,109,0.12)',border:'rgba(255,77,109,0.4)',color:'var(--eq-error)',lbl:'Crítico'};
+    if(sum<=4)return{bg:'rgba(255,179,0,0.10)',border:'rgba(255,179,0,0.35)',color:'var(--eq-warning)',lbl:'Mediano'};
+    return{bg:'rgba(0,229,160,0.08)',border:'rgba(0,229,160,0.25)',color:'var(--eq-success)',lbl:'Baixo'};
+  }
+
+  function matrizBadgeHtml(nome, clientes){
+    const ocs=decometroCache[nome]||null;
+    const nc=nivelClientes(clientes||0);
+    const nd=ocs!==null?nivelDesarmes(ocs):null;
+    if(nd===null)return''; // sem dados decometro — não mostra
+    const {bg,border,color,lbl}=matrizCor(nc,nd);
+    return`<span class="matriz-badge" style="background:${bg};border:1px solid ${border};color:${color};display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirMatrizCard('${nome}',${clientes||0})" title="Ver matriz completa">
+      ⊞ ${matrizLabel(nc,nd)} · ${lbl}
+    </span>`;
+  }
+
+  // ─── MODAL MATRIZ CIRCUITO ──────────────────────────────────────────────────
+  window.abrirMatrizCard=function(nome,clientes){
+    const ocs=decometroCache[nome]||[];
+    const ocsSemPTP=desarmesSemPTP(ocs);
+    const nc=nivelClientes(clientes);
+    const nd=nivelDesarmes(ocs);
+    const {bg,border,color,lbl}=matrizCor(nc,nd);
+    const rows=ocsSemPTP.map(o=>`
+      <tr class="deco-row" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='table-row'?'none':'table-row'">
+        <td style="padding:7px 10px">${o.numero||'—'}</td>
+        <td style="padding:7px 10px;color:var(--eq-gray);font-size:11px">${o.inicio||'—'}</td>
+        <td style="padding:7px 10px;color:var(--eq-gray);font-size:11px">${o.fim||'—'}</td>
+        <td style="padding:7px 10px;color:var(--eq-cyan);font-size:11px">${o.causa||'—'}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:700;color:${parseFloat(o.chi||0)>500?'var(--eq-error)':parseFloat(o.chi||0)>100?'var(--eq-warning)':'var(--eq-success)'}">${parseFloat(o.chi||0).toFixed(2)}</td>
+      </tr>
+      <tr style="display:none;background:rgba(0,170,255,0.04)">
+        <td colspan="5" style="padding:8px 14px;font-size:12px;color:var(--eq-gray)">
+          CHI: <b style="color:var(--eq-white)">${parseFloat(o.chi||0).toFixed(2)}</b> &nbsp;|&nbsp;
+          Início: ${o.inicio||'—'} &nbsp;|&nbsp; Fim: ${o.fim||'—'}
+        </td>
+      </tr>`).join('');
+
+    const ptpList=ocs.filter(o=>String(o.causa||'').toUpperCase().includes('PTP'));
+    const ptpInfo=ptpList.length?`<div style="font-size:11px;color:var(--eq-gray);margin-top:8px">
+      ${ptpList.length} ocorrência${ptpList.length>1?'s':''} PTP desconsiderada${ptpList.length>1?'s':''} (${ptpList.map(o=>o.numero).join(', ')})
+    </div>`:'';
+
+    document.getElementById('mMatrizNome').textContent=nome;
+    document.getElementById('mMatrizBody').innerHTML=`
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:100px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;text-align:center">
+          <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Clientes</div>
+          <div style="font-size:20px;font-weight:700;color:var(--eq-white)">${clientes}</div>
+          <div style="font-size:10px;color:var(--eq-gray)">Nível ${nc}</div>
+        </div>
+        <div style="flex:1;min-width:100px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;text-align:center">
+          <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Desarmes</div>
+          <div style="font-size:20px;font-weight:700;color:var(--eq-white)">${ocsSemPTP.length}</div>
+          <div style="font-size:10px;color:var(--eq-gray)">Nível ${nd}</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:${bg};border:1px solid ${border};border-radius:8px;padding:10px 12px;text-align:center">
+          <div style="font-size:11px;color:${color};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Matriz</div>
+          <div style="font-size:22px;font-weight:700;color:${color}">${matrizLabel(nc,nd)}</div>
+          <div style="font-size:11px;color:${color};font-weight:600">${lbl}</div>
+        </div>
+      </div>
+      ${ocsSemPTP.length>0?`
+      <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Desarmes (clique para expandir)</div>
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:rgba(255,255,255,.04)">
+            <th style="padding:7px 10px;text-align:left;color:var(--eq-gray);font-weight:600">Nº</th>
+            <th style="padding:7px 10px;text-align:left;color:var(--eq-gray);font-weight:600">Início</th>
+            <th style="padding:7px 10px;text-align:left;color:var(--eq-gray);font-weight:600">Fim</th>
+            <th style="padding:7px 10px;text-align:left;color:var(--eq-gray);font-weight:600">Causa</th>
+            <th style="padding:7px 10px;text-align:right;color:var(--eq-gray);font-weight:600">CHI</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>${ptpInfo}`
+      :`<div style="color:var(--eq-success);font-size:13px;padding:10px 0">✓ Nenhum desarme registrado</div>`}
+    `;
+    document.getElementById('modalMatriz').classList.add('open');
+  };
+  window.fecharModalMatriz=function(){document.getElementById('modalMatriz').classList.remove('open');};
+
+  // ─── MODAL MATRIZ GERAL (todos decometro) ───────────────────────────────────
+  window.abrirMatrizGeral=function(){
+    const equips=Object.keys(decometroCache).sort();
+    if(!equips.length){showToast('Nenhum dado do Decômetro disponível.',true);return;}
+    const rows=equips.map(nome=>{
+      const ocs=decometroCache[nome]||[];
+      const ocsSemPTP=desarmesSemPTP(ocs);
+      // clientes: usa circuito se existir, senão usa média do decometro
+      const circ=todosCircuitosCache.find(c=>c.nome===nome);
+      const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
+      const nc=nivelClientes(clientes);
+      const nd=nivelDesarmes(ocs);
+      const {color,lbl}=matrizCor(nc,nd);
+      const fonte=circ?'circuito':'média xlsx';
+      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte};
+    }).sort((a,b)=>(a.nc+a.nd)-(b.nc+b.nd)); // mais críticos primeiro
+
+    const tbody=rows.map(r=>`
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="abrirMatrizEquipDeco('${r.nome}',${r.clientes})">
+        <td style="padding:8px 10px;font-weight:600">${r.nome}</td>
+        <td style="padding:8px 10px;text-align:right">${r.clientes}<span style="font-size:10px;color:var(--eq-gray);margin-left:4px">(${r.fonte})</span></td>
+        <td style="padding:8px 10px;text-align:center;color:var(--eq-gray)">${r.nc}</td>
+        <td style="padding:8px 10px;text-align:center">
+          <span style="cursor:pointer;color:var(--eq-cyan);text-decoration:underline" onclick="event.stopPropagation();toggleDesarmesDeco('deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}')">
+            ${r.ocsSemPTP.length}
+          </span>
+        </td>
+        <td style="padding:8px 10px;text-align:center;color:var(--eq-gray)">${r.nd}</td>
+        <td style="padding:8px 10px;text-align:center;font-weight:700;color:${r.color}">${matrizLabel(r.nc,r.nd)}</td>
+        <td style="padding:8px 10px;text-align:center"><span style="padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
+      </tr>
+      <tr id="deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}" style="display:none;background:rgba(0,0,0,.2)">
+        <td colspan="7" style="padding:8px 14px">
+          ${r.ocsSemPTP.length?`<table style="width:100%;font-size:11px;border-collapse:collapse">
+            <tr style="color:var(--eq-gray)"><th style="text-align:left;padding:3px 6px">Nº</th><th style="text-align:left;padding:3px 6px">Data Início</th><th style="text-align:left;padding:3px 6px">Data Fim</th><th style="text-align:left;padding:3px 6px">Causa</th><th style="text-align:right;padding:3px 6px">CHI</th></tr>
+            ${r.ocsSemPTP.map(o=>`<tr><td style="padding:3px 6px">${o.numero||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.inicio||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.fim||'—'}</td><td style="padding:3px 6px;color:var(--eq-cyan)">${o.causa||'—'}</td><td style="padding:3px 6px;text-align:right;font-weight:700">${parseFloat(o.chi||0).toFixed(2)}</td></tr>`).join('')}
+          </table>` : '<span style="color:var(--eq-success);font-size:11px">✓ Sem desarmes</span>'}
+        </td>
+      </tr>`).join('');
+
+    document.getElementById('mMatrizGeralBody').innerHTML=`
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead style="background:rgba(255,255,255,.04)"><tr>
+            <th style="padding:8px 10px;text-align:left;color:var(--eq-gray)">Equipamento</th>
+            <th style="padding:8px 10px;text-align:right;color:var(--eq-gray)">Clientes</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Cli</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Desarmes</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Des</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Matriz</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Criticidade</th>
+          </tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>`;
+    document.getElementById('modalMatrizGeral').classList.add('open');
+  };
+
+  window.toggleDesarmesDeco=function(id){
+    const el=document.getElementById(id);
+    if(el)el.style.display=el.style.display==='table-row'?'none':'table-row';
+  };
+
+  window.fecharMatrizGeral=function(){document.getElementById('modalMatrizGeral').classList.remove('open');};
+
+  window.exportarMatriz=function(){
+    if(!window.XLSX){showToast('Carregando XLSX...');
+      const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload=()=>exportarMatriz();document.head.appendChild(s);return;}
+    const equips=Object.keys(decometroCache).sort();
+    const rows=equips.map(nome=>{
+      const ocs=decometroCache[nome]||[];
+      const ocsSemPTP=desarmesSemPTP(ocs);
+      const circ=todosCircuitosCache.find(c=>c.nome===nome);
+      const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
+      const nc=nivelClientes(clientes), nd=nivelDesarmes(ocs);
+      const {lbl}=matrizCor(nc,nd);
+      return{'Equipamento':nome,'Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl};
+    });
+    const ws=window.XLSX.utils.json_to_sheet(rows);
+    const wb=window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb,ws,'Matriz');
+    window.XLSX.writeFile(wb,'matriz_impacto_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.xlsx');
+    showToast(`✓ ${rows.length} equipamentos exportados.`);
+  };
+
+  window.abrirMatrizEquipDeco=function(nome,clientes){
+    // reutiliza abrirMatrizCard mas com clientes vindos do decometro
+    abrirMatrizCard(nome, clientes);
+  };
 
   window.verNoMapa=function(id){sessionStorage.setItem('circuitoSelecionado',id);sessionStorage.setItem('mapaOrigem','circuitos');window.location.href='mapa.html';};
 
