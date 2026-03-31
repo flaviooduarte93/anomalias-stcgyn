@@ -995,6 +995,20 @@
   }
 
   window.navTo = function(page, el) {
+    // se fiscal tem inspeção ativa e está tentando ir para pendências,
+    // verifica se Easy Trafo e Anel foram preenchidos
+    if (currentInspecaoId && currentPerfil === 'fiscal' && page === 'pendencias.html') {
+      const inspData = window._inspAtiva || {};
+      const easyOk  = inspData.easy_trafo !== null && inspData.easy_trafo !== undefined;
+      const anelOk  = inspData.fechado_em_anel !== null && inspData.fechado_em_anel !== undefined;
+      if (!easyOk || !anelOk) {
+        const faltando = [];
+        if (!easyOk) faltando.push('Easy Trafo');
+        if (!anelOk) faltando.push('Fechado em Anel');
+        showToast(`⚠ Preencha antes de concluir: ${faltando.join(' e ')}`, true, 5000);
+        return; // bloqueia navegação
+      }
+    }
     window.location.href = page;
   };
 
@@ -2229,11 +2243,11 @@
   }
 
   // ── toast ──
-  window.showToast = function(msg, isError = false) {
+  window.showToast = function(msg, isError = false, duration = 3000) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast' + (isError ? ' error' : '') + ' show';
-    setTimeout(() => t.classList.remove('show'), 3000);
+    setTimeout(() => t.classList.remove('show'), duration);
   };
 
   // service worker
@@ -2254,23 +2268,27 @@
   async function carregarEstadoInspTrafo() {
     if (!currentInspecaoId) return;
     try {
-      const { data: _inspdata } = await sb.from('inspecoes').select('*').eq('id', currentInspecaoId).single();
-      const snap = { exists: () => !!_inspdata, data: () => _inspdata || {} };
-      if (!!!_snapdata) return;
-      const d = snap.data();
-      // Easy Trafo
+      const { data: d } = await sb.from('inspecoes').select('*').eq('id', currentInspecaoId).single();
+      if (!d) return;
+
+      // armazena globalmente para validação no navTo
+      window._inspAtiva = d;
+
+      // Easy Trafo — atualiza label e cor do botão
       const lblET = document.getElementById('btnEasyTrafoLbl');
+      const btnET = document.getElementById('btnEasyTrafo');
       if (lblET) {
-        if (d.easy_trafo === true)  lblET.textContent = '✓ Easy Trafo';
-        else if (d.easy_trafo === false) lblET.textContent = '✗ Sem Easy Trafo';
-        else lblET.textContent = 'Easy Trafo';
+        if (d.easy_trafo === true)  { lblET.textContent = '✓ Easy Trafo'; btnET.style.borderColor='rgba(0,229,160,.4)'; btnET.style.color='var(--su)'; }
+        else if (d.easy_trafo === false) { lblET.textContent = '✗ Sem Easy Trafo'; btnET.style.borderColor='rgba(255,77,109,.4)'; btnET.style.color='var(--er)'; }
+        else { lblET.textContent = 'Easy Trafo'; btnET.style.borderColor='rgba(255,179,0,.5)'; btnET.style.color='var(--wa)'; } // pendente = amarelo
       }
-      // Anel
+      // Anel — atualiza label e cor do botão
       const lblA = document.getElementById('btnAnelLbl');
+      const btnA = document.getElementById('btnAnel');
       if (lblA) {
-        if (d.fechado_em_anel === true)  lblA.textContent = '✓ Anel: Sim';
-        else if (d.fechado_em_anel === false) lblA.textContent = '✗ Anel: Não';
-        else lblA.textContent = 'Anel';
+        if (d.fechado_em_anel === true)  { lblA.textContent = '✓ Anel: Sim'; btnA.style.borderColor='rgba(0,229,160,.4)'; btnA.style.color='var(--su)'; }
+        else if (d.fechado_em_anel === false) { lblA.textContent = '✗ Anel: Não'; btnA.style.borderColor='rgba(255,77,109,.4)'; btnA.style.color='var(--er)'; }
+        else { lblA.textContent = 'Anel'; btnA.style.borderColor='rgba(255,179,0,.5)'; btnA.style.color='var(--wa)'; } // pendente = amarelo
       }
     } catch(e) { console.error('carregarEstadoInspTrafo:', e); }
   }
@@ -2335,9 +2353,11 @@
         const json = await res.json();
         fotoUrl = cldSave(json.secure_url);
       }
-      const update = { easy_trafo: easyTrafoSelecionado, easyTrafoAtualizadoEm: new Date().toISOString() };
-      if (fotoUrl) update.easyTrafoFotoUrl = fotoUrl;
+      const update = { easy_trafo: easyTrafoSelecionado, easy_trafo_atualizado_em: new Date().toISOString() };
+      if (fotoUrl) update.easy_trafo_foto_url = fotoUrl;
       await sb.from('inspecoes').update(update).eq('id', currentInspecaoId);
+      // atualiza cache local
+      if (window._inspAtiva) { window._inspAtiva.easy_trafo = easyTrafoSelecionado; if(fotoUrl) window._inspAtiva.easy_trafo_foto_url = fotoUrl; }
       closeModalEasyTrafo();
       await carregarEstadoInspTrafo();
       showToast('✓ Easy Trafo registrado!');
@@ -2381,9 +2401,11 @@
     const btn = document.getElementById('btnSalvarAnel');
     btn.disabled = true; btn.textContent = 'Salvando...';
     try {
-      const update = { fechadoEmAnel: anelSelecionado, anelAtualizadoEm: new Date().toISOString() };
+      const update = { fechado_em_anel: anelSelecionado, anel_atualizado_em: new Date().toISOString() };
       if (obs) update.anel_observacao = obs;
       await sb.from('inspecoes').update(update).eq('id', currentInspecaoId);
+      // atualiza cache local
+      if (window._inspAtiva) { window._inspAtiva.fechado_em_anel = anelSelecionado; if(obs) window._inspAtiva.anel_observacao = obs; }
       closeModalAnel();
       await carregarEstadoInspTrafo();
       showToast('✓ Informação de anel registrada!');
