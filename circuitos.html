@@ -388,6 +388,7 @@
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <div class="upload-badge">.html — circuito</div>
       <div class="upload-badge" style="background:rgba(0,229,160,0.12);color:var(--eq-success);border-color:rgba(0,229,160,0.3)">.xlsx — decômetro</div>
+      <div class="upload-badge" style="background:rgba(181,123,238,0.12);color:#b57bee;border-color:rgba(181,123,238,0.3)">.xlsx — conjuntos</div>
     </div>
     <div class="upload-progress" id="uploadProgress">
       <div class="upload-progress-label" id="uploadProgressLabel"></div>
@@ -583,7 +584,8 @@
   }
 
   let currentUser=null, delegarCircuitoId=null, delegarCircuitoNome=null;
-  let todosCircuitosCache=[], decometroCache={}, decoCltsMedia={}, anomaliasCache={}, inspecoesCache={};
+  let todosCircuitosCache=[], decometroCache={}, decoCltsMedia={}, decoConjunto={}, anomaliasCache={}, inspecoesCache={};
+  let conjuntosCache={}; // { 'AEROPORTO S1': { meta:6, dec_atual: 51.4, status:'critico'|'alerta'|'ok' } }
   let paginaAtual=1, listaFiltrada=[];
   let decoOrdem={col:'chi',asc:false}, decoAtualNome='';
   const POR_PAGINA=10;
@@ -644,7 +646,11 @@
     ]);
     // cache decômetro
     decometroCache={};
-    decoAll.forEach(d=>{if(d.equipamento){decometroCache[d.equipamento]=d.ocorrencias||[];decoCltsMedia[d.equipamento]=d.clts_media||null;}});
+    decoAll.forEach(d=>{if(d.equipamento){decometroCache[d.equipamento]=d.ocorrencias||[];decoCltsMedia[d.equipamento]=d.clts_media||null;if(d.conjunto)decoConjunto[d.equipamento]=d.conjunto;}});
+    // carrega conjuntos
+    const conjAll=await fetchAll('conjuntos_dec');
+    conjuntosCache={};
+    conjAll.forEach(c=>{if(c.nome)conjuntosCache[c.nome]=c;});
     // cache anomalias pendentes por circuito
     anomaliasCache={};
     anoAll.forEach(a=>{
@@ -787,6 +793,7 @@
         </div>
         <div style="margin:8px 0 4px;display:flex;gap:6px;flex-wrap:wrap">
           ${decoBadgeHtml(c.nome)}
+          ${conjuntoBadgeHtml(c.nome)}
           ${matrizBadgeHtml(c.nome, c.clientes||0)}
         </div>
         <div class="card-actions">
@@ -872,6 +879,86 @@
 
   // ── processarArquivo (upload HTML circuito ou XLSX decômetro) ──
   async function processarArquivo(file, onProgress){
+    // XLSX — extração aderência conjuntos
+    if(file.name.endsWith('.xlsx') && file.name.toLowerCase().includes('extracao_aderencia')){
+      try{
+        onProgress?.(10,'Lendo planilha de conjuntos…');
+        if(!window.XLSX){await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+        const ab=await file.arrayBuffer();
+        const wb=window.XLSX.read(ab,{type:'array',cellDates:false});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+        // encontra linha de cabeçalho (contém "Conjunto")
+        let hIdx=rows.findIndex(r=>r.some(c=>String(c||'').trim().toUpperCase()==='CONJUNTO'));
+        if(hIdx<0){showToast('Coluna "Conjunto" não encontrada.',true);return;}
+        const h=rows[hIdx].map(c=>String(c||'').trim());
+        const col=k=>h.findIndex(c=>c.toUpperCase()===k.toUpperCase());
+        const iAno=col('ANO'), iMes=col('MÊS'), iConj=col('CONJUNTO');
+        const iDecAnual=h.findIndex(c=>c.toUpperCase().includes('DEC')&&c.toUpperCase().includes('ANUAL')&&!c.toUpperCase().includes('FEC')&&!c.toUpperCase().includes('META'));
+        const iMeta=h.findIndex(c=>c.toUpperCase().includes('META')&&c.toUpperCase().includes('DEC')&&c.toUpperCase().includes('ANO'));
+        const iPct=h.findIndex(c=>c.trim()==='%DEC');
+        const iStatus=h.findIndex(c=>c.toUpperCase().includes('STATUS')&&c.toUpperCase().includes('DEC'));
+        if([iAno,iMes,iConj,iDecAnual,iMeta,iStatus].some(x=>x<0)){
+          showToast('Colunas obrigatórias não encontradas (Ano, Mês, Conjunto, DEC Anual, Meta DEC Ano, Status DEC).',true);
+          console.log('Headers encontrados:',h);return;
+        }
+
+        onProgress?.(30,'Identificando último mês fechado…');
+        // ano atual do browser
+        const anoAtual=new Date().getFullYear();
+        const mesAtual=new Date().getMonth()+1; // 1-12
+
+        // coleta todos ano/mes do ANO ATUAL presentes
+        const dataRows=rows.slice(hIdx+1).filter(r=>r[iAno]&&r[iConj]);
+        const mesesAnoAtual=[...new Set(dataRows
+          .filter(r=>parseInt(r[iAno])===anoAtual)
+          .map(r=>parseInt(r[iMes]))
+        )].sort((a,b)=>a-b);
+
+        // último mês fechado = maior mês < mês atual; se não houver, pega o maior disponível
+        const ultimoMes=mesesAnoAtual.filter(m=>m<mesAtual).at(-1)
+                       || mesesAnoAtual.at(-1)
+                       || mesAtual-1;
+
+        onProgress?.(50,'Processando conjuntos…');
+        // filtra apenas o último mês fechado do ano atual
+        const refRows=dataRows.filter(r=>parseInt(r[iAno])===anoAtual&&parseInt(r[iMes])===ultimoMes);
+
+        let salvos=0;
+        for(let i=0;i<refRows.length;i++){
+          const r=refRows[i];
+          const nome=String(r[iConj]||'').trim().toUpperCase();
+          if(!nome)continue;
+          const decAnual=parseFloat(r[iDecAnual])||0;
+          const meta=parseFloat(r[iMeta])||0;
+          // %DEC = DEC Anual / Meta * 100, arredondado 2 casas
+          const pctDec=meta>0?Math.round((decAnual/meta)*10000)/100:0;
+          // status direto da coluna Status DEC
+          const statusRaw=String(r[iStatus]||'').trim().toUpperCase();
+          const status=statusRaw.includes('CRITICO')||statusRaw.includes('CRÍTIC')?'critico'
+                       :statusRaw.includes('TRANSGRESS')?'transgressao'
+                       :'ok'; // NA META
+
+          onProgress?.(50+Math.round((i/Math.max(refRows.length,1))*45),`Salvando ${nome}…`);
+          const{data:ex}=await sb.from('conjuntos_dec').select('id').eq('nome',nome);
+          const payload={nome,meta,dec_anual:decAnual,pct_dec:pctDec,status,
+            ano_ref:anoAtual,mes_ref:ultimoMes,atualizado_em:new Date().toISOString()};
+          if(ex&&ex.length>0){
+            await sb.from('conjuntos_dec').update(payload).eq('id',ex[0].id);
+          } else {
+            await sb.from('conjuntos_dec').insert({...payload,criado_em:new Date().toISOString()});
+          }
+          salvos++;
+        }
+        onProgress?.(100,'Concluído!');
+        const mesNome=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][ultimoMes]||ultimoMes;
+        showToast(`✓ Conjuntos: ${salvos} registros — referência ${mesNome}/${anoAtual}`);
+        await carregarCircuitos();
+      }catch(err){showToast(`Erro ao processar "${file.name}".`,true);console.error(err);}
+      return;
+    }
+
     // XLSX — decômetro
     if(file.name.endsWith('.xlsx')){
       if(!file.name.toLowerCase().includes('extracao_decometro')){showToast(`"${file.name}" não é uma extração Decômetro — ignorado.`,true);return;}
@@ -890,10 +977,13 @@
         const iSit=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('SITUA')||String(c||'').trim().toUpperCase().includes('ESTADO'));
         // Clts Af Max — para média de clientes na matriz de impacto
         const iCltsMax=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('CLTS')&&String(c||'').trim().toUpperCase().includes('MAX'));
+        // Conjunto Elétrico
+        const iConj=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('CONJUNTO')&&String(c||'').trim().toUpperCase().includes('ELÉTR')||String(c||'').trim().toUpperCase()==='CONJUNTO ELÉTRICO'||String(c||'').trim().toUpperCase()==='CONJUNTO ELETRICO');
         if([iNum,iIni,iFim,iChi,iCd].some(x=>x<0)){showToast('Colunas obrigatórias não encontradas.',true);return;}
         onProgress?.(45,'Agrupando equipamentos…');
         const ocorsPorEquip={};
         const cltsPorEquip={};  // soma e contagem para média de Clts Af Max
+        const conjPorEquip={};   // conjunto elétrico por equipamento
         for(const r of rows.slice(hIdx+1)){
           if(iSit>=0){const sit=String(r[iSit]||'').trim().toUpperCase();if(!sit.includes('FINALIZ'))continue;}
           const equip=String(r[iCd]||'').trim();
@@ -908,6 +998,11 @@
             if(clts>0){cltsPorEquip[equip].soma+=clts;cltsPorEquip[equip].cnt++;}
           }
           if(!ocorsPorEquip[equip])ocorsPorEquip[equip]={};
+          // captura conjunto elétrico (primeiro não-vazio por equipamento)
+          if(iConj>=0&&r[iConj]){
+            const conj=String(r[iConj]).trim();
+            if(conj&&!conjPorEquip[equip])conjPorEquip[equip]=conj;
+          }
           const num=String(r[iNum]||'').trim();if(!num)continue;
           if(!ocorsPorEquip[equip][num])ocorsPorEquip[equip][num]={numero:num,inicio:String(r[iIni]||'').trim(),fim:String(r[iFim]||'').trim(),causa:String(r[iCausa]||'').trim(),chi:parseFloat(r[iChi])||0};
         }
@@ -928,10 +1023,12 @@
             ocorrencias.forEach(o=>{existMap[o.numero]=o;});
             const upd={ocorrencias:Object.values(existMap),atualizado_em:new Date().toISOString()};
             if(cltsMedia!==null)upd.clts_media=cltsMedia;
+            if(conjPorEquip[equip])upd.conjunto=conjPorEquip[equip];
             await sb.from('decometro').update(upd).eq('id',existArr[0].id);
           } else {
             const ins={equipamento:equip,ocorrencias,criado_em:new Date().toISOString()};
             if(cltsMedia!==null)ins.clts_media=cltsMedia;
+            if(conjPorEquip[equip])ins.conjunto=conjPorEquip[equip];
             await sb.from('decometro').insert(ins);
           }
           salvos++;
@@ -1026,6 +1123,27 @@
     if(sum<=2)return{bg:'rgba(255,77,109,0.12)',border:'rgba(255,77,109,0.4)',color:'var(--eq-error)',lbl:'Crítico'};
     if(sum<=4)return{bg:'rgba(255,179,0,0.10)',border:'rgba(255,179,0,0.35)',color:'var(--eq-warning)',lbl:'Mediano'};
     return{bg:'rgba(0,229,160,0.08)',border:'rgba(0,229,160,0.25)',color:'var(--eq-success)',lbl:'Baixo'};
+  }
+
+  // ── Badge de Conjunto (DEC) ───────────────────────────────────────────────
+  function conjuntoBadgeHtml(equipNome){
+    const conj=decoConjunto[equipNome];
+    if(!conj)return'';
+    const info=conjuntosCache[conj.toUpperCase()]||conjuntosCache[conj]||null;
+    if(!info){
+      return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--eq-gray)">📍 ${conj}</span>`;
+    }
+    const{pct_dec,meta,status,mes_ref,ano_ref}=info;
+    const cor=status==='critico'?{bg:'rgba(255,77,109,.12)',border:'rgba(255,77,109,.4)',color:'var(--eq-error)'}
+              :status==='transgressao'?{bg:'rgba(255,179,0,.12)',border:'rgba(255,179,0,.35)',color:'var(--eq-warning)'}
+              :{bg:'rgba(0,229,160,.08)',border:'rgba(0,229,160,.25)',color:'var(--eq-success)'};
+    const ico=status==='critico'?'🔴':status==='transgressao'?'🟡':'🟢';
+    const statusLbl=status==='critico'?'CRÍTICO':status==='transgressao'?'TRANSGRESSÃO':'NA META';
+    const mesNome=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes_ref||0]||'';
+    const pct=parseFloat(pct_dec||0).toFixed(2);
+    return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;background:${cor.bg};border:1px solid ${cor.border};color:${cor.color}" title="Conjunto: ${conj} | Meta DEC: ${meta} | ${pct}% da meta | ${statusLbl} | Ref: ${mesNome}/${ano_ref||''}">
+      ${ico} ${conj} · ${pct}%
+    </span>`;
   }
 
   function matrizBadgeHtml(nome, clientes){
