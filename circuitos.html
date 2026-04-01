@@ -412,18 +412,21 @@
   </div>
 
   <!-- FILTROS DE MATRIZ — gerados dinamicamente após carregar dados -->
-  <div id="filtrosMatrizLista" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-    <!-- preenchido por renderFiltrosMatriz() -->
-  </div>
-
-  <!-- FILTROS DE CONJUNTO -->
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-    <span style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Conjunto:</span>
-    <button class="fconj-btn active" onclick="setFiltroConj('todos',this)" style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:var(--eq-white);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">Todos</button>
-    <button class="fconj-btn" onclick="setFiltroConj('ok',this)"           style="padding:4px 11px;border-radius:20px;border:1px solid rgba(0,229,160,.25);background:rgba(0,229,160,.06);color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">🟢 Na Meta</button>
-    <button class="fconj-btn" onclick="setFiltroConj('transgressao',this)" style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,179,0,.3);background:rgba(255,179,0,.07);color:var(--eq-warning);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">🟡 Transgressão</button>
-    <button class="fconj-btn" onclick="setFiltroConj('critico',this)"      style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,77,109,.35);background:rgba(255,77,109,.08);color:var(--eq-error);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">🔴 Crítico</button>
-    <button class="fconj-btn" onclick="setFiltroConj('semconj',this)"      style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--eq-gray);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">Sem dados</button>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <div id="filtrosMatrizLista" style="display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0">
+      <!-- preenchido por renderFiltrosMatriz() -->
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;font-weight:600;white-space:nowrap">Conjunto</span>
+      <select id="selectFiltroConj" onchange="setFiltroConj(this.value)"
+        style="padding:5px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--eq-white);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:pointer;outline:none;appearance:none;padding-right:24px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a9bbf' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 8px center">
+        <option value="todos">Todos</option>
+        <option value="ok">🟢 Na Meta</option>
+        <option value="transgressao">🟡 Transgressão</option>
+        <option value="critico">🔴 Crítico</option>
+        <option value="semconj">Sem dados</option>
+      </select>
+    </div>
   </div>
 
   <div id="listaCircuitos">
@@ -691,51 +694,45 @@
     todosCircuitosCache=circAll.map(c=>({...c,_id:c.id}));
     document.getElementById('countBadge').textContent=todosCircuitosCache.length;
     renderFiltrosMatriz();
-    // marca botão "Todos" do conjunto como ativo
-    const btnConjTodos=document.querySelector('.fconj-btn.active');
-    if(btnConjTodos){btnConjTodos.style.outline='2px solid rgba(255,255,255,.2)';btnConjTodos.style.opacity='1';}
     filtrarLista();
   }
 
   let filtroMatrizAtivo = 'todas';
   let filtroConjAtivo   = 'todos';
 
-  window.setFiltroConj = function(valor, btn) {
+  window.setFiltroConj = function(valor) {
     filtroConjAtivo = valor;
-    document.querySelectorAll('.fconj-btn').forEach(b => {
-      b.style.outline = 'none'; b.style.opacity = '0.65';
-    });
-    btn.style.outline = '2px solid rgba(255,255,255,.2)';
-    btn.style.opacity = '1';
+    // sync select
+    const sel = document.getElementById('selectFiltroConj');
+    if (sel) sel.value = valor;
     filtrarLista();
   };
 
   // gera os botões de filtro dinamicamente com base nos valores reais da matriz
-  function renderFiltrosMatriz() {
+  function renderFiltrosMatriz(base) {
     const wrap = document.getElementById('filtrosMatrizLista');
     if (!wrap) return;
 
-    // coleta todos os valores de matriz presentes nos circuitos
+    // usa a lista passada (já filtrada por conjunto) ou todos os circuitos
+    const lista = base || todosCircuitosCache;
+
+    // coleta counts de cada combinação de matriz
     const valoresPresentes = {};
-    todosCircuitosCache.forEach(c => {
-      const ocs = decometroCache[c.nome] || null;
+    lista.forEach(c => {
       const nc  = nivelClientes(c.clientes || 0);
-      const nd  = nivelDesarmes(ocs || []);
+      const nd  = nivelDesarmes(ocorrencias3m(c.nome) || []);
       const key = matrizLabel(nc, nd);
       const {color, lbl} = matrizCor(nc, nd);
       if (!valoresPresentes[key]) valoresPresentes[key] = {key, nc, nd, color, lbl, count: 0};
       valoresPresentes[key].count++;
     });
 
-    // ordena na sequência fixa: 1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3
     const ordemFixa = ['1 - 1','1 - 2','1 - 3','2 - 1','2 - 2','2 - 3','3 - 1','3 - 2','3 - 3'];
-    const sorted = ordemFixa
-      .filter(k => valoresPresentes[k])
-      .map(k => valoresPresentes[k]);
+    const sorted = ordemFixa.filter(k => valoresPresentes[k]).map(k => valoresPresentes[k]);
 
     const btnBase = "padding:5px 12px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:all .2s;border:1px solid";
     const btnTodas = `<button class="fmatriz-btn" onclick="setFiltroMatriz('todas',this)" style="${btnBase} rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--eq-white)">
-      Todas <span style="opacity:.6;font-weight:400">(${todosCircuitosCache.length})</span>
+      Todas <span style="opacity:.6;font-weight:400">(${lista.length})</span>
     </button>`;
 
     const btnsFiltro = sorted.map(v => {
@@ -755,9 +752,13 @@
     }).join('');
 
     wrap.innerHTML = btnTodas + btnsFiltro;
-    // marca "Todas" como ativo por padrão
-    const primeiro = wrap.querySelector('.fmatriz-btn');
-    if (primeiro) { primeiro.style.outline='2px solid rgba(255,255,255,.3)'; }
+
+    // restaura estado ativo do botão de matriz selecionado
+    wrap.querySelectorAll('.fmatriz-btn').forEach(btn => {
+      const isAtivo = (filtroMatrizAtivo==='todas' && btn.onclick?.toString().includes("'todas'"))
+                   || btn.onclick?.toString().includes(`'${filtroMatrizAtivo}'`);
+      btn.style.outline = isAtivo ? '2px solid rgba(255,255,255,.3)' : 'none';
+    });
   }
 
   window.setFiltroMatriz = function(valor, btn) {
@@ -775,17 +776,7 @@
     const termo=(document.getElementById('buscaCircuito')?.value||'').toLowerCase().trim();
     let lista=termo?todosCircuitosCache.filter(c=>(c.nome||c._id).toLowerCase().includes(termo)):[...todosCircuitosCache];
 
-    // aplica filtro de matriz
-    if(filtroMatrizAtivo!=='todas'){
-      lista=lista.filter(c=>{
-        const ocs=decometroCache[c.nome]||null;
-        const nc=nivelClientes(c.clientes||0);
-        const nd=nivelDesarmes(ocs||[]);
-        return matrizLabel(nc,nd)===filtroMatrizAtivo;
-      });
-    }
-
-    // aplica filtro de conjunto
+    // aplica filtro de conjunto PRIMEIRO
     if(filtroConjAtivo!=='todos'){
       lista=lista.filter(c=>{
         const conj=decoConjunto[c.nome]||null;
@@ -794,6 +785,18 @@
         const info=conjuntosCache[conj.toUpperCase()]||conjuntosCache[conj]||null;
         if(!info) return false;
         return info.status===filtroConjAtivo;
+      });
+    }
+
+    // recalcula counts e botões da matriz com base na lista já filtrada por conjunto
+    renderFiltrosMatriz(lista);
+
+    // aplica filtro de matriz em seguida
+    if(filtroMatrizAtivo!=='todas'){
+      lista=lista.filter(c=>{
+        const nc=nivelClientes(c.clientes||0);
+        const nd=nivelDesarmes(ocorrencias3m(c.nome)||[]);
+        return matrizLabel(nc,nd)===filtroMatrizAtivo;
       });
     }
 
