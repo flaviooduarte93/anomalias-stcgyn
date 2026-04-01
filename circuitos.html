@@ -615,8 +615,11 @@
     return new Date(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}T${t||'00:00:00'}`);
   }
   function janela3Meses(){
+    // janela: 1º dia de 3 meses atrás até hoje (inclusive mês atual)
+    // ex: abril/2026 → de 01/jan/2026 até hoje
     const hoje=new Date();
     const fim=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate(),23,59,59);
+    // 3 meses fechados anteriores ao atual
     const ini=new Date(hoje.getFullYear(),hoje.getMonth()-3,1,0,0,0);
     return{ini,fim};
   }
@@ -624,7 +627,11 @@
     const all=decometroCache[nomeGN]||null;
     if(!all)return null;
     const{ini,fim}=janela3Meses();
-    return all.filter(o=>{const dt=parseDataBR(o.inicio);return dt&&dt>=ini&&dt<=fim;});
+    return all.filter(o=>{
+      const dt=parseDataBR(o.inicio)||parseDataBR(o.fim);
+      if(!dt)return false;
+      return dt>=ini&&dt<=fim;
+    });
   }
   function decoBadgeHtml(nomeGN){
     const ocs=ocorrencias3m(nomeGN);
@@ -977,19 +984,23 @@
         const iSit=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('SITUA')||String(c||'').trim().toUpperCase().includes('ESTADO'));
         // Clts Af Max — para média de clientes na matriz de impacto
         const iCltsMax=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('CLTS')&&String(c||'').trim().toUpperCase().includes('MAX'));
-        // Conjunto Elétrico
-        const iConj=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('CONJUNTO')&&String(c||'').trim().toUpperCase().includes('ELÉTR')||String(c||'').trim().toUpperCase()==='CONJUNTO ELÉTRICO'||String(c||'').trim().toUpperCase()==='CONJUNTO ELETRICO');
-        if([iNum,iIni,iFim,iChi,iCd].some(x=>x<0)){showToast('Colunas obrigatórias não encontradas.',true);return;}
+        // Conjunto Elétrico — busca sem acento para garantir compatibilidade
+        const _normC=s=>String(s||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const iConj=h.findIndex(c=>_normC(c).includes('CONJUNTO')&&(_normC(c).includes('ELETR')||_normC(c).includes('ELET')));
+        // Ponto Elétrico — equipamento vem antes do " - " nessa coluna
+        const iPonto=h.findIndex(c=>_normC(c).includes('PONTO')&&_normC(c).includes('ELETR'));
+        if([iNum,iIni,iFim,iChi].some(x=>x<0)||iPonto<0){showToast('Colunas obrigatórias não encontradas (verifique "Ponto Elétrico").',true);return;}
         onProgress?.(45,'Agrupando equipamentos…');
         const ocorsPorEquip={};
         const cltsPorEquip={};  // soma e contagem para média de Clts Af Max
         const conjPorEquip={};   // conjunto elétrico por equipamento
         for(const r of rows.slice(hIdx+1)){
           if(iSit>=0){const sit=String(r[iSit]||'').trim().toUpperCase();if(!sit.includes('FINALIZ'))continue;}
-          const equip=String(r[iCd]||'').trim();
-          // considera apenas equipamentos GN onde chars 2-3 formam "11" (GN11...)
+          // extrai equipamento da coluna Ponto Elétrico: parte antes do " - "
+          const pontoRaw=String(r[iPonto]||'').trim();
+          const equip=pontoRaw.includes(' - ')?pontoRaw.split(' - ')[0].trim():pontoRaw;
+          // considera apenas equipamentos cujos chars 3-4 (índices 2-3) formem "11"
           if(!equip||equip==='---')continue;
-          // aceita qualquer equipamento cujos chars 3-4 (índices 2-3) formem "11"
           if(equip.length<4||equip.substring(2,4)!=='11')continue;
           // captura Clts Af Max para média
           if(iCltsMax>=0){
@@ -998,10 +1009,10 @@
             if(clts>0){cltsPorEquip[equip].soma+=clts;cltsPorEquip[equip].cnt++;}
           }
           if(!ocorsPorEquip[equip])ocorsPorEquip[equip]={};
-          // captura conjunto elétrico (primeiro não-vazio por equipamento)
+          // captura conjunto elétrico de QUALQUER linha válida do equipamento (antes do filtro de num)
           if(iConj>=0&&r[iConj]){
             const conj=String(r[iConj]).trim();
-            if(conj&&!conjPorEquip[equip])conjPorEquip[equip]=conj;
+            if(conj&&conj!=='---'&&!conjPorEquip[equip])conjPorEquip[equip]=conj;
           }
           const num=String(r[iNum]||'').trim();if(!num)continue;
           if(!ocorsPorEquip[equip][num])ocorsPorEquip[equip][num]={numero:num,inicio:String(r[iIni]||'').trim(),fim:String(r[iFim]||'').trim(),causa:String(r[iCausa]||'').trim(),chi:parseFloat(r[iChi])||0};
@@ -1147,11 +1158,13 @@
   }
 
   function matrizBadgeHtml(nome, clientes){
-    const ocs=decometroCache[nome]||null;
+    const ocsRaw=decometroCache[nome]||null; // null = sem dados
+    const ocs3m=ocorrencias3m(nome);         // null = sem dados, [] = sem desarmes na janela
     const nc=nivelClientes(clientes||0);
-    // sem dados decômetro = 0 desarmes = nível 3
-    const nd=nivelDesarmes(ocs||[]);
-    const semDeco=ocs===null;
+    // usa janela 3m+atual para o nível de desarmes
+    const nd=nivelDesarmes(ocs3m||[]);
+    const semDeco=ocsRaw===null;
+    const ocs=ocs3m;
     if(false)return''; // sempre mostra
     const {bg,border,color,lbl}=matrizCor(nc,nd);
     return`<span class="matriz-badge" style="background:${bg};border:1px solid ${border};color:${color};display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirMatrizCard('${nome}',${clientes||0})" title="${semDeco?'Sem dados decômetro — 0 desarmes considerado':'Ver matriz completa'}">
@@ -1161,11 +1174,12 @@
 
   // ─── MODAL MATRIZ CIRCUITO ──────────────────────────────────────────────────
   window.abrirMatrizCard=function(nome,clientes){
-    const ocs=decometroCache[nome]||null;
-    const temDeco=ocs!==null;
-    const ocsSemPTP=desarmesSemPTP(ocs||[]);
+    const ocsRaw=decometroCache[nome]||null;
+    const temDeco=ocsRaw!==null;
+    const ocs3m=ocorrencias3m(nome)||[];
+    const ocsSemPTP=desarmesSemPTP(ocs3m);
     const nc=nivelClientes(clientes);
-    const nd=nivelDesarmes(ocs);
+    const nd=nivelDesarmes(ocs3m);
     const {bg,border,color,lbl}=matrizCor(nc,nd);
     const rows=ocsSemPTP.map(o=>`
       <tr class="deco-row" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='table-row'?'none':'table-row'">
@@ -1232,12 +1246,12 @@
     if(!equips.length){showToast('Nenhum dado do Decômetro disponível.',true);return;}
     const ordemFixaR = ['1 - 1','1 - 2','1 - 3','2 - 1','2 - 2','2 - 3','3 - 1','3 - 2','3 - 3'];
     _matrizGeralRows=equips.map(nome=>{
-      const ocs=decometroCache[nome]||[];
-      const ocsSemPTP=desarmesSemPTP(ocs);
+      const ocs3m=ocorrencias3m(nome)||[];
+      const ocsSemPTP=desarmesSemPTP(ocs3m);
       const circ=todosCircuitosCache.find(c=>c.nome===nome);
       const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
       const nc=nivelClientes(clientes);
-      const nd=nivelDesarmes(ocs);
+      const nd=nivelDesarmes(ocs3m);
       const {color,lbl}=matrizCor(nc,nd);
       const fonte=circ?'circuito':'média xlsx';
       return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte};
@@ -1346,11 +1360,11 @@
       s.onload=()=>exportarMatriz();document.head.appendChild(s);return;}
     const equips=Object.keys(decometroCache).sort();
     const rows=equips.map(nome=>{
-      const ocs=decometroCache[nome]||[];
-      const ocsSemPTP=desarmesSemPTP(ocs);
+      const ocs3m=ocorrencias3m(nome)||[];
+      const ocsSemPTP=desarmesSemPTP(ocs3m);
       const circ=todosCircuitosCache.find(c=>c.nome===nome);
       const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
-      const nc=nivelClientes(clientes), nd=nivelDesarmes(ocs);
+      const nc=nivelClientes(clientes), nd=nivelDesarmes(ocs3m);
       const {lbl}=matrizCor(nc,nd);
       return{'Equipamento':nome,'Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl};
     });
