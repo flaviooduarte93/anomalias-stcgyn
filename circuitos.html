@@ -532,6 +532,26 @@
   </div>
 </div>
 
+<!-- MODAL: Definir/editar conjunto do equipamento -->
+<div class="modal-overlay" id="modalConjunto" onclick="if(event.target===this)fecharModalConjunto()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📍 Definir Conjunto</div>
+    <div class="modal-sub" id="mConjuntoSub">Selecione o conjunto elétrico deste equipamento.</div>
+    <label class="modal-label">Equipamento</label>
+    <div id="mConjuntoEquip" style="padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:14px;font-weight:700;color:var(--eq-cyan);margin-bottom:14px"></div>
+    <label class="modal-label">Conjunto elétrico</label>
+    <select id="selectModalConjunto" class="modal-select" style="margin-bottom:6px">
+      <option value="">Selecione o conjunto...</option>
+    </select>
+    <div id="mConjuntoStatus" style="font-size:12px;color:var(--eq-gray);margin-bottom:16px;min-height:18px"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModalConjunto()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarConjunto" onclick="salvarConjuntoManual()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Matriz de um circuito específico -->
 <div class="modal-overlay" id="modalMatriz" onclick="if(event.target===this)fecharModalMatriz()">
   <div class="modal" style="max-width:540px;max-height:85vh;overflow-y:auto">
@@ -858,6 +878,9 @@
         <div class="card-actions">
           <button class="btn-sm btn-outline-sm" onclick="verNoMapa('${id}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa
+          </button>
+          <button class="btn-sm btn-outline-sm" style="color:var(--eq-gray);border-color:rgba(255,255,255,.15)" onclick="abrirModalConjunto('${nomeEsc}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${decoConjunto[c.nome]?'Editar conjunto':'Definir conjunto'}
           </button>
           ${temDeco?`<button class="btn-sm btn-outline-sm" style="color:var(--eq-cyan);border-color:rgba(0,170,255,0.3)" onclick="abrirModalDeco('${nomeEsc}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Resumo Decômetro
@@ -1450,6 +1473,77 @@
   window.abrirMatrizEquipDeco=function(nome,clientes){
     // reutiliza abrirMatrizCard mas com clientes vindos do decometro
     abrirMatrizCard(nome, clientes);
+  };
+
+  window.abrirModalConjunto = function(nomeEquip) {
+    // popula select com todos os conjuntos disponíveis
+    const sel = document.getElementById('selectModalConjunto');
+    const conjAtual = decoConjunto[nomeEquip] || '';
+    const nomes = Object.keys(conjuntosCache).sort();
+
+    sel.innerHTML = '<option value="">Selecione o conjunto...</option>'
+      + nomes.map(n => `<option value="${n}" ${n===conjAtual?'selected':''}>${n}</option>`).join('');
+
+    // se não há conjuntos cadastrados, permite digitar manualmente
+    if (!nomes.length) {
+      sel.innerHTML = '<option value="">Nenhum conjunto cadastrado — suba a planilha de conjuntos</option>';
+    }
+
+    document.getElementById('mConjuntoEquip').textContent = nomeEquip;
+    document.getElementById('mConjuntoSub').textContent = conjAtual
+      ? `Conjunto atual: ${conjAtual}`
+      : 'Nenhum conjunto definido para este equipamento.';
+    document.getElementById('mConjuntoStatus').textContent = '';
+    document.getElementById('modalConjunto')._equip = nomeEquip;
+
+    // atualiza status ao mudar seleção
+    sel.onchange = function() {
+      const info = conjuntosCache[this.value] || null;
+      const el = document.getElementById('mConjuntoStatus');
+      if (!info) { el.textContent = ''; return; }
+      const statusLbl = info.status==='critico'?'🔴 Crítico':info.status==='transgressao'?'🟡 Transgressão':'🟢 Na Meta';
+      el.textContent = `${statusLbl} · DEC: ${parseFloat(info.pct_dec||0).toFixed(2)}% da meta`;
+      el.style.color = info.status==='critico'?'var(--eq-error)':info.status==='transgressao'?'var(--eq-warning)':'var(--eq-success)';
+    };
+
+    document.getElementById('modalConjunto').classList.add('open');
+  };
+
+  window.fecharModalConjunto = function() {
+    document.getElementById('modalConjunto').classList.remove('open');
+  };
+
+  window.salvarConjuntoManual = async function() {
+    const modal = document.getElementById('modalConjunto');
+    const nomeEquip = modal._equip;
+    const conjunto = document.getElementById('selectModalConjunto').value;
+    if (!conjunto) return showToast('Selecione um conjunto.', true);
+
+    const btn = document.getElementById('btnSalvarConjunto');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      // atualiza na tabela decometro
+      const { data: ex } = await sb.from('decometro').select('id').eq('equipamento', nomeEquip);
+      if (ex && ex.length > 0) {
+        await sb.from('decometro').update({ conjunto, atualizado_em: new Date().toISOString() }).eq('id', ex[0].id);
+      } else {
+        // cria registro se não existir
+        await sb.from('decometro').insert({ equipamento: nomeEquip, conjunto, ocorrencias: [], criado_em: new Date().toISOString() });
+      }
+      // atualiza cache local
+      decoConjunto[nomeEquip] = conjunto;
+      if (!decometroCache[nomeEquip]) decometroCache[nomeEquip] = [];
+
+      fecharModalConjunto();
+      showToast(`✓ Conjunto "${conjunto}" definido para ${nomeEquip}`);
+      await carregarCircuitos();
+    } catch(e) {
+      console.error(e);
+      showToast('Erro ao salvar conjunto.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Salvar';
+    }
   };
 
   window.verNoMapa=function(id){sessionStorage.setItem('circuitoSelecionado',id);sessionStorage.setItem('mapaOrigem','circuitos');window.location.href='mapa.html';};
