@@ -1254,7 +1254,9 @@
       const nd=nivelDesarmes(ocs3m);
       const {color,lbl}=matrizCor(nc,nd);
       const fonte=circ?'circuito':'média xlsx';
-      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte};
+      const conjunto=decoConjunto[nome]||null;
+      const conjInfo=conjunto?(conjuntosCache[conjunto.toUpperCase()]||conjuntosCache[conjunto]||null):null;
+      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte,conjunto,conjInfo};
     }).sort((a,b)=>{
       const ka=matrizLabel(a.nc,a.nd), kb=matrizLabel(b.nc,b.nd);
       return ordemFixaR.indexOf(ka)-ordemFixaR.indexOf(kb);
@@ -1296,9 +1298,23 @@
   };
 
   function renderTabelaMatrizGeral(rows){
-    const tbody=rows.map(r=>`
+    const tbody=rows.map(r=>{
+      // badge de conjunto
+      const conjBadge=r.conjunto?(()=>{
+        const info=r.conjInfo;
+        if(!info)return`<span style="font-size:11px;color:var(--eq-gray)">📍 ${r.conjunto}</span>`;
+        const{pct_dec,status}=info;
+        const cor=status==='critico'?{bg:'rgba(255,77,109,.1)',bd:'rgba(255,77,109,.35)',cl:'var(--eq-error)'}
+                  :status==='transgressao'?{bg:'rgba(255,179,0,.1)',bd:'rgba(255,179,0,.3)',cl:'var(--eq-warning)'}
+                  :{bg:'rgba(0,229,160,.07)',bd:'rgba(0,229,160,.2)',cl:'var(--eq-success)'};
+        const ico=status==='critico'?'🔴':status==='transgressao'?'🟡':'🟢';
+        return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}">${ico} ${r.conjunto} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
+      })():'<span style="font-size:10px;color:var(--eq-gray)">—</span>';
+
+      return`
       <tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="abrirMatrizEquipDeco('${r.nome}',${r.clientes})">
         <td style="padding:8px 10px;font-weight:600">${r.nome}</td>
+        <td style="padding:8px 10px">${conjBadge}</td>
         <td style="padding:8px 10px;text-align:right">${r.clientes}<span style="font-size:10px;color:var(--eq-gray);margin-left:4px">(${r.fonte})</span></td>
         <td style="padding:8px 10px;text-align:center;color:var(--eq-gray)">${r.nc}</td>
         <td style="padding:8px 10px;text-align:center">
@@ -1311,13 +1327,14 @@
         <td style="padding:8px 10px;text-align:center"><span style="padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
       </tr>
       <tr id="deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}" style="display:none;background:rgba(0,0,0,.2)">
-        <td colspan="7" style="padding:8px 14px">
+        <td colspan="8" style="padding:8px 14px">
           ${r.ocsSemPTP.length?`<table style="width:100%;font-size:11px;border-collapse:collapse">
             <tr style="color:var(--eq-gray)"><th style="text-align:left;padding:3px 6px">Nº</th><th style="text-align:left;padding:3px 6px">Data Início</th><th style="text-align:left;padding:3px 6px">Data Fim</th><th style="text-align:left;padding:3px 6px">Causa</th><th style="text-align:right;padding:3px 6px">CHI</th></tr>
             ${r.ocsSemPTP.map(o=>`<tr><td style="padding:3px 6px">${o.numero||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.inicio||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.fim||'—'}</td><td style="padding:3px 6px;color:var(--eq-cyan)">${o.causa||'—'}</td><td style="padding:3px 6px;text-align:right;font-weight:700">${parseFloat(o.chi||0).toFixed(2)}</td></tr>`).join('')}
           </table>` : '<span style="color:var(--eq-success);font-size:11px">✓ Sem desarmes</span>'}
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     const count=rows.length;
     document.getElementById('mMatrizGeralBody').innerHTML=`
@@ -1326,6 +1343,7 @@
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead style="background:rgba(255,255,255,.04)"><tr>
             <th style="padding:8px 10px;text-align:left;color:var(--eq-gray)">Equipamento</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--eq-gray)">Conjunto</th>
             <th style="padding:8px 10px;text-align:right;color:var(--eq-gray)">Clientes</th>
             <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Cli</th>
             <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Desarmes</th>
@@ -1366,7 +1384,7 @@
       const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
       const nc=nivelClientes(clientes), nd=nivelDesarmes(ocs3m);
       const {lbl}=matrizCor(nc,nd);
-      return{'Equipamento':nome,'Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl};
+      return{'Equipamento':nome,'Conjunto':decoConjunto[nome]||'—','Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl};
     });
     const ws=window.XLSX.utils.json_to_sheet(rows);
     const wb=window.XLSX.utils.book_new();
