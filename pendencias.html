@@ -291,6 +291,8 @@
   function nivelCli(n){return n>=85?1:n>=50?2:3;}
   function desarmesSemPTP(ocs){return(ocs||[]).filter(o=>!String(o.causa||'').toUpperCase().includes('PTP'));}
   function nivelDes(ocs){const n=desarmesSemPTP(ocs).length;return n>=2?1:n===1?2:3;}
+  function parseDataP(str){if(!str)return null;const s=String(str).trim();if(s.includes('T')||s.includes('-'))return new Date(s);const[d,t]=s.split(' ');const[dd,mm,yy]=(d||'').split('/');return yy?new Date(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}T${t||'00:00:00'}`):null;}
+  function ocs3mPend(nome){const all=(window._decometroCache||[]).find(d=>d.equipamento===nome);if(!all)return null;const hoje=new Date();const fim=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate(),23,59,59);const ini=new Date(hoje.getFullYear(),hoje.getMonth()-3,1,0,0,0);return(all.ocorrencias||[]).filter(o=>{const dt=parseDataP(o.inicio)||parseDataP(o.fim);return dt&&dt>=ini&&dt<=fim;});}
   function matrizCorP(nc,nd){
     const s=nc+nd;
     if(s<=2)return{color:'var(--er)',bg:'rgba(255,77,109,.1)',border:'rgba(255,77,109,.35)'};
@@ -298,12 +300,11 @@
     return{color:'var(--su)',bg:'rgba(0,229,160,.08)',border:'rgba(0,229,160,.25)'};
   }
   function matrizBadge(circuitoNome, clientes){
-    const deco=(window._decometroCache||[]).find(d=>d.equipamento===circuitoNome);
-    const ocs=deco?deco.ocorrencias||[]:null;
+    const ocs3m=ocs3mPend(circuitoNome); // null=sem dados, []=sem desarmes na janela
     const nc=nivelCli(clientes||0);
-    const nd=nivelDes(ocs||[]);
+    const nd=nivelDes(ocs3m||[]);
     const{color,bg,border}=matrizCorP(nc,nd);
-    const semDeco=ocs===null;
+    const semDeco=ocs3m===null;
     return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;background:${bg};border:1px solid ${border};color:${color}">⊞ ${nc} - ${nd}${semDeco?' <span style=opacity:.55>(sem deco)</span>':''}</span>`;
   }
   function conjuntoBadge(circuitoNome){
