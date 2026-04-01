@@ -643,7 +643,11 @@
 
   async function carregarAnomalias(){
     const filters=currentPerfil==='admin'?{}:{fiscal_id:currentUser.uid};
-    todasAnomalias=await fetchAll('anomalias',{filters,order:{col:'criado_em',asc:false}});
+    [todasAnomalias, window._decoCache, window._conjCache] = await Promise.all([
+      fetchAll('anomalias',{filters,order:{col:'criado_em',asc:false}}),
+      fetchAll('decometro'),
+      fetchAll('conjuntos_dec'),
+    ]);
     atualizarSumario();
     renderLista();
   }
@@ -715,6 +719,10 @@
           </div>
           <div class="card-body">
             <div class="card-circuito">${a.circuito_nome||a.circuito_id}</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px">
+              ${anomConjuntoBadge(a.circuito_nome||a.circuito_id)}
+              ${anomMatrizBadge(a.circuito_nome||a.circuito_id)}
+            </div>
             <div class="card-meta">
               <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg><span>${a.endereco||'—'}</span></div>
               <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>Entre postes: <span>${a.postes||'—'}</span></div>
@@ -879,6 +887,36 @@
     window.XLSX.writeFile(wb,'anomalias_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.xlsx');
     showToast(`✓ ${rows.length} anomalias exportadas para Excel.`);
   };
+
+  // ── Matriz + Conjunto badges para anomalias ──────────────────────────────
+  function _nivelCli(n){return n>=85?1:n>=50?2:3;}
+  function _desarmesSemPTP(ocs){return(ocs||[]).filter(o=>!String(o.causa||'').toUpperCase().includes('PTP'));}
+  function _nivelDes(ocs){const n=_desarmesSemPTP(ocs).length;return n>=2?1:n===1?2:3;}
+  function _matrizCor(nc,nd){const s=nc+nd;return s<=2?{bg:'rgba(255,77,109,.1)',bd:'rgba(255,77,109,.35)',cl:'var(--eq-error)'}:s<=4?{bg:'rgba(255,179,0,.1)',bd:'rgba(255,179,0,.3)',cl:'var(--eq-warning)'}:{bg:'rgba(0,229,160,.08)',bd:'rgba(0,229,160,.25)',cl:'var(--eq-success)'};}
+
+  function anomMatrizBadge(circuitoNome){
+    const deco=(window._decoCache||[]).find(d=>d.equipamento===circuitoNome);
+    // try to get clientes from circuito name match
+    const nc=_nivelCli(0); // sem clientes disponível na anomalia — nível mínimo
+    const ocs=deco?deco.ocorrencias||[]:null;
+    const nd=_nivelDes(ocs||[]);
+    const{bg,bd,cl}=_matrizCor(nc,nd);
+    const semDeco=ocs===null;
+    return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:700;background:${bg};border:1px solid ${bd};color:${cl}" title="Matriz de impacto${semDeco?' (sem decômetro)':''}">⊞ ${nc} - ${nd}</span>`;
+  }
+
+  function anomConjuntoBadge(circuitoNome){
+    const deco=(window._decoCache||[]).find(d=>d.equipamento===circuitoNome);
+    if(!deco||!deco.conjunto)return'';
+    const conj=deco.conjunto;
+    const info=(window._conjCache||[]).find(c=>c.nome&&c.nome.toUpperCase()===conj.toUpperCase())||null;
+    if(!info)return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--eq-gray)">📍 ${conj}</span>`;
+    const{pct_dec,meta,status,mes_ref,ano_ref}=info;
+    const cor=status==='critico'?{bg:'rgba(255,77,109,.12)',bd:'rgba(255,77,109,.4)',cl:'var(--eq-error)'}:status==='transgressao'?{bg:'rgba(255,179,0,.12)',bd:'rgba(255,179,0,.35)',cl:'var(--eq-warning)'}:{bg:'rgba(0,229,160,.08)',bd:'rgba(0,229,160,.25)',cl:'var(--eq-success)'};
+    const ico=status==='critico'?'🔴':status==='transgressao'?'🟡':'🟢';
+    const mesN=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes_ref||0]||'';
+    return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}" title="Conjunto: ${conj} | Meta DEC: ${meta} | ${parseFloat(pct_dec||0).toFixed(2)}% | Ref: ${mesN}/${ano_ref||''}">${ico} ${conj} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
+  }
 
   // ── lightbox ──
   function openLightbox(url) {
