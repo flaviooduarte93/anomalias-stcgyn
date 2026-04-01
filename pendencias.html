@@ -306,6 +306,20 @@
     const semDeco=ocs===null;
     return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;background:${bg};border:1px solid ${border};color:${color}">⊞ ${nc} - ${nd}${semDeco?' <span style=opacity:.55>(sem deco)</span>':''}</span>`;
   }
+  function conjuntoBadge(circuitoNome){
+    const deco=(window._decometroCache||[]).find(d=>d.equipamento===circuitoNome);
+    if(!deco||!deco.conjunto)return'';
+    const conj=deco.conjunto;
+    const info=(window._conjuntosCache||[]).find(c=>c.nome&&c.nome.toUpperCase()===conj.toUpperCase())||null;
+    if(!info)return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--gr)">📍 ${conj}</span>`;
+    const{pct_dec,meta,status,mes_ref,ano_ref}=info;
+    const cor=status==='critico'?{bg:'rgba(255,77,109,.12)',bd:'rgba(255,77,109,.4)',cl:'var(--er)'}
+              :status==='transgressao'?{bg:'rgba(255,179,0,.12)',bd:'rgba(255,179,0,.35)',cl:'var(--wa)'}
+              :{bg:'rgba(0,229,160,.08)',bd:'rgba(0,229,160,.25)',cl:'var(--su)'};
+    const ico=status==='critico'?'🔴':status==='transgressao'?'🟡':'🟢';
+    const mesN=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes_ref||0]||'';
+    return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}" title="Meta DEC: ${meta} | ${parseFloat(pct_dec||0).toFixed(2)}% da meta | Ref: ${mesN}/${ano_ref||''}">${ico} ${conj} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
+  }
 
   let cUser=null,cPerf=null,dados=[],filtro='todos',idConc=null,idCanc=null,idNovaInspCircuito=null;
 
@@ -344,10 +358,11 @@
         renderEquipe();
       } else {
         const filters=cPerf==='admin'?{}:{fiscal_id:cUser.uid};
-        [dados, window._circuitosCache, window._decometroCache] = await Promise.all([
+        [dados, window._circuitosCache, window._decometroCache, window._conjuntosCache] = await Promise.all([
           fetchAll('inspecoes',{filters,order:{col:'delegado_em',asc:false}}),
           fetchAll('circuitos',{filters:{ativo:true}}),
           fetchAll('decometro'),
+          fetchAll('conjuntos_dec'),
         ]);
         // carrega anomalias agrupadas por circuito
         const todasAnom=await fetchAll('anomalias',{order:{col:'criado_em',asc:false}});
@@ -509,15 +524,17 @@
 
       const clickHandler=insp.status==='concluido'?`onclick="abreResumo('${iid}')"`:'';
       const statusLbl=insp.status==='pendente'?'Pendente':insp.status==='concluido'?'Concluido':'Redelegada';
-      // matriz de impacto
+      // matriz de impacto + conjunto
       const circ=(window._circuitosCache||[]).find(c=>c.id===insp.circuito_id||c.nome===insp.circuito_nome);
       const mBadge=circ?matrizBadge(circ.nome,circ.clientes||0):'';
+      const cjBadge=circ?conjuntoBadge(circ.nome):'';
       return `<div class="card ${insp.status}${urgente?' urgente':''}" ${clickHandler} style="${insp.status==='concluido'?'padding-bottom:28px':''}">
         <div class="ctop">
           <div>
             <div class="cnome">${nome}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center">
               ${dBadge?dBadge:''}
+              ${cjBadge}
               ${mBadge}
             </div>
           </div>
