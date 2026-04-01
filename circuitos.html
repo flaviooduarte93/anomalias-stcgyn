@@ -412,8 +412,18 @@
   </div>
 
   <!-- FILTROS DE MATRIZ — gerados dinamicamente após carregar dados -->
-  <div id="filtrosMatrizLista" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+  <div id="filtrosMatrizLista" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
     <!-- preenchido por renderFiltrosMatriz() -->
+  </div>
+
+  <!-- FILTROS DE CONJUNTO -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+    <span style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Conjunto:</span>
+    <button class="fconj-btn active" onclick="setFiltroConj('todos',this)" style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:var(--eq-white);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">Todos</button>
+    <button class="fconj-btn" onclick="setFiltroConj('ok',this)"           style="padding:4px 11px;border-radius:20px;border:1px solid rgba(0,229,160,.25);background:rgba(0,229,160,.06);color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">🟢 Na Meta</button>
+    <button class="fconj-btn" onclick="setFiltroConj('transgressao',this)" style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,179,0,.3);background:rgba(255,179,0,.07);color:var(--eq-warning);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">🟡 Transgressão</button>
+    <button class="fconj-btn" onclick="setFiltroConj('critico',this)"      style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,77,109,.35);background:rgba(255,77,109,.08);color:var(--eq-error);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">🔴 Crítico</button>
+    <button class="fconj-btn" onclick="setFiltroConj('semconj',this)"      style="padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--eq-gray);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">Sem dados</button>
   </div>
 
   <div id="listaCircuitos">
@@ -681,10 +691,24 @@
     todosCircuitosCache=circAll.map(c=>({...c,_id:c.id}));
     document.getElementById('countBadge').textContent=todosCircuitosCache.length;
     renderFiltrosMatriz();
+    // marca botão "Todos" do conjunto como ativo
+    const btnConjTodos=document.querySelector('.fconj-btn.active');
+    if(btnConjTodos){btnConjTodos.style.outline='2px solid rgba(255,255,255,.2)';btnConjTodos.style.opacity='1';}
     filtrarLista();
   }
 
   let filtroMatrizAtivo = 'todas';
+  let filtroConjAtivo   = 'todos';
+
+  window.setFiltroConj = function(valor, btn) {
+    filtroConjAtivo = valor;
+    document.querySelectorAll('.fconj-btn').forEach(b => {
+      b.style.outline = 'none'; b.style.opacity = '0.65';
+    });
+    btn.style.outline = '2px solid rgba(255,255,255,.2)';
+    btn.style.opacity = '1';
+    filtrarLista();
+  };
 
   // gera os botões de filtro dinamicamente com base nos valores reais da matriz
   function renderFiltrosMatriz() {
@@ -758,6 +782,18 @@
         const nc=nivelClientes(c.clientes||0);
         const nd=nivelDesarmes(ocs||[]);
         return matrizLabel(nc,nd)===filtroMatrizAtivo;
+      });
+    }
+
+    // aplica filtro de conjunto
+    if(filtroConjAtivo!=='todos'){
+      lista=lista.filter(c=>{
+        const conj=decoConjunto[c.nome]||null;
+        if(filtroConjAtivo==='semconj') return !conj||!(conjuntosCache[conj?.toUpperCase()]||conjuntosCache[conj]);
+        if(!conj) return false;
+        const info=conjuntosCache[conj.toUpperCase()]||conjuntosCache[conj]||null;
+        if(!info) return false;
+        return info.status===filtroConjAtivo;
       });
     }
 
