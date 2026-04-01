@@ -287,6 +287,26 @@
   function fmtDate(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('pt-BR');}
   function safe(v){return String(v||'').replace(/['"<>]/g,'');}
 
+  // ── Matriz de Impacto ──────────────────────────────────────────────────────
+  function nivelCli(n){return n>=85?1:n>=50?2:3;}
+  function desarmesSemPTP(ocs){return(ocs||[]).filter(o=>!String(o.causa||'').toUpperCase().includes('PTP'));}
+  function nivelDes(ocs){const n=desarmesSemPTP(ocs).length;return n>=2?1:n===1?2:3;}
+  function matrizCorP(nc,nd){
+    const s=nc+nd;
+    if(s<=2)return{color:'var(--er)',bg:'rgba(255,77,109,.1)',border:'rgba(255,77,109,.35)'};
+    if(s<=4)return{color:'var(--wa)',bg:'rgba(255,179,0,.1)',border:'rgba(255,179,0,.3)'};
+    return{color:'var(--su)',bg:'rgba(0,229,160,.08)',border:'rgba(0,229,160,.25)'};
+  }
+  function matrizBadge(circuitoNome, clientes){
+    const deco=(window._decometroCache||[]).find(d=>d.equipamento===circuitoNome);
+    const ocs=deco?deco.ocorrencias||[]:null;
+    const nc=nivelCli(clientes||0);
+    const nd=nivelDes(ocs||[]);
+    const{color,bg,border}=matrizCorP(nc,nd);
+    const semDeco=ocs===null;
+    return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;background:${bg};border:1px solid ${border};color:${color}">⊞ ${nc} - ${nd}${semDeco?' <span style=opacity:.55>(sem deco)</span>':''}</span>`;
+  }
+
   let cUser=null,cPerf=null,dados=[],filtro='todos',idConc=null,idCanc=null,idNovaInspCircuito=null;
 
   // ── init ──
@@ -324,7 +344,11 @@
         renderEquipe();
       } else {
         const filters=cPerf==='admin'?{}:{fiscal_id:cUser.uid};
-        dados=await fetchAll('inspecoes',{filters,order:{col:'delegado_em',asc:false}});
+        [dados, window._circuitosCache, window._decometroCache] = await Promise.all([
+          fetchAll('inspecoes',{filters,order:{col:'delegado_em',asc:false}}),
+          fetchAll('circuitos',{filters:{ativo:true}}),
+          fetchAll('decometro'),
+        ]);
         // carrega anomalias agrupadas por circuito
         const todasAnom=await fetchAll('anomalias',{order:{col:'criado_em',asc:false}});
         window._anomaliasPorCircuito={};
@@ -485,9 +509,18 @@
 
       const clickHandler=insp.status==='concluido'?`onclick="abreResumo('${iid}')"`:'';
       const statusLbl=insp.status==='pendente'?'Pendente':insp.status==='concluido'?'Concluido':'Redelegada';
+      // matriz de impacto
+      const circ=(window._circuitosCache||[]).find(c=>c.id===insp.circuito_id||c.nome===insp.circuito_nome);
+      const mBadge=circ?matrizBadge(circ.nome,circ.clientes||0):'';
       return `<div class="card ${insp.status}${urgente?' urgente':''}" ${clickHandler} style="${insp.status==='concluido'?'padding-bottom:28px':''}">
         <div class="ctop">
-          <div><div class="cnome">${nome}</div>${dBadge?'<div style="margin-top:4px">'+dBadge+'</div>':''}</div>
+          <div>
+            <div class="cnome">${nome}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center">
+              ${dBadge?dBadge:''}
+              ${mBadge}
+            </div>
+          </div>
           <span class="spill ${insp.status}">${statusLbl}</span>
         </div>
         <div class="cmeta">
