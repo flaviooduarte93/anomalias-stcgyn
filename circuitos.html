@@ -445,24 +445,37 @@
 
 <!-- MODAL: RESUMO DECÔMETRO -->
 <div class="modal-overlay" id="modalDecometro" onclick="if(event.target===this)fecharModalDeco()">
-  <div class="modal" style="max-width:700px;max-height:80vh;overflow-y:auto">
+  <div class="modal" style="max-width:700px;max-height:85vh;overflow-y:auto">
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <div class="modal-title" id="decTitulo">Resumo Decômetro</div>
       <button onclick="fecharModalDeco()" style="background:none;border:none;color:var(--eq-gray);cursor:pointer;font-size:20px;line-height:1">✕</button>
     </div>
     <div class="modal-sub" id="decSub">Últimos 3 meses fechados</div>
-    <!-- KPIs -->
-    <div style="display:flex;gap:12px;margin:14px 0 18px">
-      <div style="flex:1;background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--eq-warning)" id="decFreq">—</div>
-        <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">Desarmes</div>
+
+    <!-- KPIs: total, desarmes, PTP, CHI -->
+    <div style="display:flex;gap:10px;margin:14px 0 16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px;background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:var(--eq-warning)" id="decFreq">—</div>
+        <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">Total</div>
       </div>
-      <div style="flex:1;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--eq-error)" id="decChi">—</div>
-        <div style="font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">CHI Total</div>
+      <div style="flex:1;min-width:80px;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:var(--eq-error)" id="decFreqDes">—</div>
+        <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">Desarmes</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:rgba(91,45,142,0.12);border:1px solid rgba(181,123,238,0.25);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:#b57bee" id="decFreqPtp">—</div>
+        <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">PTP</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:var(--eq-error)" id="decChi">—</div>
+        <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px">CHI Total</div>
       </div>
     </div>
+
+    <!-- Aviso de sequência (mais recente) -->
+    <div id="decAvisoRecente" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600"></div>
+
     <!-- Tabela -->
     <div style="overflow-x:auto">
       <table id="decTabela" style="width:100%;border-collapse:collapse;font-size:12px">
@@ -470,9 +483,10 @@
           <tr>
             <th onclick="ordenarDeco('numero')" style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Ocorrência ↕</th>
             <th onclick="ordenarDeco('inicio')" style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Início ↕</th>
-            <th onclick="ordenarDeco('fim')" style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Fim ↕</th>
+            <th onclick="ordenarDeco('fim')"    style="cursor:pointer;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray);white-space:nowrap">Fim ↕</th>
             <th style="padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray)">Causa</th>
-            <th onclick="ordenarDeco('chi')" style="cursor:pointer;padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray)">CHI ↕</th>
+            <th style="padding:8px 10px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray)">Tipo</th>
+            <th onclick="ordenarDeco('chi')"   style="cursor:pointer;padding:8px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--eq-gray)">CHI ↕</th>
           </tr>
         </thead>
         <tbody id="decTabelaBody"></tbody>
@@ -916,14 +930,44 @@
 
   // ── Modal Decômetro ──
   window.abrirModalDeco=function(nomeGN){
-    decoAtualNome=nomeGN;decoOrdem={col:'chi',asc:false};
+    decoAtualNome=nomeGN;decoOrdem={col:'inicio',asc:false};
     document.getElementById('decTitulo').textContent=nomeGN;
     const{ini}=janela3Meses();
     const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     document.getElementById('decSub').textContent=`3 meses fechados + mês atual: ${meses[ini.getMonth()]}/${ini.getFullYear()} – hoje`;
     const ocs=ocorrencias3m(nomeGN)||[];
+    const isPTP=o=>String(o.causa||'').toUpperCase().includes('PTP');
+    const desarmes=ocs.filter(o=>!isPTP(o));
+    const ptps=ocs.filter(o=>isPTP(o));
     document.getElementById('decFreq').textContent=ocs.length;
+    document.getElementById('decFreqDes').textContent=desarmes.length;
+    document.getElementById('decFreqPtp').textContent=ptps.length;
     document.getElementById('decChi').textContent=ocs.reduce((s,o)=>s+(parseFloat(o.chi)||0),0).toFixed(2);
+
+    // aviso de sequência — qual foi o mais recente: desarme ou PTP?
+    const aviso=document.getElementById('decAvisoRecente');
+    if(desarmes.length>0&&ptps.length>0){
+      const dtUltDes=Math.max(...desarmes.map(o=>parseDataBR(o.inicio)||0));
+      const dtUltPtp=Math.max(...ptps.map(o=>parseDataBR(o.inicio)||0));
+      const ultimoDes=new Date(dtUltDes).toLocaleDateString('pt-BR');
+      const ultimoPtp=new Date(dtUltPtp).toLocaleDateString('pt-BR');
+      if(dtUltPtp>dtUltDes){
+        aviso.style.display='block';
+        aviso.style.background='rgba(181,123,238,0.1)';
+        aviso.style.border='1px solid rgba(181,123,238,0.3)';
+        aviso.style.color='#b57bee';
+        aviso.innerHTML=`⚡ <b>PTP foi o evento mais recente</b> (${ultimoPtp}) — houve intervenção após o último desarme (${ultimoDes}). Verifique se o PTP resolveu.`;
+      } else {
+        aviso.style.display='block';
+        aviso.style.background='rgba(255,77,109,0.1)';
+        aviso.style.border='1px solid rgba(255,77,109,0.3)';
+        aviso.style.color='var(--eq-error)';
+        aviso.innerHTML=`⚠ <b>Desarme foi o evento mais recente</b> (${ultimoDes}) — ocorreu após o último PTP (${ultimoPtp}). O PTP pode não ter resolvido o problema.`;
+      }
+    } else {
+      aviso.style.display='none';
+    }
+
     renderTabelaDeco(ocs);
     document.getElementById('modalDecometro').classList.add('open');
   };
@@ -938,6 +982,14 @@
     const vazio=document.getElementById('decVazio');
     if(!ocs.length){tbody.innerHTML='';vazio.style.display='block';return;}
     vazio.style.display='none';
+
+    const isPTP=o=>String(o.causa||'').toUpperCase().includes('PTP');
+
+    // encontra o evento mais recente de cada tipo para destacar
+    const allDates=ocs.map(o=>({o,dt:parseDataBR(o.inicio)||new Date(0)}));
+    const maxDesDt=Math.max(...allDates.filter(x=>!isPTP(x.o)).map(x=>x.dt));
+    const maxPtpDt=Math.max(...allDates.filter(x=>isPTP(x.o)).map(x=>x.dt));
+
     const sorted=[...ocs].sort((a,b)=>{
       let va,vb;
       if(decoOrdem.col==='chi'){va=parseFloat(a.chi)||0;vb=parseFloat(b.chi)||0;}
@@ -946,14 +998,25 @@
       else{va=a.numero||'';vb=b.numero||'';}
       return decoOrdem.asc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0);
     });
-    tbody.innerHTML=sorted.map((o,i)=>{
+
+    tbody.innerHTML=sorted.map(o=>{
       const chi=parseFloat(o.chi)||0;
       const chiCls=chi>500?'var(--eq-error)':chi>100?'var(--eq-warning)':'var(--eq-success)';
-      return`<tr style="${i%2===0?'background:rgba(255,255,255,0.02)':''}">
+      const ptp=isPTP(o);
+      const dt=parseDataBR(o.inicio)||new Date(0);
+      const isMaisRecente=ptp?(dt>=maxPtpDt):(dt>=maxDesDt);
+      const rowBg=ptp?'rgba(91,45,142,0.08)':'rgba(255,255,255,0.02)';
+      const destaque=isMaisRecente?'box-shadow:inset 3px 0 0 '+(ptp?'#b57bee':'var(--eq-error)')+';':'';
+      const tipoBadge=ptp
+        ?`<span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(181,123,238,.15);color:#b57bee;border:1px solid rgba(181,123,238,.3)">PTP</span>`
+        :`<span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(255,77,109,.1);color:var(--eq-error);border:1px solid rgba(255,77,109,.25)">DES</span>`;
+      const recenteTag=isMaisRecente?`<span style="margin-left:4px;font-size:9px;font-weight:700;color:${ptp?'#b57bee':'var(--eq-error)'};opacity:.8">↑ recente</span>`:'';
+      return`<tr style="background:${rowBg};${destaque}">
         <td style="padding:7px 10px;color:var(--eq-cyan)">${o.numero||'—'}</td>
         <td style="padding:7px 10px;white-space:nowrap">${o.inicio||'—'}</td>
         <td style="padding:7px 10px;white-space:nowrap">${o.fim||'—'}</td>
-        <td style="padding:7px 10px;color:var(--eq-gray);font-size:11px">${o.causa||'—'}</td>
+        <td style="padding:7px 10px;font-size:11px;color:${ptp?'#b57bee':'var(--eq-gray)'}">${o.causa||'—'}</td>
+        <td style="padding:7px 10px;text-align:center">${tipoBadge}${recenteTag}</td>
         <td style="padding:7px 10px;text-align:right;font-weight:700;color:${chiCls}">${chi.toFixed(2)}</td>
       </tr>`;
     }).join('');
