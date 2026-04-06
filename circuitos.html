@@ -1223,9 +1223,9 @@
       const nomeUpper=nomeCircuito.toUpperCase();
       const fileChars34=file.name.substring(2,4);
       if(!nomeUpper.startsWith('GN')&&fileChars34!=='11'){showToast(`"${nomeCircuito}" não reconhecido.`,true);return;}
-      onProgress?.(40,'Verificando duplicata…');
+      onProgress?.(40,'Verificando cadastro…');
       const{data:existArr}=await sb.from('circuitos').select('id').eq('nome',nomeCircuito);
-      if(existArr&&existArr.length>0){showToast(`"${nomeCircuito}" já cadastrado — ignorado.`,true);return;}
+      const jaExiste=existArr&&existArr.length>0;
       onProgress?.(60,'Extraindo dados do circuito…');
       const offsetLat=parseFloat((htmlContent.match(/var offsetLat\s*=\s*(-?[\d.]+)/)||['','0'])[1])||0;
       const offsetLng=parseFloat((htmlContent.match(/var offsetLng\s*=\s*(-?[\d.]+)/)||['','0'])[1])||0;
@@ -1275,10 +1275,57 @@
       const mCli=htmlContent.match(/[Cc]lientes\s*:\s*(\d+)/);
       const potencia=mPot?parseInt(mPot[1]):null;
       const clientes=mCli?parseInt(mCli[1]):0;
+      const totalUcs=postes.reduce((s,p)=>s+(p.ucs||[]).length,0);
       onProgress?.(85,`Salvando ${nomeCircuito}…`);
-      await sb.from('circuitos').insert({nome:nomeCircuito,postes:postes.length,clientes,potencia,geodata:{postes,conexoes},ativo:true,criado_em:new Date().toISOString(),admin_id:currentUser.uid});
-      onProgress?.(100,'Concluído!');
-      showToast(`✓ "${nomeCircuito}" adicionado!`);
+      if(jaExiste){
+        // Atualiza apenas geodata, postes, clientes e potencia — preserva anomalias, inspeções, etc.
+        await sb.from('circuitos').update({
+          postes:postes.length, clientes, potencia,
+          geodata:{postes,conexoes},
+          atualizado_em:new Date().toISOString()
+        }).eq('nome',nomeCircuito);
+        onProgress?.(100,'Concluído!');
+        showToast(`✓ "${nomeCircuito}" atualizado! ${postes.length} postes · ${totalUcs} UCs`);
+
+        // Corrige anomalias de ramal sem UC deste circuito
+        if(totalUcs>0){
+          onProgress?.(92,'Corrigindo ramais sem UC…');
+          try{
+            const{data:anomRamal}=await sb.from('anomalias')
+              .select('id,texto_os')
+              .eq('circuito_nome',nomeCircuito)
+              .eq('tipo','ramal');
+            if(anomRamal&&anomRamal.length){
+              const normMed=s=>String(s||'').replace(/[-\s]/g,'').toUpperCase();
+              // índice: medidor normalizado → UC
+              const medIdx={};
+              postes.forEach(p=>(p.ucs||[]).forEach(u=>{
+                const k=normMed(u.m);
+                if(k&&!medIdx[k])medIdx[k]={uc:u.uc,m:u.m};
+              }));
+              let corrigidos=0;
+              for(const a of anomRamal){
+                const txt=String(a.texto_os||'');
+                // só processa se está sem UC (começa com "— -")
+                if(!/^—\s*-/.test(txt))continue;
+                const mMed=txt.match(/Medidor\s+(\S+)/i);
+                if(!mMed)continue;
+                const medAnom=mMed[1];
+                const match=medIdx[normMed(medAnom)];
+                if(!match)continue;
+                const novoTexto=`UC ${match.uc} - Instalar e retirar o ramal do Medidor ${medAnom}`;
+                await sb.from('anomalias').update({texto_os:novoTexto}).eq('id',a.id);
+                corrigidos++;
+              }
+              if(corrigidos>0)showToast(`✓ "${nomeCircuito}" — ${corrigidos} ramal(is) com UC atualizada`);
+            }
+          }catch(e){console.warn('Erro ao corrigir ramais:',e);}
+        }
+      } else {
+        await sb.from('circuitos').insert({nome:nomeCircuito,postes:postes.length,clientes,potencia,geodata:{postes,conexoes},ativo:true,criado_em:new Date().toISOString(),admin_id:currentUser.uid});
+        onProgress?.(100,'Concluído!');
+        showToast(`✓ "${nomeCircuito}" adicionado! ${postes.length} postes · ${totalUcs} UCs`);
+      }
     }catch(err){showToast(`Erro ao processar "${file.name}".`,true);console.error(err);}
   }
 
