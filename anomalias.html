@@ -419,6 +419,18 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </div>
     <input class="search-input" id="searchInput" type="text" placeholder="Buscar por endereço, circuito ou postes..." oninput="renderLista()"/>
+    <!-- Barra de seleção múltipla (visível só para admin com pendentes) -->
+    <div id="barraSelecao" style="display:none;align-items:center;gap:10px;padding:8px 12px;background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.25);border-radius:10px;margin-top:8px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--eq-white);user-select:none">
+        <input type="checkbox" id="checkTodas" onchange="toggleSelecionarTodas(this)" style="width:16px;height:16px;accent-color:#1565C0;cursor:pointer">
+        Selecionar todas
+      </label>
+      <span id="contadorSelecionadas" style="font-size:12px;color:var(--eq-gray)">0 selecionadas</span>
+      <button id="btnProgramarLote" onclick="abrirProgramarLote()" disabled style="padding:6px 14px;background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.3);border-radius:7px;color:#90caf9;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:not-allowed;opacity:.5;transition:all .2s">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Programar selecionadas
+      </button>
+    </div>
   </div>
 
   <!-- filtros tipo -->
@@ -526,6 +538,29 @@
     <span class="nav-label">Circuitos</span>
   </button>
 </nav>
+
+<!-- MODAL: programar LOTE para equipe (admin) -->
+<div class="modal-overlay" id="modalProgramarLote" onclick="if(event.target===this)fecharProgramarLote()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 Programar em lote</div>
+    <div class="modal-sub" id="loteSubtitulo">Programar anomalias selecionadas</div>
+    <label class="modal-label" style="margin-top:12px">Equipe responsável</label>
+    <select id="selectEquipeLote" class="modal-select" style="margin-bottom:16px">
+      <option value="">Carregando equipes...</option>
+    </select>
+    <div id="loteProgressWrap" style="display:none;margin-bottom:12px">
+      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+        <div id="loteProgressBar" style="height:100%;width:0%;background:#1565C0;border-radius:3px;transition:width .3s"></div>
+      </div>
+      <div id="loteProgressLabel" style="font-size:11px;color:var(--eq-gray);margin-top:4px;text-align:center"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharProgramarLote()">Cancelar</button>
+      <button class="btn-save" id="btnConfirmarLote" onclick="confirmarProgramarLote()">Programar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: programar para equipe (admin) -->
 <div class="modal-overlay" id="modalProgramar">
@@ -680,8 +715,15 @@
     const lista=document.getElementById('listaAnomalias');
     if(!itens.length){
       lista.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>Nenhuma anomalia encontrada<br/>para os filtros aplicados.</p></div>`;
+      atualizarBarraSelecao([]);
       return;
     }
+
+    // mostra barra de seleção só pra admin com pendentes/programados na lista
+    const temSelecionaveis=currentPerfil==='admin'&&itens.some(a=>a.status==='pendente'&&a.tipo!=='mux');
+    document.getElementById('barraSelecao').style.display=temSelecionaveis?'flex':'none';
+    if(temSelecionaveis){document.getElementById('checkTodas').checked=false;}
+
     lista.innerHTML='';
     itens.forEach(a=>{
       const dataStr=fmtDate(a.criado_em);
@@ -694,6 +736,14 @@
         ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao lb-trigger" src="${cldThumb(a.foto_concluido_url)}" data-full="${a.foto_concluido_url}" alt="Foto conclusão" loading="lazy"/></div>`:'';
       const equipeHtml=a.equipe_id
         ?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>${a.equipe_nome||'—'}</span></div>`:'';
+
+      // checkbox de seleção (só pra pendentes que podem ser programados)
+      const podeSelecionar=currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux';
+      const checkboxHtml=podeSelecionar
+        ?`<label style="position:absolute;top:8px;left:8px;z-index:2;cursor:pointer">
+            <input type="checkbox" class="anom-check" data-id="${a.id}" onchange="atualizarSelecao()"
+              style="width:18px;height:18px;accent-color:#1565C0;cursor:pointer">
+          </label>`:'';
 
       let botoesHtml=`<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuito_id}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>`;
@@ -711,8 +761,9 @@
       }
 
       lista.innerHTML+=`
-        <div class="anomalia-card">
-          <div class="card-foto-wrap">
+        <div class="anomalia-card" style="position:relative">
+          ${checkboxHtml}
+          <div class="card-foto-wrap" style="${podeSelecionar?'padding-left:36px':''}">
             ${fotoHtml}
             <span class="card-tipo-badge ${a.tipo}">${tipoLabel}</span>
             <span class="card-status-badge ${a.status}">${statusLabel}</span>
@@ -861,6 +912,76 @@
     setTimeout(()=>t.classList.remove('show'),3000);
   };
 
+  // ── Seleção múltipla ────────────────────────────────────────────────────────
+  function atualizarBarraSelecao(checks){
+    const sel=(checks||[...document.querySelectorAll('.anom-check:checked')]).map(c=>c.dataset.id);
+    const contador=document.getElementById('contadorSelecionadas');
+    const btn=document.getElementById('btnProgramarLote');
+    if(contador)contador.textContent=`${sel.length} selecionada${sel.length!==1?'s':''}`;
+    if(btn){
+      btn.disabled=sel.length===0;
+      btn.style.opacity=sel.length>0?'1':'0.5';
+      btn.style.cursor=sel.length>0?'pointer':'not-allowed';
+    }
+    const checkAll=document.getElementById('checkTodas');
+    if(checkAll){
+      const total=document.querySelectorAll('.anom-check').length;
+      checkAll.checked=total>0&&sel.length===total;
+      checkAll.indeterminate=sel.length>0&&sel.length<total;
+    }
+  }
+  window.atualizarSelecao=function(){atualizarBarraSelecao();};
+  window.toggleSelecionarTodas=function(cb){
+    document.querySelectorAll('.anom-check').forEach(c=>c.checked=cb.checked);
+    atualizarBarraSelecao();
+  };
+
+  // ── Programar em lote ───────────────────────────────────────────────────────
+  window.abrirProgramarLote=async function(){
+    const ids=[...document.querySelectorAll('.anom-check:checked')].map(c=>c.dataset.id);
+    if(!ids.length)return;
+    const modal=document.getElementById('modalProgramarLote');
+    modal._ids=ids;
+    document.getElementById('loteSubtitulo').textContent=`${ids.length} anomalia${ids.length!==1?'s':''} selecionada${ids.length!==1?'s':''}`;
+    document.getElementById('loteProgressWrap').style.display='none';
+    document.getElementById('btnConfirmarLote').disabled=false;
+    const sel=document.getElementById('selectEquipeLote');
+    sel.innerHTML='<option value="">Carregando...</option>';
+    modal.classList.add('open');
+    const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
+    sel.innerHTML=equipes.length
+      ?equipes.map(u=>`<option value="${u.id}" data-nome="${u.nome}">${u.nome}</option>`).join('')
+      :'<option value="">Nenhuma equipe cadastrada</option>';
+  };
+  window.fecharProgramarLote=function(){document.getElementById('modalProgramarLote').classList.remove('open');};
+  window.confirmarProgramarLote=async function(){
+    const modal=document.getElementById('modalProgramarLote');
+    const ids=modal._ids||[];
+    const sel=document.getElementById('selectEquipeLote');
+    const equipeId=sel.value;
+    const equipeNome=sel.options[sel.selectedIndex]?.dataset?.nome||sel.options[sel.selectedIndex]?.text||'';
+    if(!equipeId)return showToast('Selecione uma equipe.',true);
+    document.getElementById('btnConfirmarLote').disabled=true;
+    const wrap=document.getElementById('loteProgressWrap');
+    const bar=document.getElementById('loteProgressBar');
+    const lbl=document.getElementById('loteProgressLabel');
+    wrap.style.display='block';
+    let ok=0,erros=0;
+    for(let i=0;i<ids.length;i++){
+      bar.style.width=`${Math.round(((i)/ids.length)*100)}%`;
+      lbl.textContent=`${i+1}/${ids.length}...`;
+      const{error}=await sb.from('anomalias').update({
+        status:'programado',equipe_id:equipeId,equipe_nome:equipeNome,
+        programado_em:new Date().toISOString()
+      }).eq('id',ids[i]);
+      if(error)erros++;else ok++;
+    }
+    bar.style.width='100%';
+    lbl.textContent=`Concluído: ${ok} programadas${erros?`, ${erros} erro(s)`:''}`;
+    showToast(`✓ ${ok} anomalia${ok!==1?'s':''} programada${ok!==1?'s':''} para ${equipeNome}`);
+    setTimeout(()=>{fecharProgramarLote();carregarAnomalias();},1200);
+  };
+
   window.exportarPendentes=async function(){
     if(!todasAnomalias.length)return showToast('Nenhuma anomalia para exportar.',true);
     if(!window.XLSX){
@@ -868,22 +989,38 @@
     }
     const tipoLabel={poda:'Poda',espacador:'Espaçador',ramal:'Ramal',mux:'MBX',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'};
     const statusLabel={pendente:'Pendente',programado:'Programado',concluido:'Concluído'};
-    const rows=todasAnomalias.map(a=>({
-      'Circuito':a.circuito_nome||a.circuito_id||'—','Tipo':tipoLabel[a.tipo]||a.tipo||'—',
-      'Status':statusLabel[a.status]||a.status||'—','Endereço':a.endereco||'—',
-      'Entre Postes':a.postes||'—','Quantidade':a.quantidade||1,
-      'Medidor (Ramal)':a.ramal_medidor||'—','UC (Ramal)':a.ramal_uc||'—',
-      'Medidor (Fora)':a.fora_medidor||'—','UC (Fora)':a.fora_uc||'—',
-      'Obs. Irregularidade':a.fora_obs||'—','Observação':a.observacao||'—',
-      'MBX Circuito Todo':a.mux_circuito_todo?'Sim':'—',
-      'Fiscal':a.fiscal_nome||'—','Equipe':a.equipe_nome||'—',
-      'Registrado em':fmtDate(a.criado_em),'Concluído em':fmtDate(a.concluido_em),
-      'Lat':a.lat||'','Lng':a.lng||''
-    }));
+    const rows=todasAnomalias.map(a=>{
+      // conjunto e matriz
+      const deco=(window._decoCache||[]).find(d=>d.equipamento===(a.circuito_nome||a.circuito_id));
+      const conjNome=deco?.conjunto||'—';
+      const conjInfo=conjNome!=='—'?((window._conjCache||[]).find(c=>c.nome?.toUpperCase()===conjNome.toUpperCase())||null):null;
+      const conjStatus=conjInfo?({ok:'Na Meta',transgressao:'Transgressão',critico:'Crítico'}[conjInfo.status]||'—'):'—';
+      const pctDec=conjInfo?`${parseFloat(conjInfo.pct_dec||0).toFixed(2)}%`:'—';
+      const ocs3m=_ocs3m(a.circuito_nome||a.circuito_id)||[];
+      const nc=_nivelCli(0);
+      const nd=_nivelDes(ocs3m);
+      const matriz=`${nc} - ${nd}`;
+      return{
+        'Circuito':a.circuito_nome||a.circuito_id||'—',
+        'Conjunto':conjNome,'Status Conjunto':conjStatus,'%DEC':pctDec,
+        'Matriz':matriz,
+        'Tipo':tipoLabel[a.tipo]||a.tipo||'—',
+        'Status':statusLabel[a.status]||a.status||'—',
+        'Endereço':a.endereco||'—','Entre Postes':a.postes||'—',
+        'Quantidade':a.quantidade||1,
+        'Medidor (Ramal)':a.ramal_medidor||'—','UC (Ramal)':a.ramal_uc||'—',
+        'Medidor (Fora)':a.fora_medidor||'—','UC (Fora)':a.fora_uc||'—',
+        'Obs. Irregularidade':a.fora_obs||'—','Observação':a.observacao||'—',
+        'MBX Circuito Todo':a.mux_circuito_todo?'Sim':'—',
+        'Fiscal':a.fiscal_nome||'—','Equipe':a.equipe_nome||'—',
+        'Registrado em':fmtDate(a.criado_em),'Concluído em':fmtDate(a.concluido_em),
+        'Lat':a.lat||'','Lng':a.lng||''
+      };
+    });
     const ws=window.XLSX.utils.json_to_sheet(rows);
     const wb=window.XLSX.utils.book_new();
     window.XLSX.utils.book_append_sheet(wb,ws,'Anomalias');
-    ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:Math.max(k.length,12)}));
+    ws['!cols']=Object.keys(rows[0]||{}).map(k=>({wch:Math.max(k.length,14)}));
     window.XLSX.writeFile(wb,'anomalias_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.xlsx');
     showToast(`✓ ${rows.length} anomalias exportadas para Excel.`);
   };
