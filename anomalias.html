@@ -98,7 +98,7 @@
     .search-input:focus { border-color: var(--eq-cyan); }
     .search-input::placeholder { color: rgba(138,155,191,0.5); }
     .search-icon {
-      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      position: absolute; left: 13px; top: 13px;
       color: var(--eq-gray); pointer-events: none;
     }
 
@@ -419,18 +419,19 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </div>
     <input class="search-input" id="searchInput" type="text" placeholder="Buscar por endereço, circuito ou postes..." oninput="renderLista()"/>
-    <!-- Barra de seleção múltipla (visível só para admin com pendentes) -->
-    <div id="barraSelecao" style="display:none;align-items:center;gap:10px;padding:8px 12px;background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.25);border-radius:10px;margin-top:8px;flex-wrap:wrap">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--eq-white);user-select:none">
-        <input type="checkbox" id="checkTodas" onchange="toggleSelecionarTodas(this)" style="width:16px;height:16px;accent-color:#1565C0;cursor:pointer">
-        Selecionar todas
-      </label>
-      <span id="contadorSelecionadas" style="font-size:12px;color:var(--eq-gray)">0 selecionadas</span>
-      <button id="btnProgramarLote" onclick="abrirProgramarLote()" disabled style="padding:6px 14px;background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.3);border-radius:7px;color:#90caf9;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:not-allowed;opacity:.5;transition:all .2s">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        Programar selecionadas
-      </button>
-    </div>
+  </div>
+
+  <!-- Barra de seleção múltipla (visível só para admin com pendentes) -->
+  <div id="barraSelecao" style="display:none;align-items:center;gap:10px;padding:8px 12px;background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.25);border-radius:10px;margin-bottom:12px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--eq-white);user-select:none">
+      <input type="checkbox" id="checkTodas" onchange="toggleSelecionarTodas(this)" style="width:16px;height:16px;accent-color:#1565C0;cursor:pointer">
+      Selecionar todas
+    </label>
+    <span id="contadorSelecionadas" style="font-size:12px;color:var(--eq-gray)">0 selecionadas</span>
+    <button id="btnProgramarLote" onclick="abrirProgramarLote()" disabled style="padding:6px 14px;background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.3);border-radius:7px;color:#90caf9;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:not-allowed;opacity:.5;transition:all .2s">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Programar selecionadas
+    </button>
   </div>
 
   <!-- filtros tipo -->
@@ -739,10 +740,11 @@
 
       // checkbox de seleção (só pra pendentes que podem ser programados)
       const podeSelecionar=currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux';
+      // checkbox no canto inferior esquerdo da foto, com fundo semi-transparente para visibilidade
       const checkboxHtml=podeSelecionar
-        ?`<label style="position:absolute;top:8px;left:8px;z-index:2;cursor:pointer">
+        ?`<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation">
             <input type="checkbox" class="anom-check" data-id="${a.id}" onchange="atualizarSelecao()"
-              style="width:18px;height:18px;accent-color:#1565C0;cursor:pointer">
+              style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block">
           </label>`:'';
 
       let botoesHtml=`<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuito_id}')">
@@ -762,11 +764,11 @@
 
       lista.innerHTML+=`
         <div class="anomalia-card" style="position:relative">
-          ${checkboxHtml}
-          <div class="card-foto-wrap" style="${podeSelecionar?'padding-left:36px':''}">
+          <div class="card-foto-wrap" style="position:relative">
             ${fotoHtml}
             <span class="card-tipo-badge ${a.tipo}">${tipoLabel}</span>
             <span class="card-status-badge ${a.status}">${statusLabel}</span>
+            ${checkboxHtml}
           </div>
           <div class="card-body">
             <div class="card-circuito">${a.circuito_nome||a.circuito_id}</div>
@@ -949,9 +951,10 @@
     sel.innerHTML='<option value="">Carregando...</option>';
     modal.classList.add('open');
     const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
-    sel.innerHTML=equipes.length
-      ?equipes.map(u=>`<option value="${u.id}" data-nome="${u.nome}">${u.nome}</option>`).join('')
-      :'<option value="">Nenhuma equipe cadastrada</option>';
+    sel.innerHTML=`<option value="" disabled selected>Selecione a equipe...</option>`
+      +(equipes.length
+        ?equipes.map(u=>`<option value="${u.id}" data-nome="${u.nome}">${u.nome}</option>`).join('')
+        :'<option value="" disabled>Nenhuma equipe cadastrada</option>');
   };
   window.fecharProgramarLote=function(){document.getElementById('modalProgramarLote').classList.remove('open');};
   window.confirmarProgramarLote=async function(){
