@@ -370,6 +370,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar Matriz
       </button>
+      <button onclick="abrirModalReprocessar()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(255,179,0,.06);border:1px solid rgba(255,179,0,.25);border-radius:8px;color:var(--eq-warning);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Reprocessar UCs
+      </button>
     </div>
   </div>
 
@@ -542,6 +546,26 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModalDelegarInspecao()">Cancelar</button>
       <button class="btn-save" id="btnDelegarConfirmar" onclick="confirmarDelegacao()">Delegar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Reprocessar UCs -->
+<div class="modal-overlay" id="modalReprocessar" onclick="if(event.target===this&&!_reprocessando)fecharModalReprocessar()">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔄 Reprocessar UCs</div>
+    <div class="modal-sub" style="margin-bottom:14px">
+      Atualiza os dados de UC em todos os circuitos e corrige anomalias de ramal que estão sem UC.
+    </div>
+    <div id="reprocessarLog" style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;font-family:monospace;color:#8a9bbf;max-height:260px;overflow-y:auto;margin-bottom:14px;display:none"></div>
+    <div id="reprocessarResumo" style="display:none;margin-bottom:14px"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btnFecharReproc" onclick="fecharModalReprocessar()">Fechar</button>
+      <button id="btnIniciarReproc" onclick="iniciarReprocessamento()" style="flex:1;padding:12px;background:linear-gradient(135deg,rgba(255,179,0,.2),rgba(255,179,0,.08));border:1px solid rgba(255,179,0,.35);border-radius:10px;color:var(--eq-warning);font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Iniciar
+      </button>
     </div>
   </div>
 </div>
@@ -1637,6 +1661,188 @@
     } finally {
       btn.disabled = false; btn.textContent = 'Salvar';
     }
+  };
+
+  // ── Reprocessar UCs ─────────────────────────────────────────────────────────
+  let _reprocessando = false;
+
+  window.abrirModalReprocessar = function() {
+    document.getElementById('reprocessarLog').style.display = 'none';
+    document.getElementById('reprocessarLog').innerHTML = '';
+    document.getElementById('reprocessarResumo').style.display = 'none';
+    document.getElementById('btnIniciarReproc').disabled = false;
+    document.getElementById('btnIniciarReproc').innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Iniciar';
+    document.getElementById('modalReprocessar').classList.add('open');
+  };
+  window.fecharModalReprocessar = function() {
+    if (_reprocessando) return;
+    document.getElementById('modalReprocessar').classList.remove('open');
+  };
+
+  function logReproc(msg, color) {
+    const log = document.getElementById('reprocessarLog');
+    log.style.display = 'block';
+    const line = document.createElement('div');
+    line.style.color = color || '#8a9bbf';
+    line.style.marginBottom = '2px';
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function extrairPostesComUcsJs(htmlContent) {
+    // Extrai offset
+    const offsetLat = parseFloat((htmlContent.match(/var offsetLat\s*=\s*(-?[\d.]+)/)||['','0'])[1])||0;
+    const offsetLng = parseFloat((htmlContent.match(/var offsetLng\s*=\s*(-?[\d.]+)/)||['','0'])[1])||0;
+    const startIdx = htmlContent.search(/var postes\s*=\s*\[/);
+    if (startIdx === -1) return [];
+    const arrStart = htmlContent.indexOf('[', startIdx);
+    let depth = 0, i = arrStart;
+    for (; i < htmlContent.length; i++) {
+      if (htmlContent[i] === '[') depth++;
+      else if (htmlContent[i] === ']') { depth--; if (depth === 0) { i++; break; } }
+    }
+    try {
+      const raw = eval(htmlContent.slice(arrStart, i));
+      return raw.map(p => ({
+        id: p.id,
+        lat: Math.round((p.lat + offsetLat) * 1e7) / 1e7,
+        lng: Math.round((p.lng + offsetLng) * 1e7) / 1e7,
+        e: p.esforco || '',
+        t: p.temTransformador === 1 ? 1 : 0,
+        ucs: (p.ucs || []).map(u => ({
+          uc: String(u.uc || ''),
+          m: u.medidor || u.m || '',
+          n: u.nome || u.n || '',
+          f: u.fase || u.f || ''
+        }))
+      }));
+    } catch(e) { return []; }
+  }
+
+  function ucPorMedidor(postes, medRaw) {
+    const medNorm = String(medRaw).replace(/[-\s]/g, '').toUpperCase();
+    for (const p of postes) {
+      for (const u of (p.ucs || [])) {
+        const mNorm = String(u.m || '').replace(/[-\s]/g, '').toUpperCase();
+        if (mNorm && mNorm === medNorm) return String(u.uc || '');
+      }
+    }
+    return null;
+  }
+
+  window.iniciarReprocessamento = async function() {
+    _reprocessando = true;
+    document.getElementById('btnIniciarReproc').disabled = true;
+    document.getElementById('btnIniciarReproc').textContent = 'Processando...';
+    document.getElementById('btnFecharReproc').disabled = true;
+
+    const stats = { circuitos: 0, semHtml: 0, ucsOk: 0, anomaliasCorrigidas: 0, erros: 0 };
+
+    try {
+      // 1. Busca todos os circuitos
+      logReproc('Buscando circuitos...');
+      const circs = await fetchAll('circuitos', { filters: { ativo: true } });
+      logReproc(`${circs.length} circuitos encontrados.`);
+
+      // 2. Busca anomalias de ramal sem UC
+      logReproc('Buscando anomalias de ramal sem UC...');
+      const todasAnom = await fetchAll('anomalias', { filters: { tipo: 'ramal' } });
+      const anomSemUC = todasAnom.filter(a => {
+        const txt = String(a.texto_os || a.texto || '');
+        return txt.startsWith('— -') || txt.includes('— - Instalar');
+      });
+      logReproc(`${anomSemUC.length} anomalias de ramal sem UC.`);
+      logReproc('─'.repeat(40));
+
+      // 3. Processa cada circuito
+      for (const c of circs) {
+        const html = c.htmlContent || null;
+        const geo  = c.geodata || {};
+
+        if (!html) {
+          logReproc(`⚠ ${c.nome} — sem htmlContent`, '#ffb300');
+          stats.semHtml++;
+          continue;
+        }
+
+        logReproc(`→ ${c.nome}`);
+        const novosPostes = extrairPostesComUcsJs(html);
+        if (!novosPostes.length) {
+          logReproc(`  ✗ Nenhum poste extraído`, 'var(--eq-error)');
+          stats.erros++;
+          continue;
+        }
+
+        const totalUcs = novosPostes.reduce((s, p) => s + (p.ucs||[]).length, 0);
+        logReproc(`  ${novosPostes.length} postes · ${totalUcs} UCs`, totalUcs > 0 ? '#00e5a0' : '#8a9bbf');
+
+        // Atualiza geodata do circuito
+        const { error: errGeo } = await sb.from('circuitos')
+          .update({ geodata: { postes: novosPostes, conexoes: geo.conexoes || [] } })
+          .eq('id', c.id);
+        if (errGeo) { logReproc(`  ✗ Erro geodata: ${errGeo.message}`, '#ff4d6d'); stats.erros++; continue; }
+        stats.circuitos++;
+
+        // Corrige anomalias de ramal deste circuito que estão sem UC
+        const anomDesteCirc = anomSemUC.filter(a => a.circuito_id === c.id || a.circuito_nome === c.nome);
+        for (const anom of anomDesteCirc) {
+          // extrai medidor do texto: "— - Instalar e retirar o ramal do Medidor XXXXXXXX"
+          const mMatch = String(anom.texto_os || anom.texto || '').match(/Medidor\s+(\S+)/i);
+          if (!mMatch) continue;
+          const medidor = mMatch[1];
+          const uc = ucPorMedidor(novosPostes, medidor);
+          if (!uc) { logReproc(`  ⚠ Medidor ${medidor} não encontrado`, '#ffb300'); continue; }
+
+          const novoTexto = `UC ${uc} - Instalar e retirar o ramal do Medidor ${medidor}`;
+          const { error: errAnom } = await sb.from('anomalias')
+            .update({ texto_os: novoTexto })
+            .eq('id', anom.id);
+          if (!errAnom) {
+            logReproc(`  ✓ Anomalia ${anom.id?.slice(0,8)} → UC ${uc}`, '#00e5a0');
+            stats.anomaliasCorrigidas++;
+          }
+        }
+      }
+
+    } catch(e) {
+      logReproc(`Erro geral: ${e.message}`, '#ff4d6d');
+      stats.erros++;
+    }
+
+    // Resumo
+    const resumo = document.getElementById('reprocessarResumo');
+    resumo.style.display = 'block';
+    resumo.innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:100px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif">${stats.circuitos}</div>
+          <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase">Circuitos</div>
+        </div>
+        <div style="flex:1;min-width:100px;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--eq-cyan);font-family:'Barlow Condensed',sans-serif">${stats.anomaliasCorrigidas}</div>
+          <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase">Anomalias corrigidas</div>
+        </div>
+        <div style="flex:1;min-width:100px;background:rgba(255,179,0,.06);border:1px solid rgba(255,179,0,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--eq-warning);font-family:'Barlow Condensed',sans-serif">${stats.semHtml}</div>
+          <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase">Sem HTML</div>
+        </div>
+        ${stats.erros ? `<div style="flex:1;min-width:100px;background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--eq-error);font-family:'Barlow Condensed',sans-serif">${stats.erros}</div>
+          <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase">Erros</div>
+        </div>` : ''}
+      </div>`;
+
+    logReproc('─'.repeat(40));
+    logReproc(`Concluído. ${stats.circuitos} circuitos · ${stats.anomaliasCorrigidas} anomalias corrigidas.`, '#00e5a0');
+    if (stats.semHtml) logReproc(`${stats.semHtml} circuito(s) sem htmlContent — resuba o arquivo HTML.`, '#ffb300');
+
+    _reprocessando = false;
+    document.getElementById('btnFecharReproc').disabled = false;
+    document.getElementById('btnIniciarReproc').textContent = 'Concluído ✓';
+
+    // Recarrega circuitos para refletir novos dados
+    await carregarCircuitos();
   };
 
   window.verNoMapa=function(id){sessionStorage.setItem('circuitoSelecionado',id);sessionStorage.setItem('mapaOrigem','circuitos');window.location.href='mapa.html';};
