@@ -700,95 +700,113 @@
   }
 
   window.renderLista=function(){
-    const busca=document.getElementById('searchInput').value.toLowerCase().trim();
-    let itens=todasAnomalias;
-    if(filtroTipo!=='todos')itens=itens.filter(a=>a.tipo===filtroTipo);
-    if(filtroStatus!=='todos')itens=itens.filter(a=>a.status===filtroStatus);
-    if(busca)itens=itens.filter(a=>
+    const busca=(document.getElementById('searchInput').value||'').toLowerCase().trim();
+    let itens=[...todasAnomalias];
+
+    // filtros
+    if(filtroTipo!=='todos')   itens=itens.filter(a=>a.tipo===filtroTipo);
+    if(filtroStatus!=='todos') itens=itens.filter(a=>a.status===filtroStatus);
+    if(busca) itens=itens.filter(a=>
       (a.endereco||'').toLowerCase().includes(busca)||
       (a.circuito_nome||'').toLowerCase().includes(busca)||
       (a.postes||'').toLowerCase().includes(busca)||
       (a.fiscal_nome||'').toLowerCase().includes(busca)
     );
+
     document.getElementById('countPill').textContent=itens.length;
-    const tipoLabelMap={poda:'✂ Podas',espacador:'⊕ Espaçadores',ramal:'🏠 Ramais',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Postes',outros:'📋 Outros'};
+    const tipoLabelMap={poda:'✂ Podas',espacador:'⊕ Espaçadores',ramal:'🏠 Ramais',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Postes',outros:'📋 Outros'};
     document.getElementById('sectionTitle').textContent=filtroTipo!=='todos'?(tipoLabelMap[filtroTipo]||filtroTipo):'Todos os registros';
+
     const lista=document.getElementById('listaAnomalias');
     if(!itens.length){
-      lista.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><p>Nenhuma anomalia encontrada<br/>para os filtros aplicados.</p></div>`;
+      lista.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><p>Nenhuma anomalia encontrada<br/>para os filtros aplicados.</p></div>';
       atualizarBarraSelecao([]);
       return;
     }
 
-    // mostra barra de seleção só pra admin com pendentes/programados na lista
+    // barra de seleção
     const temSelecionaveis=currentPerfil==='admin'&&itens.some(a=>a.status==='pendente'&&a.tipo!=='mux');
     document.getElementById('barraSelecao').style.display=temSelecionaveis?'flex':'none';
-    if(temSelecionaveis){document.getElementById('checkTodas').checked=false;}
+    if(temSelecionaveis){
+      const ct=document.getElementById('checkTodas');
+      if(ct){ct.checked=false;ct.indeterminate=false;}
+    }
 
-    const htmlCards=[];
-    itens.forEach(a=>{
+    const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'};
+    const statusLabel={pendente:'⏳ Pendente',programado:'📋 Programado',concluido:'✓ Concluído'};
+    const isAdmin=currentPerfil==='admin';
+    const isFiscal=currentPerfil==='fiscal';
+
+    const cards=itens.map(function(a){
+      const idS=String(a.id||'').replace(/['"<>&]/g,'');
+      const cirS=String(a.circuito_id||'').replace(/['"<>&]/g,'');
+      const tipS=tipoLabel[a.tipo]||a.tipo||'';
+      const stS=statusLabel[a.status]||a.status||'';
       const dataStr=fmtDate(a.criado_em);
-      const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
-      const statusLabel={pendente:'⏳ Pendente',programado:'📋 Programado',concluido:'✓ Concluído'}[a.status]||a.status;
-      const fotoHtml=a.foto_url
-        ?`<img class="card-foto lb-trigger" src="${cldThumb(a.foto_url)}" data-full="${a.foto_url}" alt="Foto" loading="lazy"/>`
-        :`<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
-      const fotoConclusaoHtml=a.foto_concluido_url
-        ?`<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao lb-trigger" src="${cldThumb(a.foto_concluido_url)}" data-full="${a.foto_concluido_url}" alt="Foto conclusão" loading="lazy"/></div>`:'';
-      const equipeHtml=a.equipe_id
-        ?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>${a.equipe_nome||'—'}</span></div>`:'';
+      const podeS=isAdmin&&a.status==='pendente'&&a.tipo!=='mux';
+      const posS=(a.postes||'').replace(/'/g,"\\'");
 
-      const podeSelecionar=currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux';
-      const checkboxHtml=podeSelecionar
-        ?`<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation">
-            <input type="checkbox" class="anom-check" data-id="${a.id}" onchange="atualizarSelecao()"
-              style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block">
-          </label>`:'';
+      // foto
+      let foto=a.foto_url
+        ?'<img class="card-foto lb-trigger" src="'+cldThumb(a.foto_url)+'" data-full="'+a.foto_url+'" alt="Foto" loading="lazy"/>'
+        :'<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
 
-      const idSafe=String(a.id).replace(/['"<>]/g,'');
-      const postesSafe=(a.postes||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      let botoesHtml=`<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuito_id}')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>`;
-      if(currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux')
-        botoesHtml+=`<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${idSafe}','${a.tipo}','${postesSafe}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>`;
-      if(currentPerfil==='admin'&&a.status!=='concluido')
-        botoesHtml+=`<button class="btn-sm btn-success-sm" onclick="openModalConcluir('${idSafe}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>`;
-      if((currentPerfil==='admin'||(currentPerfil==='fiscal'&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido')
-        botoesHtml+=`<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${idSafe}')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>`;
+      // foto conclusão
+      let fotoConc=a.foto_concluido_url
+        ?'<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao lb-trigger" src="'+cldThumb(a.foto_concluido_url)+'" data-full="'+a.foto_concluido_url+'" alt="Foto conclusão" loading="lazy"/></div>'
+        :'';
 
-      htmlCards.push(`
-        <div class="anomalia-card" style="position:relative">
-          <div class="card-foto-wrap" style="position:relative">
-            ${fotoHtml}
-            <span class="card-tipo-badge ${a.tipo}">${tipoLabel}</span>
-            <span class="card-status-badge ${a.status}">${statusLabel}</span>
-            ${checkboxHtml}
-          </div>
-          <div class="card-body">
-            <div class="card-circuito">${a.circuito_nome||a.circuito_id}</div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px">
-              ${(()=>{try{return anomConjuntoBadge(a.circuito_nome||a.circuito_id);}catch(e){return '';}})()}
-              ${(()=>{try{return anomMatrizBadge(a.circuito_nome||a.circuito_id);}catch(e){return '';}})()}
-            </div>
-            <div class="card-meta">
-              <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg><span>${a.endereco||'—'}</span></div>
-              <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>Entre postes: <span>${a.postes||'—'}</span></div>
-              <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Registrado em <span>${dataStr}</span></div>
-              ${currentPerfil==='admin'?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Fiscal: <span>${a.fiscal_nome||'—'}</span></div>`:''}
-              ${equipeHtml}
-            </div>
-            ${fotoConclusaoHtml}
-            ${(a.observacao||a.fora_obs)?`<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>${a.observacao||a.fora_obs}</div>`:''}
-            <div class="card-actions">${botoesHtml}</div>
-          </div>
-        </div>`);
+      // badges de conjunto e matriz
+      let cjBadge='', mzBadge='';
+      try{cjBadge=anomConjuntoBadge(a.circuito_nome||a.circuito_id);}catch(e){}
+      try{mzBadge=anomMatrizBadge(a.circuito_nome||a.circuito_id);}catch(e){}
+
+      // checkbox
+      let chk=podeS
+        ?'<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation"><input type="checkbox" class="anom-check" data-id="'+idS+'" onchange="atualizarSelecao()" style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block"></label>'
+        :'';
+
+      // equipe
+      let eqHtml=a.equipe_id?'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>'+(a.equipe_nome||'—')+'</span></div>':'';
+
+      // botões
+      let btns='<button class="btn-sm btn-outline-sm" onclick="verNoMapa(\''+cirS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>';
+      if(isAdmin&&a.status==='pendente'&&a.tipo!=='mux')
+        btns+='<button class="btn-sm btn-primary-sm" onclick="openModalProgramar(\''+idS+'\',\''+a.tipo+'\',\''+posS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>';
+      if(isAdmin&&a.status!=='concluido')
+        btns+='<button class="btn-sm btn-success-sm" onclick="openModalConcluir(\''+idS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>';
+      if((isAdmin||(isFiscal&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido')
+        btns+='<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia(\''+idS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>';
+
+      // obs
+      let obs=(a.observacao||a.fora_obs)?'<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>'+(a.observacao||a.fora_obs)+'</div>':'';
+
+      return '<div class="anomalia-card" style="position:relative">'
+        +'<div class="card-foto-wrap" style="position:relative">'
+          +foto
+          +'<span class="card-tipo-badge '+a.tipo+'">'+tipS+'</span>'
+          +'<span class="card-status-badge '+a.status+'">'+stS+'</span>'
+          +chk
+        +'</div>'
+        +'<div class="card-body">'
+          +'<div class="card-circuito">'+(a.circuito_nome||a.circuito_id||'—')+'</div>'
+          +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px">'+cjBadge+mzBadge+'</div>'
+          +'<div class="card-meta">'
+            +'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg><span>'+(a.endereco||'—')+'</span></div>'
+            +'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>Entre postes: <span>'+(a.postes||'—')+'</span></div>'
+            +'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Registrado em <span>'+dataStr+'</span></div>'
+            +(isAdmin?'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Fiscal: <span>'+(a.fiscal_nome||'—')+'</span></div>':'')
+            +eqHtml
+          +'</div>'
+          +fotoConc
+          +obs
+          +'<div class="card-actions">'+btns+'</div>'
+        +'</div>'
+      +'</div>';
     });
-    lista.innerHTML=htmlCards.join('');
-  };
 
+    lista.innerHTML=cards.join('');
+  };
   function resetarSelecao(){
     // desmarca tudo e zera barra antes de re-renderizar
     document.querySelectorAll('.anom-check').forEach(c=>c.checked=false);
