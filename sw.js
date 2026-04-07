@@ -1,6 +1,6 @@
 // ── STCGYN Service Worker — v3 (Supabase) ──
 // Incrementar CACHE_VERSION a cada deploy para forçar atualização
-const CACHE_VERSION = 'stcgyn-v3';
+const CACHE_VERSION = 'stcgyn-v4';
 
 const STATIC_ASSETS = [
   './',
