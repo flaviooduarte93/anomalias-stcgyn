@@ -440,7 +440,7 @@
     <button class="filtro-btn poda" onclick="setFiltroTipo('poda', this)">✂ Poda</button>
     <button class="filtro-btn espacador" onclick="setFiltroTipo('espacador', this)">⊕ Espaçador</button>
     <button class="filtro-btn ramal" onclick="setFiltroTipo('ramal', this)">🏠 Ramal</button>
-    <button class="filtro-btn mux" onclick="setFiltroTipo('mux', this)">🔄 MBX</button>
+    <button class="filtro-btn fora" onclick="setFiltroTipo('fora', this)">⚠️ Fora Padrão</button>
     <button class="filtro-btn poste" onclick="setFiltroTipo('poste', this)">🪵 Sub. Poste</button>
     <button class="filtro-btn outros" onclick="setFiltroTipo('outros', this)">📋 Outros</button>
   </div>
@@ -482,10 +482,6 @@
     <div class="sum-card ramal">
       <div class="sum-val" id="sumRamal">—</div>
       <div class="sum-label">Ramais</div>
-    </div>
-    <div class="sum-card mux">
-      <div class="sum-val" id="sumMux">—</div>
-      <div class="sum-label">MBX</div>
     </div>
   </div>
 
@@ -679,11 +675,15 @@
 
   async function carregarAnomalias(){
     const filters=currentPerfil==='admin'?{}:{fiscal_id:currentUser.uid};
-    [todasAnomalias, window._decoCache, window._conjCache] = await Promise.all([
+    const [allAnom, _deco, _conj] = await Promise.all([
       fetchAll('anomalias',{filters,order:{col:'criado_em',asc:false}}),
       fetchAll('decometro'),
       fetchAll('conjuntos_dec'),
     ]);
+    // MBX fica apenas na aba MBX
+    todasAnomalias = allAnom.filter(a=>a.tipo!=='mux');
+    window._decoCache = _deco;
+    window._conjCache = _conj;
     atualizarSumario();
     renderLista();
   }
@@ -696,7 +696,7 @@
     document.getElementById('sumPoda').textContent=todasAnomalias.filter(a=>a.tipo==='poda').length;
     document.getElementById('sumEspacador').textContent=todasAnomalias.filter(a=>a.tipo==='espacador').length;
     document.getElementById('sumRamal').textContent=todasAnomalias.filter(a=>a.tipo==='ramal').length;
-    document.getElementById('sumMux').textContent=todasAnomalias.filter(a=>a.tipo==='mux').length;
+
   }
 
   window.renderLista=function(){
@@ -770,8 +770,8 @@
           <div class="card-body">
             <div class="card-circuito">${a.circuito_nome||a.circuito_id}</div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px">
-              ${anomConjuntoBadge(a.circuito_nome||a.circuito_id)}
-              ${anomMatrizBadge(a.circuito_nome||a.circuito_id)}
+              ${(()=>{try{return anomConjuntoBadge(a.circuito_nome||a.circuito_id);}catch(e){return '';}})()}
+              ${(()=>{try{return anomMatrizBadge(a.circuito_nome||a.circuito_id);}catch(e){return '';}})()}
             </div>
             <div class="card-meta">
               <div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg><span>${a.endereco||'—'}</span></div>
@@ -818,8 +818,10 @@
     sel.innerHTML='<option value="">Carregando...</option>';
     document.getElementById('modalProgramar').classList.add('open');
     const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
-    sel.innerHTML=equipes.length?'':'<option value="">Nenhuma equipe cadastrada</option>';
-    equipes.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.nome;sel.appendChild(o);});
+    sel.innerHTML=`<option value="" disabled selected>Selecione a equipe...</option>`
+      +(equipes.length
+        ?equipes.map(u=>`<option value="${u.id}">${u.nome}</option>`).join('')
+        :'<option value="" disabled>Nenhuma equipe cadastrada</option>');
   };
   window.closeModalProgramar=function(){document.getElementById('modalProgramar').classList.remove('open');};
   window.confirmarProgramar=async function(){
