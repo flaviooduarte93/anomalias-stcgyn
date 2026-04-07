@@ -725,7 +725,7 @@
     document.getElementById('barraSelecao').style.display=temSelecionaveis?'flex':'none';
     if(temSelecionaveis){document.getElementById('checkTodas').checked=false;}
 
-    lista.innerHTML='';
+    const htmlCards=[];
     itens.forEach(a=>{
       const dataStr=fmtDate(a.criado_em);
       const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
@@ -738,31 +738,28 @@
       const equipeHtml=a.equipe_id
         ?`<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>${a.equipe_nome||'—'}</span></div>`:'';
 
-      // checkbox de seleção (só pra pendentes que podem ser programados)
       const podeSelecionar=currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux';
-      // checkbox no canto inferior esquerdo da foto, com fundo semi-transparente para visibilidade
       const checkboxHtml=podeSelecionar
         ?`<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation">
             <input type="checkbox" class="anom-check" data-id="${a.id}" onchange="atualizarSelecao()"
               style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block">
           </label>`:'';
 
+      const idSafe=String(a.id).replace(/['"<>]/g,'');
+      const postesSafe=(a.postes||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
       let botoesHtml=`<button class="btn-sm btn-outline-sm" onclick="verNoMapa('${a.circuito_id}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>`;
-      if(currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux'){
-        botoesHtml+=`<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${a.id}','${a.tipo}','${(a.postes||'').replace(/'/g,"\'")}')">
+      if(currentPerfil==='admin'&&a.status==='pendente'&&a.tipo!=='mux')
+        botoesHtml+=`<button class="btn-sm btn-primary-sm" onclick="openModalProgramar('${idSafe}','${a.tipo}','${postesSafe}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>`;
-      }
-      if(currentPerfil==='admin'&&a.status!=='concluido'){
-        botoesHtml+=`<button class="btn-sm btn-success-sm" onclick="openModalConcluir('${a.id}')">
+      if(currentPerfil==='admin'&&a.status!=='concluido')
+        botoesHtml+=`<button class="btn-sm btn-success-sm" onclick="openModalConcluir('${idSafe}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>`;
-      }
-      if((currentPerfil==='admin'||(currentPerfil==='fiscal'&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido'){
-        botoesHtml+=`<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${a.id}')">
+      if((currentPerfil==='admin'||(currentPerfil==='fiscal'&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido')
+        botoesHtml+=`<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia('${idSafe}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>`;
-      }
 
-      lista.innerHTML+=`
+      htmlCards.push(`
         <div class="anomalia-card" style="position:relative">
           <div class="card-foto-wrap" style="position:relative">
             ${fotoHtml}
@@ -787,12 +784,20 @@
             ${(a.observacao||a.fora_obs)?`<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>${a.observacao||a.fora_obs}</div>`:''}
             <div class="card-actions">${botoesHtml}</div>
           </div>
-        </div>`;
+        </div>`);
     });
+    lista.innerHTML=htmlCards.join('');
   };
 
-  window.setFiltroTipo=function(tipo,btn){filtroTipo=tipo;document.querySelectorAll('#filtrosTipo .filtro-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLista();};
-  window.setFiltroStatus=function(status,btn){filtroStatus=status;document.querySelectorAll('#filtrosStatus .filtro-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLista();};
+  function resetarSelecao(){
+    // desmarca tudo e zera barra antes de re-renderizar
+    document.querySelectorAll('.anom-check').forEach(c=>c.checked=false);
+    const ct=document.getElementById('checkTodas');
+    if(ct){ct.checked=false;ct.indeterminate=false;}
+    atualizarBarraSelecao([]);
+  }
+  window.setFiltroTipo=function(tipo,btn){filtroTipo=tipo;document.querySelectorAll('#filtrosTipo .filtro-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');resetarSelecao();renderLista();};
+  window.setFiltroStatus=function(status,btn){filtroStatus=status;document.querySelectorAll('#filtrosStatus .filtro-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');resetarSelecao();renderLista();};
   window.verNoMapa=function(cid){sessionStorage.setItem('circuitoSelecionado',cid);window.location.href='mapa.html';};
 
   window.excluirAnomalia=async function(id){
