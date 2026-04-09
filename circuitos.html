@@ -719,6 +719,8 @@
   }
 
   // ── carregar todos os dados ──
+  function equipValido(nome){ return /^[A-Za-z]{2}/.test(nome) && String(nome).substring(2,4)==='11'; }
+
   async function carregarCircuitos(){
     const[decoAll,circAll,anoAll,inspAll]=await Promise.all([
       fetchAll('decometro'),
@@ -728,7 +730,13 @@
     ]);
     // cache decômetro
     decometroCache={};
-    decoAll.forEach(d=>{if(d.equipamento){decometroCache[d.equipamento]=d.ocorrencias||[];decoCltsMedia[d.equipamento]=d.clts_media||null;if(d.conjunto)decoConjunto[d.equipamento]=d.conjunto;}});
+    decoAll.forEach(d=>{
+      if(d.equipamento && equipValido(d.equipamento)){
+        decometroCache[d.equipamento]=d.ocorrencias||[];
+        decoCltsMedia[d.equipamento]=d.clts_media||null;
+        if(d.conjunto)decoConjunto[d.equipamento]=d.conjunto;
+      }
+    });
     // carrega conjuntos
     const conjAll=await fetchAll('conjuntos_dec');
     conjuntosCache={};
@@ -1483,7 +1491,7 @@
 
   // ─── MODAL MATRIZ GERAL (todos decometro) ───────────────────────────────────
   window.abrirMatrizGeral=function(){
-    const equips=Object.keys(decometroCache).sort();
+    const equips=Object.keys(decometroCache).filter(equipValido).sort();
     if(!equips.length){showToast('Nenhum dado do Decômetro disponível.',true);return;}
     const ordemFixaR = ['1 - 1','1 - 2','1 - 3','2 - 1','2 - 2','2 - 3','3 - 1','3 - 2','3 - 3'];
     _matrizGeralRows=equips.map(nome=>{
@@ -1617,7 +1625,7 @@
     if(!window.XLSX){showToast('Carregando XLSX...');
       const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
       s.onload=()=>exportarMatriz();document.head.appendChild(s);return;}
-    const equips=Object.keys(decometroCache).sort();
+    const equips=Object.keys(decometroCache).filter(equipValido).sort();
     const rows=equips.map(nome=>{
       const ocs3m=ocorrencias3m(nome)||[];
       const ocsSemPTP=desarmesSemPTP(ocs3m);
