@@ -433,6 +433,13 @@
       style="padding:5px 10px;background:#0d1f3c;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#f0f4ff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:pointer;outline:none;max-width:200px">
       <option value="todos" style="background:#0d1f3c;color:#f0f4ff">Conjunto: Todos</option>
     </select>
+    <select id="selectFiltroInsp" onchange="setFiltroInsp(this.value)"
+      style="padding:5px 10px;background:#0d1f3c;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#f0f4ff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:pointer;outline:none">
+      <option value="todos"      style="background:#0d1f3c;color:#f0f4ff">Inspeção: Todas</option>
+      <option value="armazenado" style="background:#0d1f3c;color:#8a9bbf">Sem delegação</option>
+      <option value="pendente"   style="background:#0d1f3c;color:#ffb300">Delegada / Pendente</option>
+      <option value="concluido"  style="background:#0d1f3c;color:#00e5a0">Concluída</option>
+    </select>
     <span id="countFiltro" style="font-size:12px;color:var(--eq-gray);white-space:nowrap"></span>
   </div>
   <div id="filtrosMatrizLista" style="display:none"></div>
@@ -771,6 +778,12 @@
   let filtroMatrizAtivo = 'todas';
   let filtroConjAtivo   = 'todos';
   let filtroNomeConjAtivo = 'todos';
+  let filtroInspAtivo = 'todos';
+
+  window.setFiltroInsp = function(valor) {
+    filtroInspAtivo = valor;
+    filtrarLista();
+  };
 
   window.setFiltroConj = function(valor) {
     filtroConjAtivo = valor;
@@ -876,6 +889,15 @@
         const nc=nivelClientes(c.clientes||0);
         const nd=nivelDesarmes(ocorrencias3m(c.nome)||[]);
         return matrizLabel(nc,nd)===filtroMatrizAtivo;
+      });
+    }
+
+    // aplica filtro de inspeção
+    if(filtroInspAtivo!=='todos'){
+      lista=lista.filter(c=>{
+        const insp=inspecoesCache[c.id]||null;
+        const statusInsp=insp?insp.status:'armazenado';
+        return statusInsp===filtroInspAtivo;
       });
     }
 
