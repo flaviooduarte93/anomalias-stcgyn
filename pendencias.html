@@ -133,6 +133,13 @@
     <button class="fbtn" onclick="setFiltro('concluido',this)">Concluídos</button>
     <button class="fbtn" onclick="setFiltro('cancelado',this)">Histórico</button>
   </div>
+  <!-- Filtro de fiscal — só visível para admin -->
+  <div id="filtroFiscalWrap" style="display:none;margin-bottom:12px">
+    <select id="selectFiltroFiscal" onchange="setFiltroFiscal(this.value,this)"
+      style="width:100%;padding:9px 12px;background:#0d1f3c;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#f0f4ff;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;outline:none">
+      <option value="todos" style="background:#0d1f3c">Todos os fiscais</option>
+    </select>
+  </div>
   <div class="sumrow">
     <div class="sumcard t"><div class="sumval" id="sTotal">-</div><div class="sumlbl">Total</div></div>
     <div class="sumcard p"><div class="sumval" id="sPend">-</div><div class="sumlbl">Pendentes</div></div>
@@ -322,7 +329,7 @@
     return`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}" title="Meta DEC: ${meta} | ${parseFloat(pct_dec||0).toFixed(2)}% da meta | Ref: ${mesN}/${ano_ref||''}">${ico} ${conj} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
   }
 
-  let cUser=null,cPerf=null,dados=[],filtro='todos',idConc=null,idCanc=null,idNovaInspCircuito=null;
+  let cUser=null,cPerf=null,dados=[],filtro='todos',filtroFiscal='todos',idConc=null,idCanc=null,idNovaInspCircuito=null;
 
   // ── init ──
   (async()=>{
@@ -374,6 +381,7 @@
           window._anomaliasPorCircuito[cid].push(a);
         });
         updSum(dados.length,dados.filter(x=>x.status==='pendente').length,dados.filter(x=>x.status==='concluido').length);
+        renderFiltroFiscal();
         renderLista();
       }
     }catch(e){console.error(e);showErr('Erro ao buscar dados. Tente recarregar.');}
@@ -408,6 +416,8 @@
     let itens=dados.slice();
     if(cPerf==='fiscal') itens=itens.filter(x=>x.status==='pendente');
     else if(filtro!=='todos') itens=itens.filter(x=>x.status===filtro);
+    // filtro de fiscal (só admin)
+    if(cPerf==='admin'&&filtroFiscal!=='todos') itens=itens.filter(x=>(x.fiscal_id||'sem_fiscal')===filtroFiscal);
     document.getElementById('cntPill').textContent=itens.length;
     document.getElementById('secTtl').textContent=
       cPerf==='fiscal'?'Inspecoes pendentes':
@@ -691,10 +701,50 @@
 
   window.setFiltro=function(f,btn){
     filtro=f;
+    filtroFiscal='todos'; // reset fiscal ao mudar status
     document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
+    renderFiltroFiscal();
     renderLista();
   };
+
+  window.setFiltroFiscal=function(fid){
+    filtroFiscal=fid;
+    renderLista();
+  };
+
+  function renderFiltroFiscal(){
+    const wrap=document.getElementById('filtroFiscalWrap');
+    const sel=document.getElementById('selectFiltroFiscal');
+    if(!wrap||!sel||cPerf!=='admin'){return;}
+
+    // pega lista filtrada pelo status atual
+    let base=dados.slice();
+    if(filtro==='pendente')base=base.filter(x=>x.status==='pendente');
+    else if(filtro==='concluido')base=base.filter(x=>x.status==='concluido');
+    else if(filtro==='cancelado')base=base.filter(x=>x.status==='cancelado');
+
+    // agrupa por fiscal
+    const mapa={};
+    base.forEach(x=>{
+      const fid=x.fiscal_id||'sem_fiscal';
+      const fnome=x.fiscal_nome||'Sem fiscal';
+      if(!mapa[fid])mapa[fid]={id:fid,nome:fnome,count:0};
+      mapa[fid].count++;
+    });
+    const fiscais=Object.values(mapa).sort((a,b)=>a.nome.localeCompare(b.nome));
+
+    if(!fiscais.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+
+    const totalCount=base.length;
+    const prev=filtroFiscal;
+    sel.innerHTML=`<option value="todos" style="background:#0d1f3c">Todos os fiscais (${totalCount})</option>`
+      +fiscais.map(f=>`<option value="${f.id}" style="background:#0d1f3c">${f.nome} (${f.count})</option>`).join('');
+    // restaura seleção anterior se ainda existe
+    if([...sel.options].some(o=>o.value===prev)) sel.value=prev;
+    else { sel.value='todos'; filtroFiscal='todos'; }
+  }
 
   window.toggleForaList=function(id,btn){
     const el=document.getElementById(id);
