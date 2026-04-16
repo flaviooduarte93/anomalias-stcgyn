@@ -868,6 +868,15 @@
       });
     }
 
+    // aplica filtro de inspeção ANTES de recalcular a matriz
+    if(filtroInspAtivo!=='todos'){
+      lista=lista.filter(c=>{
+        const insp=inspecoesCache[c.id]||null;
+        const statusInsp=insp?insp.status:'armazenado';
+        return statusInsp===filtroInspAtivo;
+      });
+    }
+
     // atualiza dropdown de nomes com base na lista filtrada por status
     renderSelectNomeConj(filtroConjAtivo==='todos'
       ? todosCircuitosCache
@@ -880,7 +889,7 @@
         })
     );
 
-    // recalcula counts da matriz com base na lista filtrada por conjunto
+    // recalcula counts da matriz com base na lista já filtrada (conjunto + inspeção)
     renderFiltrosMatriz(lista);
 
     // aplica filtro de matriz
@@ -889,15 +898,6 @@
         const nc=nivelClientes(c.clientes||0);
         const nd=nivelDesarmes(ocorrencias3m(c.nome)||[]);
         return matrizLabel(nc,nd)===filtroMatrizAtivo;
-      });
-    }
-
-    // aplica filtro de inspeção
-    if(filtroInspAtivo!=='todos'){
-      lista=lista.filter(c=>{
-        const insp=inspecoesCache[c.id]||null;
-        const statusInsp=insp?insp.status:'armazenado';
-        return statusInsp===filtroInspAtivo;
       });
     }
 
