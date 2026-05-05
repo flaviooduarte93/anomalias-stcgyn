@@ -1527,7 +1527,12 @@
       const fonte=circ?'circuito':'média xlsx';
       const conjunto=decoConjunto[nome]||null;
       const conjInfo=conjunto?(conjuntosCache[conjunto.toUpperCase()]||conjuntosCache[conjunto]||null):null;
-      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte,conjunto,conjInfo};
+      // calcula dias restantes para sair da janela de 90 dias (usa todas as ocs, não só 3m)
+      const todasOcs=decometroCache[nome]||[];
+      const ultDataOcs=todasOcs.reduce((mx,o)=>{const dt=parseDataBR(o.inicio)||parseDataBR(o.fim);return dt&&dt>mx?dt:mx;},null);
+      const saidaJanela=ultDataOcs?new Date(ultDataOcs.getTime()+91*86400000):null;
+      const diasRestantes=saidaJanela?Math.ceil((saidaJanela-Date.now())/86400000):null;
+      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte,conjunto,conjInfo,diasRestantes,saidaJanela};
     }).sort((a,b)=>{
       const ka=matrizLabel(a.nc,a.nd), kb=matrizLabel(b.nc,b.nd);
       return ordemFixaR.indexOf(ka)-ordemFixaR.indexOf(kb);
@@ -1569,7 +1574,30 @@
   };
 
   function renderTabelaMatrizGeral(rows){
-    const tbody=rows.map(r=>{
+    // aplica ordenação
+    const ord=_matrizGeralOrdem;
+    const sorted=[...rows].sort((a,b)=>{
+      let va,vb;
+      if(ord.col==='equipamento'){va=a.nome;vb=b.nome;}
+      else if(ord.col==='clientes'){va=a.clientes||0;vb=b.clientes||0;}
+      else if(ord.col==='desarmes'){va=a.ocsSemPTP.length;vb=b.ocsSemPTP.length;}
+      else if(ord.col==='matriz'){
+        const ordemFixaM=['1 - 1','1 - 2','1 - 3','2 - 1','2 - 2','2 - 3','3 - 1','3 - 2','3 - 3'];
+        va=ordemFixaM.indexOf(matrizLabel(a.nc,a.nd));vb=ordemFixaM.indexOf(matrizLabel(b.nc,b.nd));
+      }
+      else if(ord.col==='diasRestantes'){
+        // null (sem data) vai para o final sempre
+        va=a.diasRestantes===null?Infinity:a.diasRestantes;
+        vb=b.diasRestantes===null?Infinity:b.diasRestantes;
+      }
+      else{va=a.nc+a.nd;vb=b.nc+b.nd;}
+      return ord.asc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0);
+    });
+
+    const thStyle='padding:8px 10px;color:var(--eq-gray);cursor:pointer;white-space:nowrap;user-select:none';
+    const thIcon=col=>_matrizGeralOrdem.col===col?(_matrizGeralOrdem.asc?' ↑':' ↓'):'';
+
+    const tbody=sorted.map(r=>{
       // badge de conjunto
       const conjBadge=r.conjunto?(()=>{
         const info=r.conjInfo;
@@ -1581,6 +1609,22 @@
         const ico=status==='critico'?'🔴':status==='transgressao'?'🟡':'🟢';
         return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}">${ico} ${r.conjunto} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
       })():'<span style="font-size:10px;color:var(--eq-gray)">—</span>';
+
+      // badge janela 90 dias
+      let janelaBadge='<span style="color:var(--eq-gray)">—</span>';
+      if(r.diasRestantes!==null){
+        const d=r.diasRestantes;
+        const dataStr=r.saidaJanela?r.saidaJanela.toLocaleDateString('pt-BR'):'';
+        if(d<0){
+          janelaBadge=`<span style="color:var(--eq-success);font-weight:700" title="Saiu da janela em ${dataStr}">✓ Saiu</span>`;
+        } else if(d<=10){
+          janelaBadge=`<span style="color:var(--eq-error);font-weight:700" title="Sai em ${dataStr}">⚠ ${d}d</span>`;
+        } else if(d<=30){
+          janelaBadge=`<span style="color:var(--eq-warning);font-weight:700" title="Sai em ${dataStr}">${d}d</span>`;
+        } else {
+          janelaBadge=`<span style="color:var(--eq-gray)" title="Sai em ${dataStr}">${d}d</span>`;
+        }
+      }
 
       return`
       <tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="abrirMatrizEquipDeco('${r.nome}',${r.clientes})">
@@ -1596,9 +1640,10 @@
         <td style="padding:8px 10px;text-align:center;color:var(--eq-gray)">${r.nd}</td>
         <td style="padding:8px 10px;text-align:center;font-weight:700;color:${r.color}">${matrizLabel(r.nc,r.nd)}</td>
         <td style="padding:8px 10px;text-align:center"><span style="padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
+        <td style="padding:8px 10px;text-align:center;font-size:12px">${janelaBadge}</td>
       </tr>
       <tr id="deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}" style="display:none;background:rgba(0,0,0,.2)">
-        <td colspan="8" style="padding:8px 14px">
+        <td colspan="9" style="padding:8px 14px">
           ${r.ocsSemPTP.length?`<table style="width:100%;font-size:11px;border-collapse:collapse">
             <tr style="color:var(--eq-gray)"><th style="text-align:left;padding:3px 6px">Nº</th><th style="text-align:left;padding:3px 6px">Data Início</th><th style="text-align:left;padding:3px 6px">Data Fim</th><th style="text-align:left;padding:3px 6px">Causa</th><th style="text-align:right;padding:3px 6px">CHI</th></tr>
             ${r.ocsSemPTP.map(o=>`<tr><td style="padding:3px 6px">${o.numero||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.inicio||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.fim||'—'}</td><td style="padding:3px 6px;color:var(--eq-cyan)">${o.causa||'—'}</td><td style="padding:3px 6px;text-align:right;font-weight:700">${parseFloat(o.chi||0).toFixed(2)}</td></tr>`).join('')}
@@ -1613,14 +1658,15 @@
       <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead style="background:rgba(255,255,255,.04)"><tr>
-            <th style="padding:8px 10px;text-align:left;color:var(--eq-gray)">Equipamento</th>
+            <th onclick="ordenarMatrizGeral('equipamento')" style="${thStyle};text-align:left">Equipamento${thIcon('equipamento')}</th>
             <th style="padding:8px 10px;text-align:left;color:var(--eq-gray)">Conjunto</th>
-            <th style="padding:8px 10px;text-align:right;color:var(--eq-gray)">Clientes</th>
+            <th onclick="ordenarMatrizGeral('clientes')" style="${thStyle};text-align:right">Clientes${thIcon('clientes')}</th>
             <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Cli</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Desarmes</th>
+            <th onclick="ordenarMatrizGeral('desarmes')" style="${thStyle};text-align:center">Desarmes${thIcon('desarmes')}</th>
             <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Des</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Matriz</th>
+            <th onclick="ordenarMatrizGeral('matriz')" style="${thStyle};text-align:center">Matriz${thIcon('matriz')}</th>
             <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Criticidade</th>
+            <th onclick="ordenarMatrizGeral('diasRestantes')" style="${thStyle};text-align:center" title="Dias para sair da janela de 90 dias (91º dia)">Janela 90d${thIcon('diasRestantes')}</th>
           </tr></thead>
           <tbody>${tbody}</tbody>
         </table>
@@ -1635,6 +1681,16 @@
   window.fecharMatrizGeral=function(){document.getElementById('modalMatrizGeral').classList.remove('open');};
 
   let _matrizGeralRows=[];
+  let _matrizGeralOrdem={col:'matriz',asc:true}; // coluna e direção de ordenação
+
+  window.ordenarMatrizGeral=function(col){
+    if(_matrizGeralOrdem.col===col) _matrizGeralOrdem.asc=!_matrizGeralOrdem.asc;
+    else {_matrizGeralOrdem.col=col; _matrizGeralOrdem.asc=(col==='diasRestantes'||col==='equipamento');}
+    const filtroAtivo=document.querySelector('#filtrosMatrizGeral button[style*="2px solid"]');
+    const valorFiltro=filtroAtivo?filtroAtivo.onclick?.toString().match(/'([^']+)'/)?.[1]||'todas':'todas';
+    const rows=valorFiltro==='todas'?_matrizGeralRows:_matrizGeralRows.filter(r=>matrizLabel(r.nc,r.nd)===valorFiltro);
+    renderTabelaMatrizGeral(rows);
+  };
 
   window.filtrarMatrizGeral=function(valor,btn){
     document.querySelectorAll('#filtrosMatrizGeral button').forEach(b=>b.style.outline='none');
@@ -1655,7 +1711,11 @@
       const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
       const nc=nivelClientes(clientes), nd=nivelDesarmes(ocs3m);
       const {lbl}=matrizCor(nc,nd);
-      return{'Equipamento':nome,'Conjunto':decoConjunto[nome]||'—','Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl};
+      const todasOcsExp=decometroCache[nome]||[];
+      const ultDataOcsExp=todasOcsExp.reduce((mx,o)=>{const dt=parseDataBR(o.inicio)||parseDataBR(o.fim);return dt&&dt>mx?dt:mx;},null);
+      const saidaJanelaExp=ultDataOcsExp?new Date(ultDataOcsExp.getTime()+91*86400000):null;
+      const diasRestExp=saidaJanelaExp?Math.ceil((saidaJanelaExp-Date.now())/86400000):null;
+      return{'Equipamento':nome,'Conjunto':decoConjunto[nome]||'—','Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl,'Janela 90d (dias)':diasRestExp===null?'—':diasRestExp,'Saída da Janela':saidaJanelaExp?saidaJanelaExp.toLocaleDateString('pt-BR'):'—'};
     });
     const ws=window.XLSX.utils.json_to_sheet(rows);
     const wb=window.XLSX.utils.book_new();
