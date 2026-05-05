@@ -612,7 +612,7 @@
 
 <!-- MODAL: Matriz geral — todos os equipamentos do decômetro -->
 <div class="modal-overlay" id="modalMatrizGeral" onclick="if(event.target===this)fecharMatrizGeral()">
-  <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto;width:96vw">
+  <div class="modal" style="max-width:98vw;width:98vw;max-height:92vh;overflow-y:auto;padding:18px 16px">
     <div class="modal-handle"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px;flex-wrap:wrap">
       <div class="modal-title" style="margin:0">⊞ Matriz de Impacto</div>
@@ -1607,7 +1607,7 @@
                   :status==='transgressao'?{bg:'rgba(255,179,0,.1)',bd:'rgba(255,179,0,.3)',cl:'var(--eq-warning)'}
                   :{bg:'rgba(0,229,160,.07)',bd:'rgba(0,229,160,.2)',cl:'var(--eq-success)'};
         const ico=status==='critico'?'🔴':status==='transgressao'?'🟡':'🟢';
-        return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}">${ico} ${r.conjunto} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
+        return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}">${ico} ${r.conjunto} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
       })():'<span style="font-size:10px;color:var(--eq-gray)">—</span>';
 
       // badge janela 90 dias
@@ -1627,20 +1627,20 @@
       }
 
       return`
-      <tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="abrirMatrizEquipDeco('${r.nome}',${r.clientes})">
-        <td style="padding:8px 10px;font-weight:600">${r.nome}</td>
-        <td style="padding:8px 10px">${conjBadge}</td>
-        <td style="padding:8px 10px;text-align:right">${r.clientes}<span style="font-size:10px;color:var(--eq-gray);margin-left:4px">(${r.fonte})</span></td>
-        <td style="padding:8px 10px;text-align:center;color:var(--eq-gray)">${r.nc}</td>
-        <td style="padding:8px 10px;text-align:center">
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;white-space:nowrap" onclick="abrirMatrizEquipDeco('${r.nome}',${r.clientes})">
+        <td style="padding:6px 10px;font-weight:600">${r.nome}</td>
+        <td style="padding:6px 10px">${conjBadge}</td>
+        <td style="padding:6px 10px;text-align:right">${r.clientes}<span style="font-size:10px;color:var(--eq-gray);margin-left:4px">(${r.fonte})</span></td>
+        <td style="padding:6px 10px;text-align:center;color:var(--eq-gray)">${r.nc}</td>
+        <td style="padding:6px 10px;text-align:center">
           <span style="cursor:pointer;color:var(--eq-cyan);text-decoration:underline" onclick="event.stopPropagation();toggleDesarmesDeco('deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}')">
             ${r.ocsSemPTP.length}
           </span>
         </td>
-        <td style="padding:8px 10px;text-align:center;color:var(--eq-gray)">${r.nd}</td>
-        <td style="padding:8px 10px;text-align:center;font-weight:700;color:${r.color}">${matrizLabel(r.nc,r.nd)}</td>
-        <td style="padding:8px 10px;text-align:center"><span style="padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
-        <td style="padding:8px 10px;text-align:center;font-size:12px">${janelaBadge}</td>
+        <td style="padding:6px 10px;text-align:center;color:var(--eq-gray)">${r.nd}</td>
+        <td style="padding:6px 10px;text-align:center;font-weight:700;color:${r.color}">${matrizLabel(r.nc,r.nd)}</td>
+        <td style="padding:6px 10px;text-align:center"><span style="padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
+        <td style="padding:6px 10px;text-align:center;font-size:12px">${janelaBadge}</td>
       </tr>
       <tr id="deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}" style="display:none;background:rgba(0,0,0,.2)">
         <td colspan="9" style="padding:8px 14px">
@@ -1656,17 +1656,17 @@
     document.getElementById('mMatrizGeralBody').innerHTML=`
       ${count===0?`<div style="color:var(--eq-gray);text-align:center;padding:24px;font-size:13px">Nenhum equipamento nessa categoria.</div>`:`
       <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto">
           <thead style="background:rgba(255,255,255,.04)"><tr>
-            <th onclick="ordenarMatrizGeral('equipamento')" style="${thStyle};text-align:left">Equipamento${thIcon('equipamento')}</th>
-            <th style="padding:8px 10px;text-align:left;color:var(--eq-gray)">Conjunto</th>
-            <th onclick="ordenarMatrizGeral('clientes')" style="${thStyle};text-align:right">Clientes${thIcon('clientes')}</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Cli</th>
-            <th onclick="ordenarMatrizGeral('desarmes')" style="${thStyle};text-align:center">Desarmes${thIcon('desarmes')}</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">N.Des</th>
-            <th onclick="ordenarMatrizGeral('matriz')" style="${thStyle};text-align:center">Matriz${thIcon('matriz')}</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray)">Criticidade</th>
-            <th onclick="ordenarMatrizGeral('diasRestantes')" style="${thStyle};text-align:center" title="Dias para sair da janela de 90 dias (91º dia)">Janela 90d${thIcon('diasRestantes')}</th>
+            <th onclick="ordenarMatrizGeral('equipamento')" style="${thStyle};text-align:left;white-space:nowrap">Equipamento${thIcon('equipamento')}</th>
+            <th style="padding:8px 10px;text-align:left;color:var(--eq-gray);white-space:nowrap">Conjunto</th>
+            <th onclick="ordenarMatrizGeral('clientes')" style="${thStyle};text-align:right;white-space:nowrap">Clientes${thIcon('clientes')}</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray);white-space:nowrap">N.Cli</th>
+            <th onclick="ordenarMatrizGeral('desarmes')" style="${thStyle};text-align:center;white-space:nowrap">Desarmes${thIcon('desarmes')}</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray);white-space:nowrap">N.Des</th>
+            <th onclick="ordenarMatrizGeral('matriz')" style="${thStyle};text-align:center;white-space:nowrap">Matriz${thIcon('matriz')}</th>
+            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray);white-space:nowrap">Criticidade</th>
+            <th onclick="ordenarMatrizGeral('diasRestantes')" style="${thStyle};text-align:center;white-space:nowrap" title="Dias para sair da janela de 90 dias (91º dia)">Janela 90d${thIcon('diasRestantes')}</th>
           </tr></thead>
           <tbody>${tbody}</tbody>
         </table>
