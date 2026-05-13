@@ -1,11 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<script>
-  // aplica tema antes de renderizar para evitar flash
-  (function(){var t=localStorage.getItem('stcgyn-theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light'){document.documentElement.style.setProperty('--eq-blue-dark','#e8f0fe');document.documentElement.style.setProperty('--eq-white','#1a2340');}})();
-</script>
-  <meta charset="UTF-8"/>
+<meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
@@ -449,13 +445,7 @@
       <span class="uname" id="unameEl">—</span>
       <span class="uperfil" id="uperfilEl">—</span>
     </div>
-    <button id="themeToggleBtn" onclick="stcTheme.toggle()" title="Mudar tema"
-  style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--eq-gray);cursor:pointer;flex-shrink:0;transition:all .2s"
-  onmouseover="this.style.color='var(--eq-white)';this.style.background='rgba(255,255,255,.1)'"
-  onmouseout="this.style.color='var(--eq-gray)';this.style.background='rgba(255,255,255,.06)'">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-</button>
-  <button class="btn-logout" onclick="logout()">Sair</button>
+    <button class="btn-logout" onclick="logout()">Sair</button>
   </div>
 </div>
 
@@ -629,156 +619,52 @@
 
     
     /* ── Tema Claro v2 — usa variáveis --th-* ────────────────── */
-    [data-theme="light"] body {
-      background: var(--th-bg) !important;
-      color: var(--th-text) !important;
-    }
-    /* Topbar mantém brand */
-    .topbar { background: linear-gradient(135deg,#1a56c4,#0d3b8e) !important; }
-    .topbar *, .topbar-logo *, .page-title-wrap * { color: #fff !important; }
-
-    /* Textos principais */
-    .page-title, .page-sub, h1,h2,h3,h4,
-    .section-title, .card-title, .cnome,
-    .card-circuito, .modal-title,
-    .upload-title, .kpi-label,
-    [class*="title"], [class*="label"],
-    [data-theme="light"] [class*="nome"], [data-theme="light"] [class*="name"] {
-      color: var(--th-text) !important;
-    }
-    /* Textos secundários */
-    .modal-sub, .card-meta, .cmeta,
-    .meta-row, .card-sub, .upload-sub,
-    [class*="sub"], [class*="gray"],
-    [data-theme="light"] [class*="secondary"] {
-      color: var(--th-text2) !important;
-    }
-    .meta-row svg { stroke: var(--th-text2) !important; }
-
-    /* Superfícies e cards */
-    .card, .anomalia-card, .insp-card,
-    .circ-card, .modal,
-    [class*="-card"], [class*="card-"],
-    [data-theme="light"] [class*="panel"], [data-theme="light"] [class*="painel"] {
-      background: var(--th-card) !important;
-      border-color: var(--th-border) !important;
-      color: var(--th-text) !important;
-    }
-    .modal-overlay { background: rgba(0,0,0,.45) !important; }
-
-    /* Inputs, selects, textareas */
-    input, select, textarea,
-    .modal-input, .modal-select,
-    [data-theme="light"] [class*="input"], [data-theme="light"] [class*="select"] {
-      background: var(--th-input-bg) !important;
-      border-color: var(--th-border) !important;
-      color: var(--th-text) !important;
-    }
-    [data-theme="light"] input::placeholder, [data-theme="light"] textarea::placeholder {
-      color: var(--th-text3) !important;
-    }
-    [data-theme="light"] select option {
-      background: var(--th-input-bg) !important;
-      color: var(--th-text) !important;
-    }
-
-    /* Dropdowns hardcoded */
-    select[style*="0d1f3c"],
-    [data-theme="light"] select[style*="background:#0d1f3c"] {
-      background: var(--th-input-bg) !important;
-      color: var(--th-text) !important;
-    }
-
-    /* Filtros / botões */
-    [data-theme="light"] .filtro-btn, [data-theme="light"] .fbtn, [data-theme="light"] .fmatriz-btn {
-      background: var(--th-surface) !important;
-      border-color: var(--th-border) !important;
-      color: var(--th-text2) !important;
-    }
-    [data-theme="light"] .filtro-btn.active, [data-theme="light"] .fbtn.active {
-      background: #1a56c4 !important;
-      border-color: #1a56c4 !important;
-      color: #fff !important;
-    }
-    .filtros { border-color: var(--th-border) !important; }
-
-    /* Tabelas */
-    table { color: var(--th-text) !important; }
-    thead, thead tr { background: var(--th-bg2) !important; }
-    th { color: var(--th-text2) !important; }
-    tr { border-color: var(--th-border2) !important; }
-    tr:hover { background: var(--th-hover) !important; }
-    td { color: var(--th-text) !important; }
-
-    /* Nav inferior */
-    [data-theme="light"] .nav-bottom {
-      background: var(--th-card) !important;
-      border-color: var(--th-border) !important;
-    }
-    .nav-item { color: var(--th-text2) !important; }
-    .nav-item.active { color: #1a56c4 !important; }
-    .nav-label { color: inherit !important; }
-
-    /* Skeletons */
-    [data-theme="light"] .sk, [data-theme="light"] .skeleton {
-      background: linear-gradient(90deg,
-        var(--th-bg2) 25%, var(--th-bg) 50%, var(--th-bg2) 75%
-      ) !important;
-      background-size: 400% 100% !important;
-    }
-
-    /* Upload area */
-    [data-theme="light"] .upload-area {
-      background: var(--th-surface) !important;
-      border-color: var(--th-border) !important;
-    }
-
-    /* Botão tema */
-    [data-theme="light"] #themeToggleBtn {
-      background: rgba(255,255,255,.15) !important;
-      border-color: rgba(255,255,255,.3) !important;
-      color: #fff !important;
-    }
-
-    /* Painel bases */
-    [data-theme="light"] #painelBases {
-      background: var(--th-surface) !important;
-      border-color: var(--th-border) !important;
-      color: var(--th-text) !important;
-    }
-    #painelBases * { color: var(--th-text) !important; }
-
-    /* Barras e wrappers genéricos */
-    [class*="wrap"], [class*="bar"],
-    [data-theme="light"] [class*="section"], [data-theme="light"] [class*="content"] {
-      color: var(--th-text);
-    }
-
-    /* Sum cards / KPI */
-    .sum-card, [class*="sum-"],
-    [data-theme="light"] [class*="kpi"], [data-theme="light"] [class*="-kpi"] {
-      background: var(--th-card) !important;
-      border-color: var(--th-border) !important;
-    }
-    .sum-label, [class*="sum-label"],
-    [data-theme="light"] [class*="kpi-label"] {
-      color: var(--th-text2) !important;
-    }
-
-    /* Botões de ação secundários */
-    .btn-cancel, [class*="btn-cancel"],
-    [data-theme="light"] [class*="btn-outline"] {
-      background: var(--th-surface) !important;
-      border-color: var(--th-border) !important;
-      color: var(--th-text2) !important;
-    }
-
-    /* Scrollbars */
-    ::-webkit-scrollbar-track { background: var(--th-bg) !important; }
-    ::-webkit-scrollbar-thumb { background: var(--th-border) !important; }
+    
+    
+    
+    
 
     
 
+
+    
+    /* ── Tema do modal de apontamento ────────────────────────── */
+    #modalAnomalia.modal-light .modal {
+      background: #ffffff !important;
+      color: #111827 !important;
+    }
+    #modalAnomalia.modal-light .modal-title { color: #111827 !important; }
+    #modalAnomalia.modal-light .modal-sub   { color: #374151 !important; }
+    #modalAnomalia.modal-light .modal-label { color: #374151 !important; }
+    #modalAnomalia.modal-light input,
+    #modalAnomalia.modal-light select,
+    #modalAnomalia.modal-light textarea {
+      background: #f3f4f6 !important;
+      border-color: #d1d5db !important;
+      color: #111827 !important;
+    }
+    #modalAnomalia.modal-light input::placeholder { color: #9ca3af !important; }
+    #modalAnomalia.modal-light label             { color: #374151 !important; }
+    #modalAnomalia.modal-light .modal-handle     { background: #d1d5db !important; }
+    #modalAnomalia.modal-light .btn-cancel {
+      background: #f3f4f6 !important;
+      border-color: #d1d5db !important;
+      color: #374151 !important;
+    }
+    /* botão toggle dentro do modal */
+    .modal-theme-btn {
+      display:flex;align-items:center;justify-content:center;
+      width:30px;height:30px;border-radius:7px;cursor:pointer;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.07);
+      color:var(--eq-gray);transition:all .2s;flex-shrink:0;
+    }
+    .modal-theme-btn:hover { background:rgba(255,255,255,.14); color:var(--eq-white); }
+    #modalAnomalia.modal-light .modal-theme-btn {
+      border-color:#d1d5db !important;
+      background:#f3f4f6 !important;
+      color:#374151 !important;
+    }
 
     </style>');
   })();
@@ -815,7 +701,18 @@
 <div class="modal-overlay" id="modalAnomalia">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Nova Anomalia</div>
+    <div class="modal-title">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span>Nova Anomalia</span>
+        <button class="modal-theme-btn" id="modalAnomaliaTemaBtn"
+          onclick="toggleModalAnomaliaTema()"
+          title="Alternar tema do modal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
 
     <div class="modal-field">
       <div class="modal-label">Localização (automática)</div>
@@ -2657,9 +2554,28 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
+
+  // ── Toggle tema do modal de apontamento ──
+  window.toggleModalAnomaliaTema = function() {
+    const modal = document.getElementById('modalAnomalia');
+    const btn   = document.getElementById('modalAnomaliaTemaBtn');
+    const isLight = modal.classList.toggle('modal-light');
+    localStorage.setItem('stcgyn-modal-tema', isLight ? 'light' : 'dark');
+    if (btn) {
+      btn.innerHTML = isLight
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+      btn.title = isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro';
+    }
+  };
+  // restaura preferência salva ao abrir o modal
+  (function() {
+    const tema = localStorage.getItem('stcgyn-modal-tema') || 'dark';
+    if (tema === 'light') {
+      const el = document.getElementById('modalAnomalia');
+      if (el) el.classList.add('modal-light');
+    }
+  })();
 </script>
-
-
-<script src="./theme.js"></script>
 </body>
 </html>
