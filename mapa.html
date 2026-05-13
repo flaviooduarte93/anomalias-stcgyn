@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+<script>
+  // aplica tema antes de renderizar para evitar flash
+  (function(){var t=localStorage.getItem('stcgyn-theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light'){document.documentElement.style.setProperty('--eq-blue-dark','#e8f0fe');document.documentElement.style.setProperty('--eq-white','#1a2340');}})();
+</script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
@@ -445,7 +449,13 @@
       <span class="uname" id="unameEl">—</span>
       <span class="uperfil" id="uperfilEl">—</span>
     </div>
-    <button class="btn-logout" onclick="logout()">Sair</button>
+    <button id="themeToggleBtn" onclick="stcTheme.toggle()" title="Mudar tema"
+  style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--eq-gray);cursor:pointer;flex-shrink:0;transition:all .2s"
+  onmouseover="this.style.color='var(--eq-white)';this.style.background='rgba(255,255,255,.1)'"
+  onmouseout="this.style.color='var(--eq-gray)';this.style.background='rgba(255,255,255,.06)'">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+  <button class="btn-logout" onclick="logout()">Sair</button>
   </div>
 </div>
 
@@ -612,7 +622,68 @@
          p === 'fiscal' ? '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-      + '</style>');
+      + '
+    /* ── Tema Claro ─────────────────────────────────────────── */
+    [data-theme="light"] body {
+      background: #f0f4ff !important;
+      color: #1a2340 !important;
+    }
+    [data-theme="light"] .topbar {
+      background: linear-gradient(135deg, #1a56c4 0%, #0d3b8e 100%) !important;
+      border-bottom-color: rgba(0,0,0,.1) !important;
+    }
+    [data-theme="light"] .nav-bottom {
+      background: #fff !important;
+      border-top: 1px solid rgba(0,0,0,.1) !important;
+    }
+    [data-theme="light"] .nav-item { color: #4a5568 !important; }
+    [data-theme="light"] .nav-item.active { color: #1a56c4 !important; }
+    [data-theme="light"] .modal {
+      background: #fff !important;
+      border-color: rgba(0,0,0,.1) !important;
+      color: #1a2340 !important;
+    }
+    [data-theme="light"] .modal-overlay { background: rgba(0,0,0,.4) !important; }
+    [data-theme="light"] .card,
+    [data-theme="light"] .anomalia-card {
+      background: #fff !important;
+      border-color: rgba(0,0,0,.1) !important;
+    }
+    [data-theme="light"] input,
+    [data-theme="light"] select,
+    [data-theme="light"] textarea {
+      background: #fff !important;
+      border-color: rgba(0,0,0,.15) !important;
+      color: #1a2340 !important;
+    }
+    [data-theme="light"] input::placeholder { color: #9aa5b4 !important; }
+    [data-theme="light"] .page-title,
+    [data-theme="light"] .page-sub { color: #1a2340 !important; }
+    [data-theme="light"] .section-title { color: #1a2340 !important; }
+    [data-theme="light"] .filtro-btn {
+      background: rgba(0,0,0,.05) !important;
+      border-color: rgba(0,0,0,.12) !important;
+      color: #4a5568 !important;
+    }
+    [data-theme="light"] .filtro-btn.active {
+      background: #1a56c4 !important;
+      color: #fff !important;
+    }
+    [data-theme="light"] .sk, [data-theme="light"] .skeleton {
+      background: linear-gradient(90deg,#e2e8f0 25%,#f0f4ff 50%,#e2e8f0 75%) !important;
+    }
+    [data-theme="light"] .upload-area {
+      background: rgba(0,0,0,.02) !important;
+      border-color: rgba(0,0,0,.15) !important;
+    }
+    [data-theme="light"] table thead { background: rgba(0,0,0,.04) !important; }
+    [data-theme="light"] table tbody tr:hover { background: rgba(0,0,0,.03) !important; }
+    [data-theme="light"] #themeToggleBtn {
+      background: rgba(0,0,0,.08) !important;
+      border-color: rgba(0,0,0,.15) !important;
+      color: #4a5568 !important;
+    }
+</style>');
   })();
 </script>
 <nav class="bottom-nav">
@@ -2491,5 +2562,7 @@
   }
 </script>
 
+
+<script src="./theme.js"></script>
 </body>
 </html>
