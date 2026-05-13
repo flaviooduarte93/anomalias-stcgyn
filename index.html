@@ -1,11 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<script>
-  // aplica tema antes de renderizar para evitar flash
-  (function(){var t=localStorage.getItem('stcgyn-theme')||'dark';document.documentElement.setAttribute('data-theme',t);if(t==='light'){document.documentElement.style.setProperty('--eq-blue-dark','#e8f0fe');document.documentElement.style.setProperty('--eq-white','#1a2340');}})();
-</script>
-  <meta charset="UTF-8" />
+<meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Anomalias STCGYN — Login</title>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
@@ -74,157 +70,14 @@
   
     
 
-    /* ── Tema Claro — Completo ─────────────────────────────── */
-    [data-theme="light"] {
-      --eq-blue-dark:  #dce8ff;
-      --eq-blue:       #1a56c4;
-      --eq-blue-mid:   #0d3b8e;
-      --eq-cyan:       #0077cc;
-      --eq-purple:     #5b2d8e;
-      --eq-purple-mid: #7c3fc0;
-      --eq-white:      #1a2340;
-      --eq-gray:       #4a5568;
-      --eq-error:      #c0132e;
-      --eq-success:    #006b45;
-      --eq-warning:    #92400e;
-    }
-    [data-theme="light"] body,
-    [data-theme="light"] .page-content,
-    [data-theme="light"] .main-content {
-      background: #eef2ff !important;
-      color: #1a2340 !important;
-    }
-    /* Topbar mantém cor da marca */
-    [data-theme="light"] .topbar {
-      background: linear-gradient(135deg,#1a56c4,#0d3b8e) !important;
-    }
-    [data-theme="light"] .topbar * { color: #fff !important; }
-    [data-theme="light"] #themeToggleBtn {
-      background: rgba(255,255,255,.15) !important;
-      border-color: rgba(255,255,255,.25) !important;
-      color: #fff !important;
-    }
-    /* Navbar inferior */
-    [data-theme="light"] .nav-bottom {
-      background: #fff !important;
-      border-top: 1px solid #d1d9f0 !important;
-    }
-    [data-theme="light"] .nav-item { color: #4a5568 !important; }
-    [data-theme="light"] .nav-item.active,
-    [data-theme="light"] .nav-item:hover { color: #1a56c4 !important; }
-    [data-theme="light"] .nav-label { color: inherit !important; }
-    /* Cards e superfícies */
-    [data-theme="light"] .card,
-    [data-theme="light"] .anomalia-card,
-    [data-theme="light"] .insp-card,
-    [data-theme="light"] .circ-card,
-    [data-theme="light"] .sum-card {
-      background: #fff !important;
-      border-color: #d1d9f0 !important;
-    }
-    [data-theme="light"] .card *,
-    [data-theme="light"] .anomalia-card *,
-    [data-theme="light"] .insp-card * { color: inherit; }
-    /* Textos principais */
-    [data-theme="light"] .page-title,
-    [data-theme="light"] .page-sub,
-    [data-theme="light"] .section-title,
-    [data-theme="light"] .modal-title,
-    [data-theme="light"] .modal-sub,
-    [data-theme="light"] .cnome,
-    [data-theme="light"] .card-circuito,
-    [data-theme="light"] h1,[data-theme="light"] h2,
-    [data-theme="light"] h3,[data-theme="light"] h4 {
-      color: #1a2340 !important;
-    }
-    [data-theme="light"] p,
-    [data-theme="light"] span:not([style*="color"]),
-    [data-theme="light"] div:not([style*="color"]),
-    [data-theme="light"] td,
-    [data-theme="light"] th,
-    [data-theme="light"] li,
-    [data-theme="light"] label {
-      color: #1a2340;
-    }
-    /* Textos secundários */
-    [data-theme="light"] .card-meta,
-    [data-theme="light"] .meta-row,
-    [data-theme="light"] .cmeta,
-    [data-theme="light"] .modal-sub {
-      color: #4a5568 !important;
-    }
-    [data-theme="light"] .meta-row svg { stroke: #4a5568 !important; }
-    /* Inputs e selects */
-    [data-theme="light"] input,
-    [data-theme="light"] select,
-    [data-theme="light"] textarea {
-      background: #fff !important;
-      border-color: #c4cfe8 !important;
-      color: #1a2340 !important;
-    }
-    [data-theme="light"] input::placeholder,
-    [data-theme="light"] textarea::placeholder { color: #9aa5b4 !important; }
-    [data-theme="light"] select option { background: #fff; color: #1a2340; }
-    /* Modais */
-    [data-theme="light"] .modal {
-      background: #fff !important;
-      border-color: #d1d9f0 !important;
-      color: #1a2340 !important;
-    }
-    [data-theme="light"] .modal * { color: #1a2340; }
-    [data-theme="light"] .modal-overlay { background: rgba(0,0,0,.45) !important; }
-    /* Filtros */
-    [data-theme="light"] .filtros { border-bottom-color: #d1d9f0 !important; }
-    [data-theme="light"] .filtro-btn,
-    [data-theme="light"] .fbtn {
-      background: #eef2ff !important;
-      border-color: #c4cfe8 !important;
-      color: #4a5568 !important;
-    }
-    [data-theme="light"] .filtro-btn.active,
-    [data-theme="light"] .fbtn.active {
-      background: #1a56c4 !important;
-      border-color: #1a56c4 !important;
-      color: #fff !important;
-    }
-    /* Upload area */
-    [data-theme="light"] .upload-area {
-      background: #f5f8ff !important;
-      border-color: #c4cfe8 !important;
-    }
-    [data-theme="light"] .upload-title { color: #1a2340 !important; }
-    [data-theme="light"] .upload-sub { color: #4a5568 !important; }
-    /* Skeletons */
-    [data-theme="light"] .sk,
-    [data-theme="light"] .skeleton {
-      background: linear-gradient(90deg,#dce6ff 25%,#eef2ff 50%,#dce6ff 75%) !important;
-      background-size: 400% 100% !important;
-    }
-    /* Tabelas */
-    [data-theme="light"] table { color: #1a2340 !important; }
-    [data-theme="light"] thead,
-    [data-theme="light"] thead tr { background: #eef2ff !important; }
-    [data-theme="light"] th { color: #4a5568 !important; }
-    [data-theme="light"] tr { border-bottom-color: #e2e8f8 !important; }
-    [data-theme="light"] tr:hover { background: #f5f8ff !important; }
-    /* Painel bases */
-    [data-theme="light"] #painelBases {
-      background: #fff !important;
-      border-color: #d1d9f0 !important;
-    }
-    /* Badges de status */
-    [data-theme="light"] .count-badge {
-      background: #1a56c4 !important;
-      color: #fff !important;
-    }
-    /* Botões de ação */
-    [data-theme="light"] .btn-cancel {
-      background: #eef2ff !important;
-      border-color: #c4cfe8 !important;
-      color: #4a5568 !important;
-    }
-    /* SVG icons em texto */
-    [data-theme="light"] svg[stroke="currentColor"] { stroke: currentColor; }
+    
+
+    
+    /* ── Tema Claro v2 — usa variáveis --th-* ────────────────── */
+    
+    
+    
+    
 
     </style>
 </head>
@@ -236,13 +89,7 @@
 <div class="orb orb-3"></div>
 
 <div class="page">
-<button id="themeToggleBtn" onclick="stcTheme.toggle()" title="Mudar tema"
-  style="position:fixed;top:16px;right:16px;z-index:100;display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.6);cursor:pointer;transition:all .2s"
-  onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,.15)'"
-  onmouseout="this.style.color='rgba(255,255,255,.6)';this.style.background='rgba(255,255,255,.08)'">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-</button>
-  <div class="card">
+<div class="card">
     <div class="logo-wrap">
       <div class="logo-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -535,7 +382,5 @@
     }
   })();
 </script>
-
-<script src="./theme.js"></script>
 </body>
 </html>
