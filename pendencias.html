@@ -364,9 +364,20 @@
     const fw=document.getElementById('filtrosWrap');
     const nd=document.getElementById('ni-dash');
     const nc=document.getElementById('ni-circ');
-    if(cPerf==='admin'){sub.textContent='Todas as inspecoes delegadas';fw.classList.remove('hidden');if(nd)nd.classList.remove('hidden');if(nc)nc.classList.remove('hidden');}
-    else if(cPerf==='equipe') sub.textContent='Seus servicos programados';
-    else sub.textContent='Suas inspecoes pendentes';
+    const nm=document.getElementById('ni-mbx');
+    // primeiro oculta tudo que não é base
+    [nd,nc,nm].forEach(el=>{if(el)el.style.display='none';});
+    if(cPerf==='admin'){
+      sub.textContent='Todas as inspecoes delegadas';
+      fw.classList.remove('hidden');
+      if(nd)nd.style.display='';
+      if(nc)nc.style.display='';
+      if(nm)nm.style.display='';
+    } else if(cPerf==='equipe'){
+      sub.textContent='Seus servicos programados';
+    } else {
+      sub.textContent='Suas inspecoes pendentes';
+    }
   }
 
   async function carregar(){
