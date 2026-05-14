@@ -636,6 +636,10 @@
     #modalAnomalia.modal-light .modal-title { color: #111827 !important; }
     #modalAnomalia.modal-light .modal-sub   { color: #374151 !important; }
     #modalAnomalia.modal-light .modal-label { color: #374151 !important; }
+    #modalAnomalia.modal-light .modal-value { color: #111827 !important; }
+    #modalAnomalia.modal-light p,
+    #modalAnomalia.modal-light span:not([style*="color"]),
+    #modalAnomalia.modal-light div:not([style*="color"]) { color: #111827; }
     #modalAnomalia.modal-light input,
     #modalAnomalia.modal-light select,
     #modalAnomalia.modal-light textarea {
@@ -647,6 +651,25 @@
     #modalAnomalia.modal-light label             { color: #374151 !important; }
     #modalAnomalia.modal-light .modal-handle     { background: #d1d5db !important; }
     #modalAnomalia.modal-light .btn-cancel {
+      background: #f3f4f6 !important;
+      border-color: #d1d5db !important;
+      color: #374151 !important;
+    }
+    /* Botões de tipo */
+    #modalAnomalia.modal-light .tipo-btn {
+      background: #f3f4f6 !important;
+      border-color: #d1d5db !important;
+      color: #374151 !important;
+    }
+    #modalAnomalia.modal-light .tipo-btn.selected {
+      background: #dbeafe !important;
+      border-color: #3b82f6 !important;
+      color: #1d4ed8 !important;
+    }
+    #modalAnomalia.modal-light .tipo-btn svg { stroke: currentColor !important; }
+    /* Fotos */
+    #modalAnomalia.modal-light .foto-upload-btn,
+    #modalAnomalia.modal-light [class*="foto"] {
       background: #f3f4f6 !important;
       border-color: #d1d5db !important;
       color: #374151 !important;
@@ -664,6 +687,10 @@
       border-color:#d1d5db !important;
       background:#f3f4f6 !important;
       color:#374151 !important;
+    }
+    #modalAnomalia.modal-light .modal-theme-btn:hover {
+      background:#e5e7eb !important;
+      color:#111827 !important;
     }
 
     </style>');
@@ -1043,16 +1070,24 @@
   // ── nav ──
   function setupNav(perfil) {
     sessionStorage.setItem('userPerfil', perfil);
+    // começa com tudo oculto e revela conforme o perfil
+    ['nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.classList.add('hidden');
+    });
     if (perfil === 'fiscal' || perfil === 'admin') {
       document.getElementById('nav-anomalias').classList.remove('hidden');
       document.getElementById('nav-pendencias').classList.remove('hidden');
-      // mostra botão de pendentes
       const btn = document.getElementById('btnMostrarPendentes');
       if (btn) btn.style.display = 'flex';
     }
     if (perfil === 'admin') {
       document.getElementById('nav-dashboard').classList.remove('hidden');
+      document.getElementById('nav-mbx').classList.remove('hidden');
       document.getElementById('nav-circuitos').classList.remove('hidden');
+    }
+    if (perfil === 'equipe') {
+      // equipe só vê mapa
     }
     if (perfil === 'fiscal') {
       document.getElementById('fabAnomalias').classList.remove('hidden');
@@ -2559,21 +2594,39 @@
   window.toggleModalAnomaliaTema = function() {
     const modal = document.getElementById('modalAnomalia');
     const btn   = document.getElementById('modalAnomaliaTemaBtn');
+    if (!modal) return;
     const isLight = modal.classList.toggle('modal-light');
     localStorage.setItem('stcgyn-modal-tema', isLight ? 'light' : 'dark');
+    // ícone: claro → mostrar lua (para ir ao escuro); escuro → mostrar sol (para ir ao claro)
     if (btn) {
-      btn.innerHTML = isLight
-        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
       btn.title = isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro';
+      btn.innerHTML = isLight
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+           </svg>`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <circle cx="12" cy="12" r="5"/>
+             <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+             <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+             <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+             <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+           </svg>`;
     }
   };
-  // restaura preferência salva ao abrir o modal
+  // restaura preferência ao carregar
   (function() {
     const tema = localStorage.getItem('stcgyn-modal-tema') || 'dark';
     if (tema === 'light') {
       const el = document.getElementById('modalAnomalia');
+      const btn = document.getElementById('modalAnomaliaTemaBtn');
       if (el) el.classList.add('modal-light');
+      if (btn) {
+        btn.title = 'Mudar para tema escuro';
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+      }
     }
   })();
 </script>
