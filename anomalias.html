@@ -671,12 +671,20 @@
     sessionStorage.setItem('userPerfil',u.perfil);
     document.getElementById('avatarEl').textContent=u.nome.charAt(0).toUpperCase();
     if(currentPerfil==='admin'){
-      document.getElementById('nav-dashboard').classList.remove('hidden');
-      document.getElementById('nav-circuitos').classList.remove('hidden');
+      // admin vê tudo
+      ['nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el)el.classList.remove('hidden');
+      });
       document.getElementById('pageSub').textContent='Todas as anomalias registradas';
       const btnExp=document.getElementById('btnExportarPendentes');
       if(btnExp)btnExp.style.display='flex';
     } else {
+      // fiscal — só mapa, anomalias, pendências
+      ['nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el)el.style.display='none';
+      });
       document.getElementById('pageSub').textContent='Anomalias que você registrou';
     }
     await carregarAnomalias();
