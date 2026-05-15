@@ -612,7 +612,78 @@
          p === 'fiscal' ? '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-       + '</style>');
+       + '
+    /* ════════════════════════════════════════════════════════════
+       MODAL DE APONTAMENTO — TEMA CLARO (padrão) + ESCURO
+       ════════════════════════════════════════════════════════════ */
+    #modalAnomaliaInner {
+      --ma-bg:#F4F7FC;--ma-card:#FFFFFF;--ma-border:#D9E3F5;
+      --ma-title:#1B2B5A;--ma-label:#2F5FE3;--ma-text:#1B2B5A;
+      --ma-hint:#8FA3C8;--ma-input-bg:#FFFFFF;--ma-input-brd:#D9E3F5;
+      --ma-input-txt:#1B2B5A;--ma-ph:#A0B3D0;
+      --ma-shadow:0 4px 14px rgba(47,95,227,0.08);
+      --ma-alert-bg:#FFF1F3;--ma-alert-brd:#FFD6DC;--ma-alert-txt:#E54866;
+      --ma-btn-bg:#FFFFFF;--ma-btn-brd:#D9E3F5;--ma-btn-txt:#1B2B5A;
+      background:var(--ma-bg)!important;color:var(--ma-text)!important;
+      border-radius:24px 24px 0 0!important;padding:20px 20px 32px!important;
+    }
+    #modalAnomaliaInner.ma-dark {
+      --ma-bg:#0d1e3a;--ma-card:rgba(255,255,255,0.04);--ma-border:rgba(255,255,255,0.1);
+      --ma-title:#f0f4ff;--ma-label:#00aaff;--ma-text:#f0f4ff;
+      --ma-hint:#8a9bbf;--ma-input-bg:rgba(255,255,255,0.06);
+      --ma-input-brd:rgba(255,255,255,0.1);--ma-input-txt:#f0f4ff;--ma-ph:#5a6d8f;
+      --ma-shadow:0 4px 14px rgba(0,0,0,0.3);
+      --ma-alert-bg:rgba(255,77,109,0.1);--ma-alert-brd:rgba(255,77,109,0.3);--ma-alert-txt:#ff4d6d;
+      --ma-btn-bg:rgba(255,255,255,0.06);--ma-btn-brd:rgba(255,255,255,0.1);--ma-btn-txt:#f0f4ff;
+    }
+    .ma-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:var(--ma-title);letter-spacing:-0.3px;}
+    /* Switch */
+    .ma-switch{position:relative;display:inline-block;cursor:pointer;}
+    .ma-switch input{display:none;}
+    .ma-track{display:flex;align-items:center;width:54px;height:28px;background:#E2EAF8;border:1.5px solid #C9D7F2;border-radius:14px;padding:2px;transition:background .3s,border-color .3s;position:relative;}
+    .ma-dark .ma-track{background:#1a3060;border-color:rgba(255,255,255,.2);}
+    .ma-knob{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(47,95,227,0.18);display:flex;align-items:center;justify-content:center;transition:transform .3s,background .3s;position:absolute;left:2px;}
+    .ma-dark .ma-knob{transform:translateX(26px);background:#2a4a80;}
+    .ma-icon-sun{display:block;color:#2F5FE3;}.ma-icon-moon{display:none;color:#8a9bbf;}
+    .ma-dark .ma-icon-sun{display:none;}.ma-dark .ma-icon-moon{display:block;}
+    /* Fields */
+    .ma-field{margin-bottom:16px;}
+    .ma-label{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ma-label);margin-bottom:8px;}
+    .ma-hint{font-size:10px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ma-hint);}
+    .ma-value{background:var(--ma-input-bg);border:1.5px solid var(--ma-input-brd);border-radius:16px;padding:12px 14px;font-size:14px;color:var(--ma-input-txt);box-shadow:var(--ma-shadow);}
+    .ma-value.loading{color:var(--ma-ph);}
+    .ma-input{width:100%;background:var(--ma-input-bg);border:1.5px solid var(--ma-input-brd);border-radius:16px;padding:12px 14px;font-size:14px;font-family:'Barlow',sans-serif;color:var(--ma-input-txt);box-shadow:var(--ma-shadow);outline:none;box-sizing:border-box;transition:border-color .2s;resize:none;}
+    .ma-input::placeholder{color:var(--ma-ph);}
+    .ma-input.focused{border-color:#2F5FE3;}
+    .ma-dark .ma-input.focused{border-color:#00aaff;}
+    /* Tipo buttons */
+    #modalAnomaliaInner .tipo-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    #modalAnomaliaInner .tipo-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px 10px;background:var(--ma-card);border:1.5px solid var(--ma-border);border-radius:18px;color:var(--ma-btn-txt);font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:var(--ma-shadow);transition:all .2s;}
+    #modalAnomaliaInner .tipo-btn svg{width:28px;height:28px;}
+    #modalAnomaliaInner .tipo-btn-outros{grid-column:1/-1;}
+    #modalAnomaliaInner #tipoPoda svg{stroke:#3B6EF5;}
+    #modalAnomaliaInner #tipoEspacador svg{stroke:#4B7BFF;}
+    #modalAnomaliaInner #tipoMux svg{stroke:#22C55E;}
+    #modalAnomaliaInner #tipoRamal svg{stroke:#F97316;}
+    #modalAnomaliaInner #tipoFora svg{stroke:#8B5CF6;}
+    #modalAnomaliaInner #tipoPoste svg{stroke:#06B6D4;}
+    #modalAnomaliaInner #tipoOutros svg{stroke:#64748B;}
+    #modalAnomaliaInner #tipoPoda.selected{color:#3B6EF5;background:rgba(59,110,245,0.08);border-color:#3B6EF5;}
+    #modalAnomaliaInner #tipoEspacador.selected{color:#4B7BFF;background:rgba(75,123,255,0.08);border-color:#4B7BFF;}
+    #modalAnomaliaInner #tipoMux.selected{color:#22C55E;background:rgba(34,197,94,0.08);border-color:#22C55E;}
+    #modalAnomaliaInner #tipoRamal.selected{color:#F97316;background:rgba(249,115,22,0.08);border-color:#F97316;}
+    #modalAnomaliaInner #tipoFora.selected{color:#8B5CF6;background:rgba(139,92,246,0.08);border-color:#8B5CF6;}
+    #modalAnomaliaInner #tipoPoste.selected{color:#06B6D4;background:rgba(6,182,212,0.08);border-color:#06B6D4;}
+    #modalAnomaliaInner #tipoOutros.selected{color:#64748B;background:rgba(100,116,139,0.08);border-color:#64748B;}
+    /* Foto */
+    .ma-foto-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;background:var(--ma-card);border:2px dashed var(--ma-border);border-radius:16px;color:var(--ma-label);font-size:13px;font-weight:600;cursor:pointer;width:100%;box-sizing:border-box;transition:all .2s;}
+    .ma-foto-btn:hover{border-color:#2F5FE3;}
+    /* Cancel btn */
+    #modalAnomaliaInner .btn-cancel{background:var(--ma-btn-bg)!important;border:1.5px solid var(--ma-btn-brd)!important;color:var(--ma-hint)!important;}
+    /* Alerta rodapé */
+    .modal-dist-alert{background:var(--ma-alert-bg);border:1.5px solid var(--ma-alert-brd);border-radius:16px;padding:12px 16px;color:var(--ma-alert-txt);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;margin-top:12px;}
+
+    </style>');
   })();
 </script>
 <nav class="bottom-nav">
@@ -645,187 +716,118 @@
 
 <!-- MODAL: apontar anomalia -->
 <div class="modal-overlay" id="modalAnomalia">
-  <div class="modal">
+  <div class="modal" id="modalAnomaliaInner">
     <div class="modal-handle"></div>
-    <div class="modal-title">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <span>Nova Anomalia</span>
-        <button class="modal-theme-btn" id="modalAnomaliaTemaBtn"
-          onclick="toggleModalAnomaliaTema()"
-          title="Alternar tema do modal">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-        </button>
-      </div>
+
+    <!-- Header com título e switch de tema -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="ma-title">Nova Anomalia</div>
+      <label class="ma-switch" title="Alternar tema">
+        <input type="checkbox" id="modalTemaSwitch" onchange="toggleModalAnomaliaTema(this.checked)">
+        <span class="ma-track">
+          <span class="ma-knob">
+            <!-- Sol (claro) -->
+            <svg class="ma-icon-sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <!-- Lua (escuro) -->
+            <svg class="ma-icon-moon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+        </span>
+      </label>
     </div>
 
-    <div class="modal-field">
-      <div class="modal-label">Localização (automática)</div>
-      <div class="modal-value loading" id="modalEndereco">Obtendo localização...</div>
+    <!-- Localização -->
+    <div class="ma-field">
+      <div class="ma-label">Localização (automática)</div>
+      <div class="modal-value loading ma-value" id="modalEndereco">Obtendo localização...</div>
     </div>
-    <div class="modal-field">
-      <div class="modal-label">Coordenadas</div>
-      <div class="modal-value" id="modalCoords">—</div>
+
+    <!-- Coordenadas -->
+    <div class="ma-field">
+      <div class="ma-label">Coordenadas</div>
+      <div class="ma-value" id="modalCoords">—</div>
     </div>
-    <div class="modal-field">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+
+    <!-- Entre os postes -->
+    <div class="ma-field">
+      <div class="ma-label" style="display:flex;justify-content:space-between;align-items:center">
         <span>Entre os postes</span>
-        <span style="font-size:10px;color:var(--eq-gray);font-weight:400;letter-spacing:0">preenchido automaticamente — editável</span>
+        <span class="ma-hint">preenchido automaticamente — editável</span>
       </div>
-      <input type="text" id="modalPostes"
+      <input type="text" id="modalPostes" class="ma-input"
         placeholder="Ex: 12345 — 12346"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;"
         oninput="onPostesInput()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+        onfocus="this.classList.add('focused')"
+        onblur="this.classList.remove('focused')"
       />
     </div>
 
-    <div class="modal-field">
-      <div class="modal-label">Tipo de serviço</div>
+    <!-- Tipo de serviço -->
+    <div class="ma-field">
+      <div class="ma-label">Tipo de serviço</div>
       <div class="tipo-options">
-        <button class="tipo-btn" id="tipoPoda" onclick="selectTipo('poda')">
+        <button class="tipo-btn" id="tipoPoda" onclick="selectTipo('poda')" data-color="#3B6EF5">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22l10-10"/><path d="M16 8l-4 4"/><path d="M12 4v4"/><path d="M8 8h4"/><circle cx="17" cy="17" r="5"/></svg>
           Poda
         </button>
-        <button class="tipo-btn" id="tipoEspacador" onclick="selectTipo('espacador')">
+        <button class="tipo-btn" id="tipoEspacador" onclick="selectTipo('espacador')" data-color="#4B7BFF">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
           Espaçador
         </button>
-        <button class="tipo-btn" id="tipoMux" onclick="selectTipo('mux')">
+        <button class="tipo-btn" id="tipoMux" onclick="selectTipo('mux')" data-color="#22C55E">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
           MBX
         </button>
-        <button class="tipo-btn" id="tipoRamal" onclick="selectTipo('ramal')">
+        <button class="tipo-btn" id="tipoRamal" onclick="selectTipo('ramal')" data-color="#F97316">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Ramal
         </button>
-        <button class="tipo-btn" id="tipoFora" onclick="selectTipo('fora')">
+        <button class="tipo-btn" id="tipoFora" onclick="selectTipo('fora')" data-color="#8B5CF6">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Fora Padrão
         </button>
-        <button class="tipo-btn" id="tipoPoste" onclick="selectTipo('poste')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg>
+        <button class="tipo-btn" id="tipoPoste" onclick="selectTipo('poste')" data-color="#06B6D4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M6 6h12M8 10h8"/></svg>
           Sub. Poste
         </button>
-        <button class="tipo-btn" id="tipoOutros" onclick="selectTipo('outros')">
+        <button class="tipo-btn tipo-btn-outros" id="tipoOutros" onclick="selectTipo('outros')" data-color="#64748B">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
           Outros
         </button>
       </div>
     </div>
 
-    <div class="modal-field" id="ramalFieldWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Dados do Ramal</span>
-        <span style="font-size:10px;color:var(--eq-gray);font-weight:400">UC preenchida automaticamente</span>
-      </div>
-      <input type="text" id="ramalMedidor" placeholder="Numero do medidor"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:8px"
-        oninput="onMedidorInput()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      />
-      <input type="text" id="ramalUC" placeholder="UC (preenchida automaticamente)"
-        readonly
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default"
-      />
-      <div id="ramalUCMsg" style="font-size:11px;color:#8a9bbf;margin-top:4px"></div>
+    <!-- Campos extras (injetados por JS conforme tipo) -->
+    <div id="camposExtras"></div>
+
+    <!-- Foto -->
+    <div class="ma-field" id="fotoSection" style="display:none">
+      <div class="ma-label" id="fotoLabel">Foto</div>
+      <label class="ma-foto-btn" id="fotoUploadLabel" for="fotoInput">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span id="fotoLabel2">Tirar foto / escolher</span>
+      </label>
+      <input type="file" id="fotoInput" accept="image/*" capture="environment" style="display:none" onchange="onFotoSelecionada(this)"/>
+      <img id="fotoPreview" style="display:none;width:100%;border-radius:14px;margin-top:8px;object-fit:cover;max-height:180px"/>
     </div>
 
-    <!-- Opção: Multiplexar circuito todo (só MBX) -->
-    <div class="modal-field" id="muxTodoWrap" style="display:none">
-      <button id="btnMuxTodo" onclick="toggleMuxTodo()"
-        style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid rgba(181,123,238,.3);background:rgba(181,123,238,.07);color:#b57bee;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;transition:all .2s">
-        <span style="display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          Multiplexar circuito todo
-        </span>
-        <span id="muxTodoCheck" style="width:20px;height:20px;border-radius:6px;border:2px solid rgba(181,123,238,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>
-      </button>
-    </div>
-
-    <!-- Campos: Fora do Padrão -->
-    <div class="modal-field" id="foraFieldWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Cliente fora do padrão</span>
-        <span style="font-size:10px;color:var(--eq-gray);font-weight:400">UC preenchida automaticamente</span>
-      </div>
-      <input type="text" id="foraMedidor" placeholder="Número do medidor"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:8px;box-sizing:border-box"
-        oninput="onForaMedidorInput()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      />
-      <input type="text" id="foraUC" placeholder="UC (preenchida automaticamente)"
-        readonly
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;color:#8a9bbf;font-family:'Barlow',sans-serif;font-size:14px;outline:none;cursor:default;margin-bottom:4px"
-      />
-      <div id="foraUCMsg" style="font-size:11px;color:#8a9bbf;margin-bottom:8px"></div>
-      <textarea id="foraObs" placeholder="Descrição da irregularidade (obrigatório) *"
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:72px;box-sizing:border-box"
+    <!-- Observação -->
+    <div class="ma-field" id="obsSection" style="display:none">
+      <div class="ma-label">Observação (opcional)</div>
+      <textarea id="modalObs" class="ma-input" rows="3"
+        placeholder="Detalhe a anomalia..."
         oninput="checkSalvarEnabled()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+        onfocus="this.classList.add('focused')"
+        onblur="this.classList.remove('focused')"
       ></textarea>
     </div>
 
-    <div class="modal-field">
-      <div class="modal-label">Foto da anomalia</div>
-      <div class="foto-picker-btns">
-        <button class="foto-picker-btn" id="btnCameraAnomalia" onclick="abrirFotoAnomalia('camera')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Câmera
-        </button>
-        <button class="foto-picker-btn" id="btnGaleriaAnomalia" onclick="abrirFotoAnomalia('galeria')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Galeria
-        </button>
-      </div>
-      <img class="foto-preview" id="fotoPreview" src="" alt="Preview" style="margin-top:8px"/>
-    </div>
-
-    <div class="modal-field" id="qtyFieldWrap">
-      <div class="modal-label">Quantidade de serviços</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="qty-btn" onclick="alterarQty(-1)">−</button>
-        <span id="qtyValor" style="font-size:20px;font-weight:700;color:var(--eq-white);min-width:28px;text-align:center">1</span>
-        <button class="qty-btn" onclick="alterarQty(1)">+</button>
-      </div>
-    </div>
-
-    <div class="modal-field" id="textoOrdemWrap" style="display:none">
-      <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Texto para OS</span>
-        <button onclick="copiarTextoOS()" style="background:none;border:1px solid rgba(0,170,255,0.3);border-radius:6px;padding:3px 8px;color:var(--eq-cyan);font-size:11px;cursor:pointer">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
-        </button>
-      </div>
-      <div id="textoOS" style="
-        margin-top:6px; padding:10px 12px;
-        background:rgba(0,170,255,0.06); border:1px solid rgba(0,170,255,0.2);
-        border-radius:8px; font-size:13px; color:var(--eq-white);
-        line-height:1.5; user-select:all; cursor:text;
-      "></div>
-    </div>
-
-    <div class="modal-field">
-      <div class="modal-label">Observação <span style="color:var(--eq-gray);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px" id="obsAnomaliaReq"></span></div>
-      <textarea id="obsAnomalia" placeholder="Observação adicional..."
-        style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:vertical;min-height:68px;box-sizing:border-box"
-        oninput="checkSalvarEnabled()"
-        onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      ></textarea>
-    </div>
-
-    <div class="modal-actions">
+    <div class="modal-actions" style="margin-top:20px">
       <button class="btn-cancel" onclick="closeModalAnomalia()">Cancelar</button>
       <button class="btn-save" id="btnSalvarAnomalia" onclick="salvarAnomalia()" disabled>Salvar</button>
     </div>
   </div>
 </div>
+
 
 <!-- MODAL: programar serviço (admin) -->
 <div class="modal-overlay" id="modalProgramar">
@@ -2510,43 +2512,20 @@
   }
 
   // ── Toggle tema do modal de apontamento ──
-  window.toggleModalAnomaliaTema = function() {
-    const modal = document.getElementById('modalAnomalia');
-    const btn   = document.getElementById('modalAnomaliaTemaBtn');
-    if (!modal) return;
-    const isLight = modal.classList.toggle('modal-light');
-    localStorage.setItem('stcgyn-modal-tema', isLight ? 'light' : 'dark');
-    // ícone: claro → mostrar lua (para ir ao escuro); escuro → mostrar sol (para ir ao claro)
-    if (btn) {
-      btn.title = isLight ? 'Mudar para tema escuro' : 'Mudar para tema claro';
-      btn.innerHTML = isLight
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-           </svg>`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-             <circle cx="12" cy="12" r="5"/>
-             <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-             <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-             <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-             <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-           </svg>`;
-    }
+  // ── Toggle tema do modal de apontamento ──
+  window.toggleModalAnomaliaTema = function(isDark) {
+    const inner = document.getElementById('modalAnomaliaInner');
+    const sw    = document.getElementById('modalTemaSwitch');
+    if (!inner) return;
+    if (typeof isDark === 'undefined') isDark = !inner.classList.contains('ma-dark');
+    inner.classList.toggle('ma-dark', isDark);
+    if (sw) sw.checked = isDark;
+    localStorage.setItem('stcgyn-modal-tema', isDark ? 'dark' : 'light');
   };
-  // restaura preferência ao carregar
+  // restaura preferência ao carregar (claro por padrão)
   document.addEventListener('DOMContentLoaded', function() {
-    const tema = localStorage.getItem('stcgyn-modal-tema') || 'dark';
-    if (tema === 'light') {
-      const el = document.getElementById('modalAnomalia');
-      const btn = document.getElementById('modalAnomaliaTemaBtn');
-      if (el) el.classList.add('modal-light');
-      if (btn) {
-        btn.title = 'Mudar para tema escuro';
-        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-      }
-    }
+    const tema = localStorage.getItem('stcgyn-modal-tema') || 'light';
+    toggleModalAnomaliaTema(tema === 'dark');
   });
 </script>
 </body>
