@@ -687,15 +687,18 @@
     <div class="modal-title">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <span>Nova Anomalia</span>
-        <label class="modal-switch" title="Alternar tema do modal">
-          <input type="checkbox" id="modalTemaSwitch" onchange="if(window.modalTheme)window.modalTheme.set(this.checked?'light':'dark')">
-          <span class="modal-switch-track">
-            <span class="modal-switch-knob">
-              <svg class="msw-sun" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              <svg class="msw-moon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            </span>
-          </span>
-        </label>
+        <button id="modalTemaBtn" onclick="if(window.modalTheme)window.modalTheme.toggle()"
+          style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"
+          title="Alternar tema do modal">
+          <!-- Sol: mostra quando tema escuro (indica que pode ir para claro) -->
+          <svg id="maBtnSun" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--eq-gray)">
+            <path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/>
+          </svg>
+          <!-- Lua: mostra quando tema claro (indica que pode ir para escuro) -->
+          <svg id="maBtnMoon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;color:#1B2B5A">
+            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+          </svg>
+        </button>
       </div>
     </div>
 
