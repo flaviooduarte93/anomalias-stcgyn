@@ -8,7 +8,7 @@
     '#modalAnomalia.mt-light .modal{background:#F4F7FC!important;color:#1B2B5A!important;}',
     '#modalAnomalia.mt-light .modal-handle{background:#D9E3F5!important;}',
     /* Título escuro */
-    '#modalAnomalia.mt-light .modal-title,#modalAnomalia.mt-light .modal-title span{background:#fff!important;border-color:#D9E3F5!important;color:#1B2B5A!important;}',
+    '#modalAnomalia.mt-light .modal-title,#modalAnomalia.mt-light .modal-title span{color:#1B2B5A!important;}',
     '#modalAnomalia.mt-light .modal-label{color:#2F5FE3!important;}',
     '#modalAnomalia.mt-light .modal-value{background:#fff!important;border-color:#D9E3F5!important;color:#1B2B5A!important;}',
     '#modalAnomalia.mt-light .modal-value.loading{color:#A0B3D0!important;}',
