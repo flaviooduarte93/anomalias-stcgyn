@@ -555,8 +555,9 @@
     <div class="modal-title">📋 Programar em lote</div>
     <div class="modal-sub" id="loteSubtitulo">Programar anomalias selecionadas</div>
     <label class="modal-label" style="margin-top:12px">Equipe responsável</label>
+    <input type="text" id="buscaEquipeLote" placeholder="Buscar equipe..." oninput="filtrarSelectEquipe('buscaEquipeLote','selectEquipeLote')" style="width:100%;padding:8px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:6px" autocomplete="off" autocapitalize="none" spellcheck="false"/>
     <select id="selectEquipeLote" class="modal-select" style="margin-bottom:16px">
-      <option value="">Carregando equipes...</option>
+      <option value="" disabled selected>Selecione a equipe...</option>
     </select>
     <div id="loteProgressWrap" style="display:none;margin-bottom:12px">
       <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
@@ -577,9 +578,10 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Programar Serviço</div>
     <div class="modal-sub" id="modalProgramarSub">Selecione a equipe responsável pelo serviço.</div>
-    <label class="modal-label">Equipe responsável</label>
+        <label class="modal-label">Equipe responsável</label>
+    <input type="text" id="buscaEquipe" placeholder="Buscar equipe..." oninput="filtrarSelectEquipe('buscaEquipe','selectEquipe')" style="width:100%;padding:8px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:6px" autocomplete="off" autocapitalize="none" spellcheck="false"/>
     <select class="modal-select" id="selectEquipe">
-      <option value="">Carregando equipes...</option>
+      <option value="" disabled selected>Selecione a equipe...</option>
     </select>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModalProgramar()">Cancelar</button>
@@ -599,6 +601,9 @@
 
     <div id="modalConcluirEquipeWrap" style="display:none;margin-bottom:14px">
       <label class="modal-label">Equipe executora</label>
+      <input type="text" id="buscaEquipeConc" placeholder="Buscar equipe..." oninput="filtrarSelectEquipe('buscaEquipeConc','selectEquipeConc')"
+        class="modal-input" style="margin-bottom:6px;width:100%;padding:8px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:13px;outline:none;box-sizing:border-box"
+        autocomplete="off" autocapitalize="none" spellcheck="false"/>
       <select class="modal-select" id="selectEquipeConc">
         <option value="">Selecione a equipe...</option>
       </select>
@@ -1000,6 +1005,7 @@
       +(equipes.length
         ?equipes.map(u=>`<option value="${u.id}" data-nome="${u.nome}">${u.nome}</option>`).join('')
         :'<option value="" disabled>Nenhuma equipe cadastrada</option>');
+    window.resetEquipeCache && window.resetEquipeCache('selectEquipeLote');
   };
   window.fecharProgramarLote=function(){document.getElementById('modalProgramarLote').classList.remove('open');};
   window.confirmarProgramarLote=async function(){
