@@ -284,19 +284,9 @@
       color: var(--eq-cyan);
     }
     .tipo-btn svg { width: 28px; height: 28px; }
+    .tipo-btn-full { grid-column: 1 / -1; }
 
-    /* foto */
-    .foto-area {
-      border: 2px dashed rgba(0,170,255,0.3);
-      border-radius: 10px; padding: 20px;
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-      cursor: pointer; transition: border-color .2s; position: relative; overflow: hidden;
-    }
-    .foto-area:hover { border-color: var(--eq-cyan); }
-    .foto-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .foto-area svg { color: var(--eq-gray); }
-    .foto-area span { font-size: 13px; color: var(--eq-gray); }
-    .foto-preview { width: 100%; border-radius: 8px; display: none; }
+    /* foto picker */
     .foto-picker-btns { display:flex; gap:8px; margin-top:4px; }
     .foto-picker-btn {
       flex:1; padding:10px 8px; background:rgba(255,255,255,0.06);
@@ -414,6 +404,37 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
+
+    /* ── FIX 1: Switch de tema — CSS movido para cá (fora do document.write) ── */
+    .modal-switch { position:relative; display:inline-block; cursor:pointer; flex-shrink:0; }
+    .modal-switch input { display:none; }
+    .modal-switch-track {
+      display:flex; align-items:center;
+      width:52px; height:26px;
+      background:rgba(255,255,255,.1);
+      border:1.5px solid rgba(255,255,255,.2);
+      border-radius:13px; padding:2px;
+      transition:background .3s,border-color .3s;
+      position:relative;
+    }
+    .modal-switch-knob {
+      width:20px; height:20px; border-radius:50%;
+      background:rgba(255,255,255,.25);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .3s, background .3s;
+      position:absolute; left:2px;
+    }
+    .msw-sun  { display:block;  color:rgba(255,255,255,.6); }
+    .msw-moon { display:none;   color:rgba(255,255,255,.6); }
+    #modalAnomalia.mt-light .modal-switch-track { background:#E2EAF8; border-color:#C9D7F2; }
+    #modalAnomalia.mt-light .modal-switch-knob {
+      transform:translateX(26px); background:#fff;
+      box-shadow:0 2px 6px rgba(47,95,227,.2);
+    }
+    #modalAnomalia.mt-light .msw-sun  { display:block;  color:#2F5FE3; }
+    #modalAnomalia.mt-light .msw-moon { display:none; }
+    #modalAnomalia:not(.mt-light) .msw-sun  { display:none; }
+    #modalAnomalia:not(.mt-light) .msw-moon { display:block; }
   </style>
 </head>
 <body>
@@ -598,60 +619,20 @@
   </svg>
 </button>
 
-<!-- BOTTOM NAV -->
+<!-- ── FIX 1: document.write agora só escreve o estilo de nav (sem CSS extra dentro) ── -->
 <script>
-  // Aplica nav ANTES do render — começa tudo visível, esconde conforme perfil
   (function(){
     var p = sessionStorage.getItem('userPerfil') || '';
-    // equipe: só vê mapa e pendências
-    // fiscal: vê mapa, anomalias, pendências
-    // admin: vê tudo
-    // Se não tem perfil ainda (primeiro load antes do Firebase), esconde tudo exceto mapa
     document.write('<style id="navInitStyle">'
       + (p === 'admin' ? '' :
          p === 'fiscal' ? '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-       + '
-    
-    /* ── Switch de tema do modal ─────────────────────────────── */
-    .modal-switch { position:relative; display:inline-block; cursor:pointer; flex-shrink:0; }
-    .modal-switch input { display:none; }
-    .modal-switch-track {
-      display:flex; align-items:center;
-      width:52px; height:26px;
-      background:rgba(255,255,255,.1);
-      border:1.5px solid rgba(255,255,255,.2);
-      border-radius:13px; padding:2px;
-      transition:background .3s,border-color .3s;
-      position:relative;
-    }
-    .modal-switch-knob {
-      width:20px; height:20px; border-radius:50%;
-      background:rgba(255,255,255,.25);
-      display:flex; align-items:center; justify-content:center;
-      transition:transform .3s, background .3s;
-      position:absolute; left:2px;
-    }
-    .msw-sun  { display:block;  color:rgba(255,255,255,.6); }
-    .msw-moon { display:none;   color:rgba(255,255,255,.6); }
-    /* Quando claro (checked) */
-    #modalAnomalia.mt-light .modal-switch-track {
-      background:#E2EAF8; border-color:#C9D7F2;
-    }
-    #modalAnomalia.mt-light .modal-switch-knob {
-      transform:translateX(26px); background:#fff;
-      box-shadow:0 2px 6px rgba(47,95,227,.2);
-    }
-    #modalAnomalia.mt-light .msw-sun  { display:block;  color:#2F5FE3; }
-    #modalAnomalia.mt-light .msw-moon { display:none; }
-    /* Quando escuro (padrão) */
-    #modalAnomalia:not(.mt-light) .msw-sun  { display:none; }
-    #modalAnomalia:not(.mt-light) .msw-moon { display:block; }
-
-    </style>');
+      + '</style>');
   })();
 </script>
+
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-item active" id="nav-mapa" onclick="navTo('mapa.html', this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
@@ -690,11 +671,9 @@
         <button id="modalTemaBtn" onclick="if(window.modalTheme)window.modalTheme.toggle()"
           style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"
           title="Alternar tema do modal">
-          <!-- Sol: mostra quando tema escuro (indica que pode ir para claro) -->
           <svg id="maBtnSun" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--eq-gray)">
             <path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/>
           </svg>
-          <!-- Lua: mostra quando tema claro (indica que pode ir para escuro) -->
           <svg id="maBtnMoon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;color:#1B2B5A">
             <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
           </svg>
@@ -758,27 +737,109 @@
       </div>
     </div>
 
-    <div id="camposExtras"></div>
+    <!-- ── FIX 2: camposExtras agora tem todo o conteúdo dinâmico que o JS referencia ── -->
+    <div id="camposExtras">
 
-    <div class="modal-field" id="fotoSection" style="display:none">
-      <div class="modal-label" id="fotoLabel">Foto</div>
-      <label class="foto-upload-btn" id="fotoUploadLabel" for="fotoInput">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span id="fotoLabel2">Tirar foto / escolher</span>
-      </label>
-      <input type="file" id="fotoInput" accept="image/*" capture="environment" style="display:none" onchange="onFotoSelecionada(this)"/>
+      <!-- Quantidade (poda, espaçador, mux) -->
+      <div class="modal-field" id="qtyFieldWrap" style="display:none">
+        <div class="modal-label">Quantidade</div>
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0">
+          <button class="qty-btn" onclick="alterarQty(-1)">−</button>
+          <span id="qtyValor" style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;color:var(--eq-cyan);min-width:36px;text-align:center">1</span>
+          <button class="qty-btn" onclick="alterarQty(1)">+</button>
+        </div>
+      </div>
+
+      <!-- Ramal -->
+      <div id="ramalFieldWrap" style="display:none">
+        <div class="modal-field">
+          <div class="modal-label">Número do medidor</div>
+          <input type="text" id="ramalMedidor" placeholder="Ex: 12345678"
+            style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;box-sizing:border-box"
+            oninput="onMedidorInput()"
+            onfocus="this.style.borderColor='var(--eq-cyan)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+          <span id="ramalUCMsg" style="font-size:12px;margin-top:4px;display:block"></span>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">UC (automática)</div>
+          <input type="text" id="ramalUC" readonly placeholder="Preenchida ao buscar medidor"
+            style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--eq-gray);font-family:'Barlow',sans-serif;font-size:14px;outline:none;box-sizing:border-box"/>
+        </div>
+      </div>
+
+      <!-- Fora do Padrão -->
+      <div id="foraFieldWrap" style="display:none">
+        <div class="modal-field">
+          <div class="modal-label">Número do medidor</div>
+          <input type="text" id="foraMedidor" placeholder="Ex: 12345678"
+            style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;box-sizing:border-box"
+            oninput="onForaMedidorInput()"
+            onfocus="this.style.borderColor='var(--eq-cyan)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+          <span id="foraUCMsg" style="font-size:12px;margin-top:4px;display:block"></span>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">UC (automática)</div>
+          <input type="text" id="foraUC" readonly placeholder="Preenchida ao buscar medidor"
+            style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--eq-gray);font-family:'Barlow',sans-serif;font-size:14px;outline:none;box-sizing:border-box"/>
+        </div>
+        <div class="modal-field">
+          <div class="modal-label">Descrição da irregularidade <span style="color:var(--eq-error)">*</span></div>
+          <textarea id="foraObs" rows="3" placeholder="Descreva a irregularidade..."
+            style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:none;box-sizing:border-box"
+            oninput="checkSalvarEnabled()"
+            onfocus="this.style.borderColor='var(--eq-cyan)'"
+            onblur="this.style.borderColor='rgba(255,255,255,.1)'"></textarea>
+        </div>
+      </div>
+
+      <!-- MBX — circuito todo -->
+      <div id="muxTodoWrap" style="display:none;margin-bottom:14px">
+        <button id="btnMuxTodo" onclick="toggleMuxTodo()"
+          style="width:100%;padding:10px 14px;background:rgba(181,123,238,.07);border:1px solid rgba(181,123,238,.3);border-radius:10px;color:#b57bee;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px;text-transform:uppercase;letter-spacing:.6px">
+          <span id="muxTodoCheck" style="width:20px;height:20px;border:2px solid rgba(181,123,238,.5);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>
+          Circuito todo (MBX completo)
+        </button>
+      </div>
+
+      <!-- Texto OS gerado automaticamente -->
+      <div class="modal-field" id="textoOrdemWrap" style="display:none">
+        <div class="modal-label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Texto para OS</span>
+          <button onclick="copiarTextoOS()" style="background:none;border:1px solid rgba(0,170,255,0.3);border-radius:6px;padding:3px 8px;color:var(--eq-cyan);font-size:11px;cursor:pointer">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
+          </button>
+        </div>
+        <div id="textoOS" style="margin-top:6px;padding:10px 12px;background:rgba(0,170,255,0.06);border:1px solid rgba(0,170,255,0.2);border-radius:8px;font-size:13px;color:var(--eq-white);line-height:1.5;user-select:all;cursor:text"></div>
+      </div>
+
+    </div><!-- /camposExtras -->
+
+    <!-- Foto -->
+    <div class="modal-field" id="fotoSection">
+      <div class="modal-label" id="fotoLabel">Foto <span style="color:var(--eq-error)">*</span></div>
+      <div class="foto-picker-btns">
+        <button class="foto-picker-btn" id="btnCameraAnomalia" onclick="abrirFotoAnomalia('camera')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Câmera
+        </button>
+        <button class="foto-picker-btn" id="btnGaleriaAnomalia" onclick="abrirFotoAnomalia('galeria')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Galeria
+        </button>
+      </div>
       <img id="fotoPreview" style="display:none;width:100%;border-radius:12px;margin-top:8px;object-fit:cover;max-height:200px"/>
     </div>
 
-    <div class="modal-field" id="obsSection" style="display:none">
-      <div class="modal-label">Observação (opcional)</div>
-      <textarea id="modalObs" rows="3"
-        placeholder="Detalhe a anomalia..."
+    <!-- Observação -->
+    <div class="modal-field" id="obsSection">
+      <div class="modal-label">Observação <span id="obsAnomaliaReq" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--eq-gray)">(opcional)</span></div>
+      <textarea id="obsAnomalia" rows="3" placeholder="Detalhe a anomalia..."
         style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:14px;outline:none;resize:none;box-sizing:border-box"
         oninput="checkSalvarEnabled()"
         onfocus="this.style.borderColor='var(--eq-cyan)'"
-        onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-      ></textarea>
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'"></textarea>
     </div>
 
     <div class="modal-actions">
@@ -787,7 +848,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- MODAL: programar serviço (admin) -->
 <div class="modal-overlay" id="modalProgramar">
@@ -835,16 +895,15 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95cWdmdnZuYnd1b2R5ZmN2b2p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NTgxOTcsImV4cCI6MjA5MDEzNDE5N30.wUDl3lFoDuQQwksdDgV63gZVGcXEptcvtlPslDxMipE';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ── fetchAll: loop de 1000 em 1000 ──
   async function fetchAll(table, opts = {}) {
     const { select = '*', filters = {}, order = null } = opts;
     let results = [], offset = 0, limit = 1000;
     while (true) {
       let q = sb.from(table).select(select).range(offset, offset + limit - 1);
       for (const [col, val] of Object.entries(filters)) {
-        if (val === null)          q = q.is(col, null);
+        if (val === null)            q = q.is(col, null);
         else if (Array.isArray(val)) q = q.in(col, val);
-        else                        q = q.eq(col, val);
+        else                         q = q.eq(col, val);
       }
       if (order) q = q.order(order.col, { ascending: order.asc ?? true });
       const { data, error } = await q;
@@ -856,19 +915,14 @@
     return results;
   }
 
-
-  // ── estado global ──
-  let currentUser = null;
-
-  // ── Cloudinary: transforma URL original em versão comprimida ──
-  // salvo: w_1200,q_75,f_auto  (≈ 100-200KB para foto de campo)
-  // thumb: w_400,q_65,f_auto   (miniatura para popup/card)
   function cldSave(url)  { return url ? url.replace('/upload/', '/upload/w_1200,q_75,f_auto/') : url; }
   function cldThumb(url) { return url ? url.replace('/upload/', '/upload/w_400,q_65,f_auto/')  : url; }
+
+  let currentUser = null;
   let currentPerfil = null;
   let currentCircuitoId = null;
   let currentTrafoNome = null;
-  let currentInspecaoId = null; // ID da inspeção ativa (vinda de pendencias)
+  let currentInspecaoId = null;
   let anomaliaMarkers = [];
   let currentAnomaliaPos = null;
   let currentAnomaliaPostes = null;
@@ -876,7 +930,6 @@
   let fotoFile = null;
   let programarAnomaliaId = null;
 
-  // ── mapa — inicializa após DOM completamente pintado ──
   let map;
   function initMap() {
     map = L.map('map', { zoomControl: false }).setView([-16.68, -49.25], 13);
@@ -887,14 +940,12 @@
     setTimeout(() => map.invalidateSize(), 200);
     window.addEventListener('resize', () => map.invalidateSize());
   }
-  // garante que o mapa só inicia quando o CSS já foi aplicado
   if (document.readyState === 'complete') {
     initMap();
   } else {
     window.addEventListener('load', initMap);
   }
 
-  // ── ícones ──
   const iconPoste = L.divIcon({
     className: '', iconSize: [14,14], iconAnchor: [7,7],
     html: `<div style="width:14px;height:14px;border-radius:50%;background:#1a56c4;border:2px solid #00aaff;box-shadow:0 0 6px rgba(0,170,255,0.5)"></div>`
@@ -928,7 +979,6 @@
     html: `<div style="width:28px;height:28px;border-radius:50%;background:#c8864a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/></svg></div>`
   });
 
-  // ── auth ──
   (async () => {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'index.html'; return; }
@@ -938,7 +988,6 @@
     currentUser   = { uid: data.id, ...data };
     currentPerfil = data.perfil;
 
-    // UI
     document.getElementById('avatarEl').textContent  = data.nome.charAt(0).toUpperCase();
     document.getElementById('unameEl').textContent   = data.nome.split(' ')[0];
     document.getElementById('uperfilEl').textContent = data.perfil;
@@ -948,10 +997,8 @@
     await loadPendenciasBadge();
   })();
 
-  // ── nav ──
   function setupNav(perfil) {
     sessionStorage.setItem('userPerfil', perfil);
-    // começa com tudo oculto e revela conforme o perfil
     ['nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.classList.add('hidden');
@@ -967,17 +1014,12 @@
       document.getElementById('nav-mbx').classList.remove('hidden');
       document.getElementById('nav-circuitos').classList.remove('hidden');
     }
-    if (perfil === 'equipe') {
-      // equipe só vê mapa
-    }
     if (perfil === 'fiscal') {
       document.getElementById('fabAnomalias').classList.remove('hidden');
     }
   }
 
   window.navTo = function(page, el) {
-    // se fiscal tem inspeção ativa e está tentando ir para pendências,
-    // verifica se Easy Trafo e Anel foram preenchidos
     if (currentInspecaoId && currentPerfil === 'fiscal' && page === 'pendencias.html') {
       const inspData = window._inspAtiva || {};
       const easyOk  = inspData.easy_trafo !== null && inspData.easy_trafo !== undefined;
@@ -987,7 +1029,7 @@
         if (!easyOk) faltando.push('Easy Trafo');
         if (!anelOk) faltando.push('Fechado em Anel');
         showToast(`⚠ Preencha antes de concluir: ${faltando.join(' e ')}`, true, 5000);
-        return; // bloqueia navegação
+        return;
       }
     }
     window.location.href = page;
@@ -997,36 +1039,24 @@
     await sb.auth.signOut(); sessionStorage.clear(); window.location.href = 'index.html';
   };
 
-  // ── carregar circuitos do Firestore ──
-  let todosCircuitos = []; // cache local para busca instantânea
+  let todosCircuitos = [];
 
   async function loadCircuitos() {
-    // equipe: só vê circuitos que têm anomalia programada para ela
     if (currentPerfil === 'equipe') {
       const _eqAnomFinal = await fetchAll('anomalias', { filters: { equipe_id: currentUser.uid, status: 'programado' } });
       const idsComPendencia = [...new Set(_eqAnomFinal.map(d => d.circuito_id).filter(Boolean))];
       todosCircuitos = [];
       for (const id of idsComPendencia) {
         const { data: _cdata } = await sb.from('circuitos').select('*').eq('id', id).single();
-        const cSnap = { exists: () => !!_cdata, data: () => _cdata || {} };
-        if (!!_cdata) {
-          const d = cSnap.data();
-          todosCircuitos.push({ id, nome: d.nome, postes: d.postes, clientes: d.clientes });
-        }
+        if (_cdata) todosCircuitos.push({ id, nome: _cdata.nome, postes: _cdata.postes, clientes: _cdata.clientes });
       }
     } else {
       const _circAll = await fetchAll('circuitos', { filters: { ativo: true }, order: { col: 'nome' } });
-      const snap = { docs: _circAll.map(d => ({ id: d.id, data: () => d })) };
-      // só metadados — htmlContent só é carregado no loadCircuitById
-      todosCircuitos = snap.docs.map(d => {
-        const data = d.data();
-        return { id: d.id, nome: data.nome, postes: data.postes, clientes: data.clientes };
-      });
+      todosCircuitos = _circAll.map(d => ({ id: d.id, nome: d.nome, postes: d.postes, clientes: d.clientes }));
     }
 
     renderDropdown('');
 
-    // se veio de outra tela via sessionStorage, carrega automaticamente
     const presel = sessionStorage.getItem('circuitoSelecionado');
     const preInsp = sessionStorage.getItem('inspecaoAtiva');
     if (preInsp) { currentInspecaoId = preInsp; sessionStorage.removeItem('inspecaoAtiva'); }
@@ -1041,7 +1071,6 @@
     }
   }
 
-  // ── renderiza o dropdown com filtro de texto ──
   function renderDropdown(filtro) {
     const dd = document.getElementById('circuitDropdown');
     const termo = filtro.toLowerCase().trim();
@@ -1085,16 +1114,8 @@
   window.limparBusca = function() {
     const origem = sessionStorage.getItem('mapaOrigem');
     sessionStorage.removeItem('mapaOrigem');
-
-    if (origem === 'circuitos') {
-      window.location.href = 'circuitos.html';
-      return;
-    }
-    if (origem === 'pendencias') {
-      window.location.href = 'pendencias.html';
-      return;
-    }
-
+    if (origem === 'circuitos') { window.location.href = 'circuitos.html'; return; }
+    if (origem === 'pendencias') { window.location.href = 'pendencias.html'; return; }
     const input = document.getElementById('circuitInput');
     input.value = '';
     document.getElementById('circuitWrap').classList.remove('has-value');
@@ -1103,7 +1124,7 @@
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
     document.getElementById('trafoCard').classList.add('hidden');
-      reposicionarFAB();
+    reposicionarFAB();
     input.focus();
   };
 
@@ -1119,14 +1140,12 @@
     await loadCircuitById(id);
   };
 
-  // fecha dropdown ao clicar fora
   document.addEventListener('click', e => {
     if (!document.getElementById('circuitWrap').contains(e.target)) {
       document.getElementById('circuitDropdown').classList.remove('open');
     }
   });
 
-  // ── carregar circuito selecionado (pelo select) ──
   window.loadCircuit = async function() {
     const id = document.getElementById('circuitSelect')?.value;
     if (id) await loadCircuitById(id);
@@ -1137,25 +1156,18 @@
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
     document.getElementById('trafoCard').classList.add('hidden');
-      reposicionarFAB();
+    reposicionarFAB();
     showToast('Carregando circuito…');
 
     const { data: _snapdata } = await sb.from('circuitos').select('*').eq('id', id).single();
-    const snap = { exists: () => !!_snapdata, data: () => _snapdata || {} };
-    if (!!!_snapdata) return showToast('Circuito não encontrado.', true);
-    const data = snap.data();
+    if (!_snapdata) return showToast('Circuito não encontrado.', true);
+    const data = _snapdata;
 
-    // yield para não travar a UI antes de renderizar
     await new Promise(r => setTimeout(r, 0));
 
-    // ── suporte a 3 formatos ──
-    // 1. geodata (novo — JSON extraído, sem HTML)
-    // 2. htmlContent legado (Firestore direto)
-    // 3. htmlUrl legado (Storage — não mais usado, mas compatível)
     let postesData = null, conexoesData = null, trafoInfo = null;
 
     if (data.geodata) {
-      // formato novo: dados já extraídos
       postesData   = (data.geodata.postes   || []).map(p => ({
         id: p.id, lat: p.lat, lng: p.lng,
         esforco: p.e || '', temTransformador: p.t === 1,
@@ -1171,7 +1183,6 @@
       }));
       trafoInfo = { potencia: data.potencia || null, clientes: data.clientes || null };
     } else {
-      // formato legado: precisa do HTML
       let htmlContent = data.htmlContent || null;
       if (!htmlContent && data.htmlUrl) {
         try {
@@ -1190,18 +1201,15 @@
     const trafoData = renderCircuitoData(postesData, conexoesData, trafoInfo, id, data.nome);
     await loadAnomaliasNoMapa(id);
 
-    // decômetro — assíncrono, depois do mapa já ter carregado
     if (trafoData && data.nome) {
       try {
         const decoDiv = document.getElementById('trafoDecoBadge');
         decoDiv.style.display = 'none';
         decoDiv.innerHTML = '';
         const _decoArr = await fetchAll('decometro', { filters: { equipamento: data.nome } });
-        const decoSnap = { docs: _decoArr.map(d => ({ id: d.id, data: () => d })) };
-        if (!decoSnap.empty) {
-          const all = decoSnap.docs[0].data().ocorrencias || [];
+        if (_decoArr.length) {
+          const all = _decoArr[0].ocorrencias || [];
           const hoje = new Date();
-          // 3 meses fechados + mês atual (até hoje)
           const fim3m = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
           const ini3m = new Date(hoje.getFullYear(), hoje.getMonth()-3, 1, 0, 0, 0);
           const parseDt = s => {
@@ -1213,18 +1221,13 @@
           const ocs3m = all.filter(o => { const dt=parseDt(o.inicio); return dt&&dt>=ini3m&&dt<=fim3m; });
           const freq = ocs3m.length;
           const chi  = ocs3m.reduce((s,o)=>s+(parseFloat(o.chi)||0), 0);
-          let cls, label;
-          if (!freq) { cls='ok'; label='0 desarmes (3m+atual)'; }
-          else { cls=chi>500?'critico':chi>100?'alerta':'ok'; label=freq+' desarme'+(freq>1?'s':'')+' · CHI '+chi.toFixed(1); }
+          let cls;
+          if (!freq) { cls='ok'; }
+          else { cls=chi>500?'critico':chi>100?'alerta':'ok'; }
+          const label = freq ? freq+' desarme'+(freq>1?'s':'')+' · CHI '+chi.toFixed(1) : '0 desarmes (3m+atual)';
           const chiCor = cls==='critico'?'#ff4d6d':cls==='alerta'?'#ffb300':'#00e5a0';
-          // Monta resumo das ocorrências por tipo de causa
-          const causasUnicas = ocs3m.map(function(o){return o.causa||'—';})
-            .filter(function(v,i,a){return a.indexOf(v)===i;}).slice(0,3);
-          const ocs3mOrdenado = ocs3m.slice().sort(function(a,b){
-            const pa = parseDt(a.inicio), pb = parseDt(b.inicio);
-            return (pa||0) - (pb||0);
-          });
-          const linhasOcs = freq > 0 ? ocs3mOrdenado.map(function(o){
+          const ocs3mOrdenado = ocs3m.slice().sort((a,b)=>(parseDt(a.inicio)||0)-(parseDt(b.inicio)||0));
+          const linhasOcs = freq > 0 ? ocs3mOrdenado.map(o => {
             const dtStr = o.inicio ? String(o.inicio).split(' ')[0] : '—';
             const chiO  = parseFloat(o.chi) || 0;
             const corO  = chiO > 500 ? '#ff4d6d' : chiO > 100 ? '#ffb300' : '#8a9bbf';
@@ -1233,28 +1236,23 @@
               + '<span style="font-size:11px;font-weight:700;color:'+corO+'">CHI '+chiO.toFixed(1)+'</span>'
               + '</div>';
           }).join('') : '';
-          const maisLabel = '';
 
-          decoDiv.innerHTML = ''
-            + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — 3 meses + atual</div>'
-            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:' + (freq>0?'8':'0') + 'px">'
+          decoDiv.innerHTML = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">'
+            + '<div style="font-size:10px;color:#8a9bbf;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Decometro — 3 meses + atual</div>'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:'+(freq>0?'8':'0')+'px">'
             + '<span class="deco-badge '+cls+'" style="font-size:12px;padding:4px 12px">'+label+'</span>'
             + (freq>0 ? '<span style="font-size:11px;color:'+chiCor+';font-weight:700">CHI '+chi.toFixed(1)+'</span>' : '')
             + '</div>'
-            + (freq>0 ? linhasOcs + maisLabel : '')
+            + (freq>0 ? linhasOcs : '')
             + '</div>';
-          // mostra o wrapper (botão colapsável), começa fechado
+
           document.getElementById('trafoDecoWrap').style.display = 'block';
-          document.getElementById('trafoDecoBadge').style.display = 'none'; // começa colapsado
-          // resumo no botão: frequência + CHI total
-          const resumoBtn = freq > 0
-            ? freq + ' desarme' + (freq > 1 ? 's' : '') + ' · CHI ' + chi.toFixed(1)
-            : '0 desarmes';
-          const corResumo = cls === 'critico' ? '#ff4d6d' : cls === 'alerta' ? '#ffb300' : '#00e5a0';
+          document.getElementById('trafoDecoBadge').style.display = 'none';
+          const resumoBtn = freq > 0 ? freq+' desarme'+(freq>1?'s':'')+' · CHI '+chi.toFixed(1) : '0 desarmes';
+          const corResumo = cls==='critico'?'#ff4d6d':cls==='alerta'?'#ffb300':'#00e5a0';
           document.getElementById('trafoDecoBtnResume').textContent = resumoBtn;
           document.getElementById('trafoDecoBtnResume').style.color = corResumo;
         } else {
-          // sem dados: mostra wrap com botão indicando sem dados
           document.getElementById('trafoDecoWrap').style.display = 'block';
           document.getElementById('trafoDecoBtnResume').textContent = 'sem dados';
           document.getElementById('trafoDecoBtnResume').style.color = '#8a9bbf';
@@ -1263,7 +1261,6 @@
     }
   }
 
-  // ── renderizar postes/cabos a partir de dados já extraídos ──
   function renderCircuitoData(postesData, conexoesData, trafoInfo, circuitoId, circuitoNome) {
     try {
       if (!postesData.length) {
@@ -1299,8 +1296,7 @@
             <div class="popup-row">Poste: <span>${p.id}</span></div>
             <div class="popup-row">Tipo: <span>${p.esforco || '—'}</span></div>
             <div class="popup-row">Potência: <span>${potencia} kVA</span></div>
-            <div class="popup-row">Clientes: <span>${clientes}</span></div>
-`;
+            <div class="popup-row">Clientes: <span>${clientes}</span></div>`;
           trafoData = { ...p, potencia, clientes: String(clientes), gnNome };
         } else {
           html = `<div class="popup-title">📍 Poste: ${p.id}</div>
@@ -1312,8 +1308,6 @@
         m.bindPopup(html);
       });
 
-      // card transformador
-      // card transformador
       if (trafoData) {
         currentTrafoNome = circuitoNome || circuitoId;
         document.getElementById('trafoId').textContent       = currentTrafoNome;
@@ -1322,24 +1316,20 @@
         document.getElementById('trafoClientes').textContent = trafoData.clientes;
         document.getElementById('trafoCard').classList.remove('hidden');
         reposicionarFAB();
-        // guarda coords para botoes de rota do card
         const rb = document.getElementById('trafoRotaBtns');
         rb.style.display = 'flex';
         rb.dataset.lat = trafoData.lat;
         rb.dataset.lng = trafoData.lng;
-        // botões de inspeção (easy trafo / anel) — apenas fiscal com inspeção ativa
         atualizarBotoesInspTrafo();
       }
 
-      // zoom no circuito
       const bounds = L.latLngBounds(postesData.map(p => [p.lat, p.lng]));
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 19 });
 
-      // armazena para uso na anomalia
       window._postesAtivos = postesData;
       window._conexoesAtivas = conexoesData;
 
-      return trafoData; // retorna para loadCircuitById usar
+      return trafoData;
 
     } catch(err) {
       showToast('Erro ao renderizar circuito.', true);
@@ -1347,18 +1337,17 @@
     }
   }
 
-  // ── anomalias no mapa ──
   async function loadAnomaliasNoMapa(circuitoId) {
     anomaliaMarkers.forEach(m => map.removeLayer(m));
     anomaliaMarkers = [];
 
+    let _anomaliasData;
     if (currentPerfil === 'equipe') {
       _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId, equipe_id: currentUser.uid, status: 'programado' } });
     } else {
       _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId } });
     }
 
-    // conta quantas anomalias existem em cada coordenada para aplicar spread
     const coordCount = {};
     _anomaliasData.forEach(d => {
       if (!d.lat || !d.lng) return;
@@ -1366,19 +1355,16 @@
       coordCount[key] = (coordCount[key] || 0) + 1;
     });
 
-    // controla índice de cada posição para o spread
     const coordIdx = {};
     _anomaliasData.forEach(d => plotarAnomalia(d.id, d, coordCount, coordIdx));
   }
 
-  // calcula offset em espiral para separar markers sobrepostos
   function spreadOffset(key, total, coordIdx) {
     if (total <= 1) return { lat: 0, lng: 0 };
     const idx = coordIdx[key] || 0;
     coordIdx[key] = idx + 1;
-    if (idx === 0) return { lat: 0, lng: 0 }; // primeiro fica no lugar
-    // raio cresce levemente com índice, ângulo distribui em volta
-    const radius = 0.000045 * Math.ceil(idx / 6); // ~5m por nível
+    if (idx === 0) return { lat: 0, lng: 0 };
+    const radius = 0.000045 * Math.ceil(idx / 6);
     const angle  = (idx * (Math.PI * 2 / Math.min(total - 1, 6)));
     return {
       lat: Math.sin(angle) * radius,
@@ -1397,7 +1383,6 @@
       : data.tipo === 'outros' ? iconFora
       : iconEspacador;
 
-    // aplica spread se houver sobreposição
     let lat = data.lat, lng = data.lng;
     if (coordCount && coordIdx) {
       const key = `${data.lat.toFixed(6)},${data.lng.toFixed(6)}`;
@@ -1423,16 +1408,8 @@
 
     if (data.texto_os && currentPerfil === 'admin') {
       html += `<div style="margin:8px 0 4px;font-size:11px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.6px">Texto OS</div>
-        <div style="
-          padding:8px 10px; background:rgba(0,170,255,0.06);
-          border:1px solid rgba(0,170,255,0.2); border-radius:8px;
-          font-size:12px; color:var(--eq-white); line-height:1.4;
-          margin-bottom:4px; user-select:all; cursor:text;
-        ">${data.texto_os}</div>
-        <button onclick="navigator.clipboard.writeText(this.dataset.texto).then(()=>showToast('Copiado!'))" data-texto="${(data.texto_os||'').replace(/"/g,'&quot;')}" style="
-          background:none; border:1px solid rgba(0,170,255,0.3); border-radius:6px;
-          padding:3px 8px; color:var(--eq-cyan); font-size:11px; cursor:pointer; margin-bottom:4px;
-        ">
+        <div style="padding:8px 10px;background:rgba(0,170,255,0.06);border:1px solid rgba(0,170,255,0.2);border-radius:8px;font-size:12px;color:var(--eq-white);line-height:1.4;margin-bottom:4px;user-select:all;cursor:text;">${data.texto_os}</div>
+        <button onclick="navigator.clipboard.writeText(this.dataset.texto).then(()=>showToast('Copiado!'))" data-texto="${(data.texto_os||'').replace(/"/g,'&quot;')}" style="background:none;border:1px solid rgba(0,170,255,0.3);border-radius:6px;padding:3px 8px;color:var(--eq-cyan);font-size:11px;cursor:pointer;margin-bottom:4px;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar texto
         </button>`;
     }
@@ -1445,7 +1422,6 @@
         <img class="popup-foto" src="${cldThumb(data.foto_concluido_url)}" alt="Foto conclusão"/>`;
     }
 
-    // botões por perfil
     if (currentPerfil === 'admin' && data.status === 'pendente') {
       html += `<button class="popup-btn popup-btn-prog" onclick="openModalProgramar('${id}', '${data.tipo}', '${data.postes || ''}')">Programar para Equipe</button>`;
     }
@@ -1460,7 +1436,6 @@
       </div>
       <button class="popup-btn popup-btn-conc" onclick="concluirServico('${id}')">Concluir Serviço</button>`;
     }
-    // excluir — admin ou fiscal que apontou, nunca concluído
     if (data.status !== 'concluido' &&
         (currentPerfil === 'admin' || (currentPerfil === 'fiscal' && data.fiscal_id === currentUser?.uid))) {
       html += `<button class="popup-btn popup-btn-del" onclick="excluirAnomaliaDoMapa('${id}')">
@@ -1471,15 +1446,14 @@
     m.bindPopup(html, { maxWidth: 300 });
   }
 
-  // ── abrir modal anomalia ──
   window.openModalAnomalia = function() {
     if (!currentCircuitoId) return showToast('Selecione um transformador primeiro.', true);
     document.getElementById('modalAnomalia').classList.add('open');
     selectedTipo = null;
     fotoFile = null;
     document.getElementById('fotoPreview').style.display = 'none';
-    document.getElementById('btnCameraAnomalia')?.classList.remove('selected');
-    document.getElementById('btnGaleriaAnomalia')?.classList.remove('selected');
+    document.getElementById('btnCameraAnomalia').classList.remove('selected');
+    document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
     document.getElementById('btnSalvarAnomalia').disabled = true;
     ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste','tipoOutros'].forEach(id => {
       document.getElementById(id)?.classList.remove('selected');
@@ -1488,67 +1462,56 @@
     document.getElementById('modalEndereco').classList.add('loading');
     document.getElementById('modalCoords').textContent = '—';
     document.getElementById('modalPostes').value = '';
-    currentAnomaliaPostes = null; // reset explícito — evita postes de abertura anterior
+    currentAnomaliaPostes = null;
     document.getElementById('qtyValor').textContent = '1';
-    document.getElementById('qtyFieldWrap').style.display = 'block';
+    document.getElementById('qtyFieldWrap').style.display = 'none';
     document.getElementById('textoOrdemWrap').style.display = 'none';
     document.getElementById('textoOS').textContent = '';
-    if (document.getElementById('ramalFieldWrap')) document.getElementById('ramalFieldWrap').style.display = 'none';
-    if (document.getElementById('ramalMedidor')) document.getElementById('ramalMedidor').value = '';
-    if (document.getElementById('ramalUC'))  document.getElementById('ramalUC').value = '';
-    if (document.getElementById('ramalUCMsg')) document.getElementById('ramalUCMsg').textContent = '';
-    if (document.getElementById('foraFieldWrap')) document.getElementById('foraFieldWrap').style.display = 'none';
-    if (document.getElementById('foraMedidor')) document.getElementById('foraMedidor').value = '';
-    if (document.getElementById('foraUC'))  document.getElementById('foraUC').value = '';
-    if (document.getElementById('foraUCMsg')) document.getElementById('foraUCMsg').textContent = '';
-    if (document.getElementById('foraObs')) document.getElementById('foraObs').value = '';
-    if (document.getElementById('muxTodoWrap')) document.getElementById('muxTodoWrap').style.display = 'none';
+    document.getElementById('ramalFieldWrap').style.display = 'none';
+    document.getElementById('ramalMedidor').value = '';
+    document.getElementById('ramalUC').value = '';
+    document.getElementById('ramalUCMsg').textContent = '';
+    document.getElementById('foraFieldWrap').style.display = 'none';
+    document.getElementById('foraMedidor').value = '';
+    document.getElementById('foraUC').value = '';
+    document.getElementById('foraUCMsg').textContent = '';
+    document.getElementById('foraObs').value = '';
+    document.getElementById('muxTodoWrap').style.display = 'none';
     window._muxTodo = false;
-    // reset obs e label
-    if (document.getElementById('obsAnomalia')) document.getElementById('obsAnomalia').value = '';
-    if (document.getElementById('obsAnomaliaReq')) document.getElementById('obsAnomaliaReq').textContent = '';
-    const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
-    if (postesLabel) postesLabel.textContent = 'Entre os postes';
+    document.getElementById('obsAnomalia').value = '';
+    document.getElementById('obsAnomaliaReq').textContent = '(opcional)';
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const gpsLat = pos.coords.latitude;
       const gpsLng = pos.coords.longitude;
 
-      // ── validação de distância: fiscal deve estar a no máximo 500m do circuito ──
       if (window._postesAtivos && window._postesAtivos.length > 0) {
-        // calcula distância em metros usando fórmula de Haversine
         function haversineM(lat1, lng1, lat2, lng2) {
-          const R = 6371000; // raio da Terra em metros
+          const R = 6371000;
           const dLat = (lat2-lat1) * Math.PI/180;
           const dLng = (lng2-lng1) * Math.PI/180;
           const a = Math.sin(dLat/2)**2 +
                     Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
           return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
-
-        // distância até o ponto mais próximo do circuito
         const distMinima = Math.min(
           ...window._postesAtivos.map(p => haversineM(gpsLat, gpsLng, p.lat, p.lng))
         );
-
         if (distMinima > 500) {
           document.getElementById('modalEndereco').textContent =
             `⛔ Você está a ${Math.round(distMinima)}m do circuito. Limite: 500m.`;
           document.getElementById('modalEndereco').classList.remove('loading');
           document.getElementById('modalCoords').textContent = `${gpsLat.toFixed(6)}, ${gpsLng.toFixed(6)}`;
-          // bloqueia o botão salvar e exibe aviso
           document.getElementById('btnSalvarAnomalia').disabled = true;
           showToast(`Você está a ${Math.round(distMinima)}m do circuito. Aproxime-se para registrar.`, true);
-          return; // não prossegue
+          return;
         }
       }
 
-      // dentro do raio — usa GPS real como posição da anomalia
       const lat = gpsLat, lng = gpsLng;
       currentAnomaliaPos = { lat, lng };
       document.getElementById('modalCoords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
-      // identifica os dois postes mais próximos para o campo "entre postes"
       if (window._postesAtivos && window._postesAtivos.length > 0) {
         const sorted = [...window._postesAtivos].sort((a,b) => {
           const da = Math.hypot(a.lat-gpsLat, a.lng-gpsLng);
@@ -1557,11 +1520,9 @@
         });
         currentAnomaliaPostes = sorted.slice(0,2).map(p=>p.id).join(' — ');
         document.getElementById('modalPostes').value = currentAnomaliaPostes;
-        // gera texto se tipo já foi selecionado antes do GPS retornar
         gerarTextoOS();
       }
 
-      // geocode reverso
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
         const j = await r.json();
@@ -1569,7 +1530,6 @@
         document.getElementById('modalEndereco').textContent = end;
         document.getElementById('modalEndereco').classList.remove('loading');
         currentAnomaliaPos.endereco = end;
-        // re-gera texto caso tipo tenha sido selecionado enquanto geocode rodava
         gerarTextoOS();
       } catch {
         document.getElementById('modalEndereco').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -1577,7 +1537,6 @@
         gerarTextoOS();
       }
     }, () => {
-      // GPS indisponível — usa coordenadas do trafo/primeiro poste do circuito
       if (window._postesAtivos && window._postesAtivos.length > 0) {
         const p0 = window._postesAtivos[0];
         currentAnomaliaPos = { lat: p0.lat, lng: p0.lng };
@@ -1599,17 +1558,16 @@
 
   window.selectTipo = function(tipo) {
     selectedTipo = tipo;
-    document.getElementById('tipoPoda').classList.toggle('selected', tipo === 'poda');
-    document.getElementById('tipoEspacador').classList.toggle('selected', tipo === 'espacador');
-    document.getElementById('tipoMux').classList.toggle('selected', tipo === 'mux');
-    document.getElementById('tipoRamal').classList.toggle('selected', tipo === 'ramal');
-    document.getElementById('tipoFora').classList.toggle('selected', tipo === 'fora');
-    document.getElementById('tipoPoste').classList.toggle('selected', tipo === 'poste');
-    document.getElementById('tipoOutros').classList.toggle('selected', tipo === 'outros');
-    // obs: obrigatória para 'outros', opcional para os demais
+    ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste','tipoOutros'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.classList.remove('selected');
+    });
+    const idMap = { poda:'tipoPoda', espacador:'tipoEspacador', mux:'tipoMux', ramal:'tipoRamal', fora:'tipoFora', poste:'tipoPoste', outros:'tipoOutros' };
+    document.getElementById(idMap[tipo])?.classList.add('selected');
+
     const obsReq = document.getElementById('obsAnomaliaReq');
     if (obsReq) obsReq.textContent = tipo === 'outros' ? '(obrigatória)' : '(opcional)';
-    // mux: mostra opção de circuito todo; reseta ao sair do mux
+
     const muxWrap = document.getElementById('muxTodoWrap');
     if (muxWrap) {
       muxWrap.style.display = tipo === 'mux' ? 'block' : 'none';
@@ -1621,7 +1579,7 @@
         if (btn) { btn.style.background = 'rgba(181,123,238,.07)'; btn.style.borderColor = 'rgba(181,123,238,.3)'; btn.style.color = '#b57bee'; }
       }
     }
-    // ramal
+
     const ramalWrap = document.getElementById('ramalFieldWrap');
     if (ramalWrap) {
       ramalWrap.style.display = tipo === 'ramal' ? 'block' : 'none';
@@ -1631,7 +1589,7 @@
         document.getElementById('ramalUCMsg').textContent = '';
       }
     }
-    // fora do padrão
+
     const foraWrap = document.getElementById('foraFieldWrap');
     if (foraWrap) {
       foraWrap.style.display = tipo === 'fora' ? 'block' : 'none';
@@ -1642,7 +1600,7 @@
         document.getElementById('foraObs').value = '';
       }
     }
-    // ramal e fora: quantidade sempre 1, esconde controle; poste e outros: também 1
+
     const qtyWrap = document.getElementById('qtyFieldWrap');
     if (qtyWrap) {
       if (tipo === 'ramal' || tipo === 'fora' || tipo === 'poste' || tipo === 'outros') {
@@ -1652,11 +1610,7 @@
         qtyWrap.style.display = 'block';
       }
     }
-    // label do campo postes: muda para "Poste a substituir" quando tipo=poste
-    const postesLabel = document.querySelector('#modalAnomalia .modal-field .modal-label span:first-child');
-    if (postesLabel) {
-      postesLabel.textContent = tipo === 'poste' ? 'Poste a substituir' : 'Entre os postes';
-    }
+
     gerarTextoOS();
     checkSalvarEnabled();
   };
@@ -1669,17 +1623,14 @@
     gerarTextoOS();
   };
 
-  // ── busca UC pelo número do medidor nos postes carregados ──
   window.onMedidorInput = function() {
     const med = document.getElementById('ramalMedidor').value.trim().toUpperCase();
     const ucEl  = document.getElementById('ramalUC');
     const msg   = document.getElementById('ramalUCMsg');
     ucEl.value  = '';
     if (!med) { msg.textContent = ''; gerarTextoOS(); return; }
-    // percorre todos os postes ativos buscando o medidor
     const postes = window._postesAtivos || [];
     let found = null;
-    // normaliza: remove hífen e espaços, uppercase
     const medNorm = med.replace(/[-\s]/g, '');
     for (const p of postes) {
       const ucs = p.ucs || [];
@@ -1717,13 +1668,12 @@
     const isFora    = selectedTipo === 'fora';
     const isOutros  = selectedTipo === 'outros';
     const isMuxTodo = selectedTipo === 'mux' && window._muxTodo;
-    const isPoste   = selectedTipo === 'poste';
-    // fora e outros: sem texto automático
+
     if (isFora || isOutros) {
       document.getElementById('textoOrdemWrap').style.display = 'none';
       return;
     }
-    // sincroniza postes do campo caso não esteja em currentAnomaliaPostes
+
     const postesField = document.getElementById('modalPostes');
     if (postesField && postesField.value.trim() && !currentAnomaliaPostes) {
       currentAnomaliaPostes = postesField.value.trim();
@@ -1763,7 +1713,6 @@
     navigator.clipboard.writeText(texto).then(() => {
       showToast('Texto copiado!');
     }).catch(() => {
-      // fallback para dispositivos sem clipboard API
       const sel = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(document.getElementById('textoOS'));
@@ -1807,7 +1756,6 @@
     document.getElementById('btnSalvarAnomalia').disabled = false;
   }
 
-  // ── salvar anomalia ──
   window.salvarAnomalia = async function() {
     if (!selectedTipo || !fotoFile || !currentAnomaliaPos) return;
     if (selectedTipo === 'fora' && !document.getElementById('foraObs')?.value.trim()) return;
@@ -1817,15 +1765,12 @@
     btn.innerHTML = '<span class="spinner"></span>';
 
     try {
-      // ── garante que currentAnomaliaPostes está sincronizado com o campo ──
       const postesField = document.getElementById('modalPostes');
       if (postesField && postesField.value.trim()) {
         currentAnomaliaPostes = postesField.value.trim();
       }
-      // regera o texto para garantir que está atualizado com postes/qty atuais
       gerarTextoOS();
 
-      // upload Cloudinary
       const formData = new FormData();
       formData.append('file', fotoFile);
       formData.append('upload_preset', 'anomalias-stcgyn');
@@ -1833,7 +1778,6 @@
       const json = await res.json();
       const fotoUrl = cldSave(json.secure_url);
 
-      // salvar Firestore
       const qty      = parseInt(document.getElementById('qtyValor').textContent) || 1;
       const textoOS  = document.getElementById('textoOS').textContent || '';
       const ramalMed = selectedTipo === 'ramal' ? (document.getElementById('ramalMedidor').value.trim() || '') : '';
@@ -1869,7 +1813,6 @@
       if (_newErr) throw _newErr;
 
       closeModalAnomalia();
-      // reset botão ANTES de fechar para próxima abertura
       btn.disabled = true;
       btn.textContent = 'Salvar';
       showToast('Anomalia registrada com sucesso!');
@@ -1881,15 +1824,12 @@
     }
   };
 
-  // ── modal programar (admin) ──
   window.openModalProgramar = async function(anomaliaId, tipo, postes) {
     programarAnomaliaId = anomaliaId;
 
-    // busca dados completos da anomalia para pegar textoOS e quantidade
     const { data: _anodata } = await sb.from('anomalias').select('*').eq('id', anomaliaId).single();
-    const anoSnap = { exists: () => !!_anodata, data: () => _anodata || {} };
-    const anoData = anoSnap.exists() ? anoSnap.data() : {};
-    const textoOS   = anoData.texto_os   || '';
+    const anoData = _anodata || {};
+    const textoOS    = anoData.texto_os   || '';
     const quantidade = anoData.quantidade || 1;
 
     document.getElementById('programarInfo').innerHTML =
@@ -1902,16 +1842,14 @@
       document.getElementById('programarTextoOSWrap').style.display = 'none';
     }
 
-    // carrega equipes
     const sel = document.getElementById('selectEquipe');
     sel.innerHTML = '<option value="">Carregando...</option>';
     const _equipeList = await fetchAll('usuarios', { filters: { perfil: 'equipe' }, order: { col: 'nome' } });
-    const snap = { docs: _equipeList.map(d => ({ id: d.id, data: () => d })) };
-    sel.innerHTML = '';
-    snap.forEach(d => {
+    sel.innerHTML = '<option value="" disabled selected>Selecione a equipe...</option>';
+    _equipeList.forEach(d => {
       const opt = document.createElement('option');
       opt.value = d.id;
-      opt.textContent = d.data().nome;
+      opt.textContent = d.nome;
       sel.appendChild(opt);
     });
 
@@ -1949,22 +1887,17 @@
     }
   };
 
-  // ── excluir anomalia (admin ou fiscal que apontou, nunca concluído) ──
   window.excluirAnomaliaDoMapa = async function(anomaliaId) {
     if (!confirm('Excluir este registro de anomalia?\nEsta ação não pode ser desfeita.')) return;
     try {
-      // valida status antes de deletar
-      const { data: _concdata } = await sb.from('anomalias').select('*').eq('id', anomaliaId).single();
-      const snap = { exists: () => !!_concdata, data: () => _concdata || {} };
-      if (!!!_snapdata) return showToast('Anomalia não encontrada.', true);
-      const d = snap.data();
-      if (d.status === 'concluido') return showToast('Não é possível excluir anomalias concluídas.', true);
-      if (currentPerfil === 'fiscal' && d.fiscalId !== currentUser.uid)
+      const { data: _concdata } = await sb.from('anomalias').select('status,fiscal_id').eq('id', anomaliaId).single();
+      if (!_concdata) return showToast('Anomalia não encontrada.', true);
+      if (_concdata.status === 'concluido') return showToast('Não é possível excluir anomalias concluídas.', true);
+      if (currentPerfil === 'fiscal' && _concdata.fiscal_id !== currentUser.uid)
         return showToast('Você só pode excluir anomalias que apontou.', true);
 
       await sb.from('anomalias').delete().eq('id', anomaliaId);
 
-      // remove marcador do mapa sem recarregar tudo
       anomaliaMarkers = anomaliaMarkers.filter(m => {
         if (m._anomaliaId === anomaliaId) { map.removeLayer(m); return false; }
         return true;
@@ -1976,7 +1909,6 @@
     }
   };
 
-  // ── concluir serviço (equipe) ──
   window.concluirServico = function(anomaliaId) {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
@@ -2034,26 +1966,20 @@
     overlay.querySelector('#btnConcGaleria').onclick = () => pickFoto('galeria');
   };
 
-  // ── navegação (Google Maps / Waze) ──
-  // ── Pendentes no mapa (botão alerta) ──
   let _pendentesAtivos = false;
   let _pendentesMarkers = [];
 
   window.togglePendentesNoMapa = async function(btn) {
     _pendentesAtivos = !_pendentesAtivos;
-
-    // visual do botão
     btn.style.borderColor   = _pendentesAtivos ? '#ffb300' : 'rgba(255,179,0,0.4)';
     btn.style.background    = _pendentesAtivos ? 'rgba(255,179,0,0.15)' : 'rgba(10,22,40,0.92)';
     btn.title = _pendentesAtivos ? 'Ocultar pendentes' : 'Mostrar pendentes';
 
-    // remove markers anteriores
     _pendentesMarkers.forEach(m => map.removeLayer(m));
     _pendentesMarkers = [];
 
     if (!_pendentesAtivos) return;
 
-    // busca todas as anomalias pendentes (sem filtro de circuito)
     showToast('Carregando pendentes...');
     try {
       const filters = currentPerfil === 'equipe'
@@ -2061,12 +1987,17 @@
         : { status: 'pendente' };
       const pendentes = await fetchAll('anomalias', { filters });
 
-      if (!pendentes.length) { showToast('Nenhum serviço pendente.'); _pendentesAtivos = false; btn.style.borderColor='rgba(255,179,0,0.4)'; btn.style.background='rgba(10,22,40,0.92)'; return; }
+      if (!pendentes.length) {
+        showToast('Nenhum serviço pendente.');
+        _pendentesAtivos = false;
+        btn.style.borderColor='rgba(255,179,0,0.4)';
+        btn.style.background='rgba(10,22,40,0.92)';
+        return;
+      }
 
       const tipoLabel = { poda:'Poda', espacador:'Espaçador', mux:'MBX', ramal:'Ramal', fora:'Fora Padrão', poste:'Sub. Poste', outros:'Outros' };
       const iconMap = { poda:iconPoda, mux:iconMux, ramal:iconRamal, fora:iconFora, poste:iconSubPoste, outros:iconFora };
 
-      // spread para não sobrepor markers
       const pCoordCount = {}, pCoordIdx = {};
       pendentes.forEach(a => {
         if (!a.lat || !a.lng) return;
@@ -2086,7 +2017,7 @@
           <div class="popup-title">⏳ ${tipo}</div>
           <div class="popup-row">Circuito: <span>${circuito}</span></div>
           <div class="popup-row">Entre postes: <span>${a.postes||'—'}</span></div>
-          ${a.texto_os?`<div class="popup-row" style="margin-top:6px;font-size:11px;color:#8a9bbf">${a.texto_os}</div>`:''}
+          ${a.texto_os?`<div class="popup-row" style="font-size:11px;color:#8a9bbf">${a.texto_os}</div>`:''}
           ${a.observacao?`<div class="popup-row" style="font-size:11px;color:#8a9bbf">Obs: ${a.observacao}</div>`:''}
         `, { maxWidth: 260 });
         _pendentesMarkers.push(m);
@@ -2099,7 +2030,6 @@
     }
   };
 
-  // ── Reposicionar FAB acima do trafo-card ──
   function reposicionarFAB() {
     const fab  = document.getElementById('fabAnomalias');
     const card = document.getElementById('trafoCard');
@@ -2115,7 +2045,6 @@
     }
   }
 
-  // Observar mudancas no card para reposicionar automaticamente
   (function() {
     const card = document.getElementById('trafoCard');
     if (!card) return;
@@ -2151,17 +2080,15 @@
     window.open(url, '_blank');
   };
 
-  // ── badge pendências — só mostra se > 0, filtrado por perfil ──
   async function loadPendenciasBadge() {
     const badge = document.getElementById('badgePendencias');
     badge.style.display = 'none';
-    let q;
+    let _badgeData;
     if (currentPerfil === 'admin') {
       _badgeData = await fetchAll('inspecoes', { filters: { status: 'pendente' } });
     } else if (currentPerfil === 'fiscal') {
       _badgeData = await fetchAll('inspecoes', { filters: { fiscal_id: currentUser.uid, status: 'pendente' } });
     } else {
-      // equipe: conta anomalias programadas para ela que ainda não concluiu
       _badgeData = await fetchAll('anomalias', { filters: { equipe_id: currentUser.uid, status: 'programado' } });
     }
     if (_badgeData.length > 0) {
@@ -2170,9 +2097,6 @@
     }
   }
 
-  // ── extração robusta de postes via regex ──
-
-  // ── legado: renderCircuito(htmlContent) ── delega para renderCircuitoData
   function renderCircuito(htmlContent, circuitoId, circuitoNome) {
     const postesData   = extrairPostes(htmlContent);
     const conexoesData = extrairConexoes(htmlContent);
@@ -2184,7 +2108,6 @@
     const offsetLat = parseFloat((html.match(/var offsetLat\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
     const offsetLng = parseFloat((html.match(/var offsetLng\s*=\s*(-?[\d.]+)/) || ['','0'])[1]) || 0;
     const postes = [];
-    // Extrai o array completo contando colchetes para não parar cedo
     const startIdx = html.search(/var postes\s*=\s*\[/);
     if (startIdx !== -1) {
       const arrStart = html.indexOf('[', startIdx);
@@ -2212,7 +2135,6 @@
     return postes;
   }
 
-  // ── extração de conexões via regex preciso ──
   function extrairConexoes(html) {
     const conexoes = [];
     const re = /\{\s*de:\s*'([^']+)',\s*para:\s*'([^']+)',\s*fase:\s*'([^']+)',\s*condutor:\s*'([^']+)',\s*trecho:\s*'([^']+)',\s*comprimento:\s*([\d.]+),\s*tipo:\s*'([^']+)'/g;
@@ -2231,7 +2153,6 @@
     return conexoes;
   }
 
-  // ── extração de potencia e clientes do popup inline do trafo ──
   function extrairInfoTrafo(html) {
     const info = { potencia: null, clientes: null };
     const mPot = html.match(/[Pp]otenci[ae]\s*:\s*(\d+)/);
@@ -2241,7 +2162,6 @@
     return info;
   }
 
-  // ── toast ──
   window.showToast = function(msg, isError = false, duration = 3000) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -2249,15 +2169,11 @@
     setTimeout(() => t.classList.remove('show'), duration);
   };
 
-  // service worker
-
-  // ── Mostrar botões inspeção no card do trafo (apenas fiscal com inspeção ativa) ──
   function atualizarBotoesInspTrafo() {
     const wrap = document.getElementById('trafoInspBtns');
     if (!wrap) return;
     if (currentPerfil === 'fiscal' && currentInspecaoId) {
       wrap.style.display = 'block';
-      // carrega estado atual da inspeção para atualizar labels
       carregarEstadoInspTrafo();
     } else {
       wrap.style.display = 'none';
@@ -2269,30 +2185,25 @@
     try {
       const { data: d } = await sb.from('inspecoes').select('*').eq('id', currentInspecaoId).single();
       if (!d) return;
-
-      // armazena globalmente para validação no navTo
       window._inspAtiva = d;
 
-      // Easy Trafo — atualiza label e cor do botão
       const lblET = document.getElementById('btnEasyTrafoLbl');
       const btnET = document.getElementById('btnEasyTrafo');
       if (lblET) {
-        if (d.easy_trafo === true)  { lblET.textContent = '✓ Easy Trafo'; btnET.style.borderColor='rgba(0,229,160,.4)'; btnET.style.color='var(--su)'; }
-        else if (d.easy_trafo === false) { lblET.textContent = '✗ Sem Easy Trafo'; btnET.style.borderColor='rgba(255,77,109,.4)'; btnET.style.color='var(--er)'; }
-        else { lblET.textContent = 'Easy Trafo'; btnET.style.borderColor='rgba(255,179,0,.5)'; btnET.style.color='var(--wa)'; } // pendente = amarelo
+        if (d.easy_trafo === true)       { lblET.textContent = '✓ Easy Trafo'; btnET.style.borderColor='rgba(0,229,160,.4)'; btnET.style.color='#00e5a0'; }
+        else if (d.easy_trafo === false) { lblET.textContent = '✗ Sem Easy Trafo'; btnET.style.borderColor='rgba(255,77,109,.4)'; btnET.style.color='#ff4d6d'; }
+        else                             { lblET.textContent = 'Easy Trafo'; btnET.style.borderColor='rgba(255,179,0,.5)'; btnET.style.color='#ffb300'; }
       }
-      // Anel — atualiza label e cor do botão
       const lblA = document.getElementById('btnAnelLbl');
       const btnA = document.getElementById('btnAnel');
       if (lblA) {
-        if (d.fechado_em_anel === true)  { lblA.textContent = '✓ Anel: Sim'; btnA.style.borderColor='rgba(0,229,160,.4)'; btnA.style.color='var(--su)'; }
-        else if (d.fechado_em_anel === false) { lblA.textContent = '✗ Anel: Não'; btnA.style.borderColor='rgba(255,77,109,.4)'; btnA.style.color='var(--er)'; }
-        else { lblA.textContent = 'Anel'; btnA.style.borderColor='rgba(255,179,0,.5)'; btnA.style.color='var(--wa)'; } // pendente = amarelo
+        if (d.fechado_em_anel === true)       { lblA.textContent = '✓ Anel: Sim'; btnA.style.borderColor='rgba(0,229,160,.4)'; btnA.style.color='#00e5a0'; }
+        else if (d.fechado_em_anel === false) { lblA.textContent = '✗ Anel: Não'; btnA.style.borderColor='rgba(255,77,109,.4)'; btnA.style.color='#ff4d6d'; }
+        else                                  { lblA.textContent = 'Anel'; btnA.style.borderColor='rgba(255,179,0,.5)'; btnA.style.color='#ffb300'; }
       }
     } catch(e) { console.error('carregarEstadoInspTrafo:', e); }
   }
 
-  // ── Easy Trafo ──
   let easyTrafoSelecionado = null;
   let fotoEasyFile = null;
 
@@ -2316,7 +2227,6 @@
     document.getElementById('btnEasyTrafoSim').style.opacity = val ? '1' : '0.4';
     document.getElementById('btnEasyTrafoNao').style.opacity = !val ? '1' : '0.4';
     document.getElementById('easyTrafoFotoWrap').style.display = val ? 'block' : 'none';
-    // se Não, pode salvar direto
     document.getElementById('btnSalvarEasyTrafo').disabled = val ? true : false;
     if (!val) { fotoEasyFile = null; }
   };
@@ -2355,7 +2265,6 @@
       const update = { easy_trafo: easyTrafoSelecionado, easy_trafo_atualizado_em: new Date().toISOString() };
       if (fotoUrl) update.easy_trafo_foto_url = fotoUrl;
       await sb.from('inspecoes').update(update).eq('id', currentInspecaoId);
-      // atualiza cache local
       if (window._inspAtiva) { window._inspAtiva.easy_trafo = easyTrafoSelecionado; if(fotoUrl) window._inspAtiva.easy_trafo_foto_url = fotoUrl; }
       closeModalEasyTrafo();
       await carregarEstadoInspTrafo();
@@ -2364,7 +2273,6 @@
     finally { btn.disabled = false; btn.textContent = 'Salvar'; }
   };
 
-  // ── Anel ──
   let anelSelecionado = null;
 
   window.openModalAnel = function() {
@@ -2382,7 +2290,6 @@
     anelSelecionado = val;
     document.getElementById('btnAnelSim').style.opacity = val ? '1' : '0.4';
     document.getElementById('btnAnelNao').style.opacity = !val ? '1' : '0.4';
-    // observação obrigatória apenas quando Não
     document.getElementById('anelObsWrap').style.display = !val ? 'block' : 'none';
     document.getElementById('btnSalvarAnel').disabled = !val ? true : false;
     if (val) document.getElementById('anelObs').value = '';
@@ -2403,7 +2310,6 @@
       const update = { fechado_em_anel: anelSelecionado, anel_atualizado_em: new Date().toISOString() };
       if (obs) update.anel_observacao = obs;
       await sb.from('inspecoes').update(update).eq('id', currentInspecaoId);
-      // atualiza cache local
       if (window._inspAtiva) { window._inspAtiva.fechado_em_anel = anelSelecionado; if(obs) window._inspAtiva.anel_observacao = obs; }
       closeModalAnel();
       await carregarEstadoInspTrafo();
@@ -2412,7 +2318,6 @@
     finally { btn.disabled = false; btn.textContent = 'Salvar'; }
   };
 
-  // ── Fora do Padrão: busca UC pelo medidor ──
   window.onForaMedidorInput = function() {
     const med   = document.getElementById('foraMedidor').value.trim().toUpperCase();
     const ucEl  = document.getElementById('foraUC');
@@ -2441,7 +2346,6 @@
     checkSalvarEnabled();
   };
 
-  // ── Multiplexar circuito todo (MBX) ──
   window._muxTodo = false;
   window.toggleMuxTodo = function() {
     window._muxTodo = !window._muxTodo;
@@ -2452,10 +2356,8 @@
       chk.style.background = '#b57bee';
       btn.style.background = 'rgba(181,123,238,.2)';
       btn.style.borderColor = '#b57bee';
-      // preenche quantidade com total de trechos do circuito
       const totalTrechos = (window._conexoesAtivas || []).length;
       if (totalTrechos > 0) document.getElementById('qtyValor').textContent = totalTrechos;
-      // oculta campo entre postes — não necessário para circuito todo
       document.getElementById('modalPostes').value = '';
       currentAnomaliaPostes = '';
     } else {
@@ -2470,8 +2372,6 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
-
-
 </script>
 <script src="./modal-theme.js"></script>
 </body>
