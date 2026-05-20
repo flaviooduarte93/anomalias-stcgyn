@@ -512,62 +512,48 @@
 
     
     /* ── Tema Claro v2 — usa variáveis --th-* ────────────────── */
-    
-    
-    
-    
 
     
-    /* ── Select com busca integrada ─────────────────────────── */
-    .eq-select-wrap { position:relative; }
-    .eq-select-wrap select { padding-right:30px; }
-    .eq-searchable-wrap {
-      position:relative;
+    /* ── Select pesquisável — mesmo estilo do modal-select ─── */
+    .sq-wrap { position:relative; }
+    .sq-display {
+      width:100%; padding:12px 36px 12px 14px;
+      background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+      border-radius:8px; color:var(--eq-white);
+      font-family:'Barlow',sans-serif; font-size:14px;
+      outline:none; cursor:pointer; box-sizing:border-box;
+      transition:border-color .2s; user-select:none;
+      display:flex; align-items:center; justify-content:space-between;
     }
-    .eq-searchable-input {
-      width:100%;padding:10px 36px 10px 12px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:10px;
-      color:var(--eq-white);
-      font-family:'Barlow',sans-serif;font-size:14px;
-      outline:none;box-sizing:border-box;cursor:pointer;
-      transition:border-color .2s;
+    .sq-display:focus, .sq-wrap.open .sq-display { border-color:var(--eq-cyan); }
+    .sq-display span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sq-display span.placeholder { color:rgba(138,155,191,.5); }
+    .sq-chevron { flex-shrink:0; color:var(--eq-gray); transition:transform .2s; margin-left:6px; }
+    .sq-wrap.open .sq-chevron { transform:rotate(180deg); }
+    .sq-dropdown {
+      display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:999;
+      background:#0d1f3c; border:1px solid rgba(255,255,255,.1);
+      border-radius:8px; overflow:hidden;
+      box-shadow:0 8px 20px rgba(0,0,0,.45);
     }
-    .eq-searchable-input:focus { border-color:var(--eq-cyan); }
-    .eq-searchable-input::placeholder { color:rgba(138,155,191,.5); }
-    .eq-searchable-chevron {
-      position:absolute;right:10px;top:50%;transform:translateY(-50%);
-      pointer-events:none;color:var(--eq-gray);transition:transform .2s;
+    .sq-wrap.open .sq-dropdown { display:block; }
+    .sq-search {
+      width:100%; padding:10px 12px; box-sizing:border-box;
+      background:rgba(255,255,255,.06); border:none;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      color:var(--eq-white); font-family:'Barlow',sans-serif; font-size:13px;
+      outline:none;
     }
-    .eq-searchable-dropdown {
-      display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
-      background:#0d1e3a;border:1px solid rgba(255,255,255,.12);
-      border-radius:10px;z-index:999;max-height:220px;overflow:hidden;
-      box-shadow:0 8px 24px rgba(0,0,0,.4);
+    .sq-search::placeholder { color:rgba(138,155,191,.45); }
+    .sq-list { max-height:200px; overflow-y:auto; }
+    .sq-opt {
+      padding:10px 14px; font-size:14px; color:var(--eq-white);
+      cursor:pointer; font-family:'Barlow',sans-serif;
+      transition:background .12s;
     }
-    .eq-searchable-dropdown.open { display:flex;flex-direction:column; }
-    .eq-searchable-dropdown input {
-      flex-shrink:0;
-      padding:9px 12px;margin:8px 8px 4px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:8px;color:var(--eq-white);
-      font-family:'Barlow',sans-serif;font-size:13px;outline:none;
-    }
-    .eq-searchable-dropdown input::placeholder { color:rgba(138,155,191,.5); }
-    .eq-searchable-list {
-      overflow-y:auto;padding:4px 0 8px;flex:1;
-    }
-    .eq-searchable-option {
-      padding:9px 14px;font-size:13px;color:var(--eq-white);
-      cursor:pointer;transition:background .15s;
-    }
-    .eq-searchable-option:hover { background:rgba(255,255,255,.07); }
-    .eq-searchable-option.selected { color:var(--eq-cyan);font-weight:600; }
-    .eq-searchable-option.placeholder { color:rgba(138,155,191,.5);pointer-events:none; }
-    .eq-searchable-no-results { padding:10px 14px;font-size:12px;color:var(--eq-gray);text-align:center; }
-
+    .sq-opt:hover { background:rgba(255,255,255,.07); }
+    .sq-opt.selected { color:var(--eq-cyan); }
+    .sq-opt.sq-empty { color:var(--eq-gray); font-size:12px; text-align:center; padding:12px; pointer-events:none; }
     </style>');
   })();
 </script>
@@ -1291,6 +1277,70 @@
   }
   document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initSearchableSelects, 500);
+  });
+
+  /* ── Select pesquisável ─────────────────────────────────────── */
+  function initSQ(selectId) {
+    var sel = document.getElementById(selectId);
+    if (!sel || sel._sqDone) return;
+    sel._sqDone = true;
+    sel.style.display = 'none';
+
+    var wrap = document.createElement('div');
+    wrap.className = 'sq-wrap';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+
+    wrap.innerHTML += '<div class="sq-display" tabindex="0"><span class="placeholder">Selecione a equipe...</span><svg class="sq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>'
+      + '<div class="sq-dropdown"><input class="sq-search" type="text" placeholder="&#128269; Buscar equipe..." autocomplete="off" autocapitalize="none" spellcheck="false"/><div class="sq-list"></div></div>';
+
+    var display = wrap.querySelector('.sq-display');
+    var dropdown = wrap.querySelector('.sq-dropdown');
+    var searchInput = wrap.querySelector('.sq-search');
+    var list = wrap.querySelector('.sq-list');
+
+    function renderList(q) {
+      q = (q||'').toLowerCase();
+      var opts = Array.from(sel.options).filter(function(o){ return !o.disabled && o.value; });
+      var filtered = q ? opts.filter(function(o){ return o.text.toLowerCase().includes(q); }) : opts;
+      list.innerHTML = filtered.length
+        ? filtered.map(function(o){
+            return '<div class="sq-opt'+(o.value===sel.value?' selected':'')+'" data-v="'+o.value+'">'+o.text+'</div>';
+          }).join('')
+        : '<div class="sq-opt sq-empty">Nenhuma equipe encontrada</div>';
+      list.querySelectorAll('.sq-opt:not(.sq-empty)').forEach(function(div){
+        div.addEventListener('click', function(){
+          sel.value = div.dataset.v;
+          var txt = div.textContent;
+          display.innerHTML = '<span>'+txt+'</span><svg class="sq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+          wrap.classList.remove('open');
+          sel.dispatchEvent(new Event('change'));
+        });
+      });
+    }
+
+    display.addEventListener('click', function(){
+      var opening = !wrap.classList.contains('open');
+      document.querySelectorAll('.sq-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+      if (opening) {
+        wrap.classList.add('open');
+        searchInput.value = '';
+        renderList('');
+        setTimeout(function(){ searchInput.focus(); }, 40);
+      }
+    });
+    searchInput.addEventListener('input', function(){ renderList(this.value); });
+    document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) wrap.classList.remove('open'); });
+
+    // re-inicializa display quando select é recarregado pelo JS
+    new MutationObserver(function(){
+      sel.value = '';
+      display.innerHTML = '<span class="placeholder">Selecione a equipe...</span><svg class="sq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+    }).observe(sel, {childList:true});
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    ['selectEquipe','selectEquipeLote','selectEquipeConc'].forEach(initSQ);
   });
 </script>
 
