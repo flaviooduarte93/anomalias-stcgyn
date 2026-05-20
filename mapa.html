@@ -1478,8 +1478,8 @@
     selectedTipo = null;
     fotoFile = null;
     document.getElementById('fotoPreview').style.display = 'none';
-    document.getElementById('btnCameraAnomalia').classList.remove('selected');
-    document.getElementById('btnGaleriaAnomalia').classList.remove('selected');
+    document.getElementById('btnCameraAnomalia')?.classList.remove('selected');
+    document.getElementById('btnGaleriaAnomalia')?.classList.remove('selected');
     document.getElementById('btnSalvarAnomalia').disabled = true;
     ['tipoPoda','tipoEspacador','tipoMux','tipoRamal','tipoFora','tipoPoste','tipoOutros'].forEach(id => {
       document.getElementById(id)?.classList.remove('selected');
