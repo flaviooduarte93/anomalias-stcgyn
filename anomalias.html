@@ -84,9 +84,7 @@
     .page-sub { font-size: 13px; color: var(--eq-gray); margin-top: 2px; margin-bottom: 16px; }
 
     /* ── BUSCA ── */
-    .search-wrap {
-      position: relative; margin-bottom: 14px;
-    }
+    .search-wrap { position: relative; margin-bottom: 14px; }
     .search-input {
       width: 100%; padding: 11px 16px 11px 40px;
       background: rgba(255,255,255,0.06);
@@ -115,9 +113,7 @@
       background: rgba(255,255,255,0.05); color: var(--eq-gray);
       transition: all .2s; display: flex; align-items: center; gap: 6px;
     }
-    .filtro-btn.active {
-      background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35); color: var(--eq-cyan);
-    }
+    .filtro-btn.active { background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35); color: var(--eq-cyan); }
     .filtro-btn.poda.active    { background: rgba(255,179,0,0.12); border-color: rgba(255,179,0,0.35); color: var(--eq-warning); }
     .filtro-btn.espacador.active { background: rgba(0,170,255,0.12); border-color: rgba(0,170,255,0.35); color: var(--eq-cyan); }
     .filtro-btn.ramal   { border-color: rgba(0,229,160,0.3); color: var(--eq-success); }
@@ -154,9 +150,7 @@
     .sum-card.mux .sum-val      { color: #b57bee; }
 
     /* ── SECTION HEADER ── */
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
-    }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .section-title {
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 14px; font-weight: 700; letter-spacing: .8px;
@@ -178,7 +172,6 @@
     .anomalia-card:hover { border-color: rgba(0,170,255,0.2); }
 
     .card-foto-wrap { position: relative; }
-    /* ── lightbox ── */
     .lightbox{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;animation:lbIn .2s ease}
     @keyframes lbIn{from{opacity:0}to{opacity:1}}
     .lightbox img{max-width:94vw;max-height:90vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.7);object-fit:contain}
@@ -231,7 +224,6 @@
     .meta-row svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
     .meta-row span { color: var(--eq-white); }
 
-    /* foto conclusão */
     .foto-conclusao-wrap { margin-bottom: 12px; }
     .foto-conclusao-label {
       font-size: 11px; color: var(--eq-success); font-weight: 600;
@@ -284,7 +276,7 @@
       border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
     }
 
-    /* ── MODAL PROGRAMAR (admin) ── */
+    /* ── MODAL BASE ── */
     .modal-overlay {
       position: fixed; inset: 0; z-index: 2000;
       background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
@@ -308,15 +300,6 @@
     }
     .modal-sub { font-size: 13px; color: var(--eq-gray); margin-bottom: 20px; }
     .modal-label { font-size: 11px; font-weight: 600; letter-spacing: .8px; color: var(--eq-gray); text-transform: uppercase; margin-bottom: 6px; display: block; }
-    .modal-select {
-      width: 100%; padding: 12px 14px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px; color: var(--eq-white);
-      font-family: 'Barlow', sans-serif; font-size: 14px;
-      outline: none; appearance: none; cursor: pointer;
-    }
-    .modal-select:focus { border-color: var(--eq-cyan); }
-    .modal-select option { background: #0d1f3c; }
     .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
     .modal-info-item { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:8px; padding:8px 10px; }
     .modal-info-item.full { grid-column:1/-1; }
@@ -336,6 +319,54 @@
       letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
     }
     .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── EQ PICKER — dropdown de equipe limpo ── */
+    .eq-pick-btn {
+      width: 100%; padding: 12px 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; color: var(--eq-gray);
+      font-family: 'Barlow', sans-serif; font-size: 14px;
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      transition: border-color .2s; user-select: none;
+    }
+    .eq-pick-btn:hover  { border-color: rgba(0,170,255,0.4); }
+    .eq-pick-btn.filled { color: var(--eq-white); border-color: rgba(0,170,255,0.3); }
+    .eq-pick-btn svg    { flex-shrink: 0; color: var(--eq-gray); transition: transform .2s; }
+    .eq-pick-btn.open svg { transform: rotate(180deg); }
+
+    .eq-pick-drop {
+      display: none;
+      margin-top: 4px;
+      background: #0b1a30;
+      border: 1px solid rgba(0,170,255,0.2);
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+    }
+    .eq-pick-drop.open { display: block; }
+
+    .eq-pick-search {
+      display: block; width: 100%; padding: 10px 14px;
+      background: rgba(255,255,255,0.05);
+      border: none; border-bottom: 1px solid rgba(255,255,255,0.07);
+      color: var(--eq-white); font-family: 'Barlow', sans-serif; font-size: 13px;
+      outline: none;
+    }
+    .eq-pick-search::placeholder { color: rgba(138,155,191,0.5); }
+
+    .eq-pick-list { max-height: 200px; overflow-y: auto; }
+    .eq-pick-list::-webkit-scrollbar { width: 4px; }
+    .eq-pick-list::-webkit-scrollbar-thumb { background: rgba(0,170,255,0.2); border-radius: 2px; }
+
+    .eq-pick-opt {
+      padding: 11px 16px; font-size: 13px; cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: var(--eq-white); transition: background .15s;
+    }
+    .eq-pick-opt:last-child { border-bottom: none; }
+    .eq-pick-opt:hover   { background: rgba(0,170,255,0.1); color: var(--eq-cyan); }
+    .eq-pick-opt.active  { background: rgba(0,170,255,0.14); color: var(--eq-cyan); font-weight: 600; }
+    .eq-pick-empty { padding: 14px 16px; font-size: 13px; color: var(--eq-gray); text-align: center; }
 
     /* skeleton / empty */
     .skeleton {
@@ -360,26 +391,6 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
 
-    .btn-exportar {
-      display: none;
-      align-items: center; gap: 6px;
-      padding: 9px 14px; border-radius: 8px;
-      background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3);
-      color: var(--eq-success); font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px; font-weight: 600; letter-spacing: .5px;
-      cursor: pointer; text-transform: uppercase;
-    }
-    .btn-exportar:hover { background: rgba(0,229,160,0.18); }
-    .btn-exportar {
-      display: none;
-      align-items: center; gap: 6px;
-      padding: 9px 14px; border-radius: 8px;
-      background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3);
-      color: var(--eq-success); font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px; font-weight: 600; letter-spacing: .5px;
-      cursor: pointer; margin-bottom: 4px; text-transform: uppercase;
-    }
-    .btn-exportar:hover { background: rgba(0,229,160,0.18); }
     .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
     @keyframes spin { to { transform:rotate(360deg); } }
   </style>
@@ -421,7 +432,7 @@
     <input class="search-input" id="searchInput" type="text" placeholder="Buscar por endereço, circuito ou postes..." oninput="renderLista()"/>
   </div>
 
-  <!-- Barra de seleção múltipla (visível só para admin com pendentes) -->
+  <!-- Barra de seleção múltipla -->
   <div id="barraSelecao" style="display:none;align-items:center;gap:10px;padding:8px 12px;background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.25);border-radius:10px;margin-bottom:12px;flex-wrap:wrap">
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--eq-white);user-select:none">
       <input type="checkbox" id="checkTodas" onchange="toggleSelecionarTodas(this)" style="width:16px;height:16px;accent-color:#1565C0;cursor:pointer">
@@ -455,34 +466,13 @@
 
   <!-- sumário -->
   <div class="summary-row">
-    <div class="sum-card total">
-      <div class="sum-val" id="sumTotal">—</div>
-      <div class="sum-label">Total</div>
-    </div>
-    <div class="sum-card pendente">
-      <div class="sum-val" id="sumPendente">—</div>
-      <div class="sum-label">Pendentes</div>
-    </div>
-    <div class="sum-card programado">
-      <div class="sum-val" id="sumProgramado">—</div>
-      <div class="sum-label">Programados</div>
-    </div>
-    <div class="sum-card concluido">
-      <div class="sum-val" id="sumConcluido">—</div>
-      <div class="sum-label">Concluídos</div>
-    </div>
-    <div class="sum-card poda">
-      <div class="sum-val" id="sumPoda">—</div>
-      <div class="sum-label">Podas</div>
-    </div>
-    <div class="sum-card espacador">
-      <div class="sum-val" id="sumEspacador">—</div>
-      <div class="sum-label">Espaçadores</div>
-    </div>
-    <div class="sum-card ramal">
-      <div class="sum-val" id="sumRamal">—</div>
-      <div class="sum-label">Ramais</div>
-    </div>
+    <div class="sum-card total"><div class="sum-val" id="sumTotal">—</div><div class="sum-label">Total</div></div>
+    <div class="sum-card pendente"><div class="sum-val" id="sumPendente">—</div><div class="sum-label">Pendentes</div></div>
+    <div class="sum-card programado"><div class="sum-val" id="sumProgramado">—</div><div class="sum-label">Programados</div></div>
+    <div class="sum-card concluido"><div class="sum-val" id="sumConcluido">—</div><div class="sum-label">Concluídos</div></div>
+    <div class="sum-card poda"><div class="sum-val" id="sumPoda">—</div><div class="sum-label">Podas</div></div>
+    <div class="sum-card espacador"><div class="sum-val" id="sumEspacador">—</div><div class="sum-label">Espaçadores</div></div>
+    <div class="sum-card ramal"><div class="sum-val" id="sumRamal">—</div><div class="sum-label">Ramais</div></div>
   </div>
 
   <!-- lista -->
@@ -501,18 +491,11 @@
 <script>
   (function(){
     var p = sessionStorage.getItem('userPerfil') || '';
-    document.write('<style>'
+    document.write('<style id="navInitStyle">'
       + (p === 'admin' ? '' :
          p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
          '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-      + '
-    
-
-    
-
-    
-    /* ── Tema Claro v2 — usa variáveis --th-* ────────────────── */
-    </style>');
+      + '</style>');
   })();
 </script>
 <nav class="bottom-nav">
@@ -543,17 +526,16 @@
   </button>
 </nav>
 
-<!-- MODAL: programar LOTE para equipe (admin) -->
+<!-- MODAL: programar LOTE (admin) -->
 <div class="modal-overlay" id="modalProgramarLote" onclick="if(event.target===this)fecharProgramarLote()">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">📋 Programar em lote</div>
     <div class="modal-sub" id="loteSubtitulo">Programar anomalias selecionadas</div>
-    <label class="modal-label" style="margin-top:12px">Equipe responsável</label>
-    <select id="selectEquipeLote" class="modal-select" style="margin-bottom:16px">
-      <option value="" disabled selected>Selecione a equipe...</option>
-    </select>
-    <div id="loteProgressWrap" style="display:none;margin-bottom:12px">
+    <label class="modal-label" style="margin-top:4px">Equipe responsável</label>
+    <!-- EqPicker lote -->
+    <div id="eqPickerLote"></div>
+    <div id="loteProgressWrap" style="display:none;margin-top:14px">
       <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
         <div id="loteProgressBar" style="height:100%;width:0%;background:#1565C0;border-radius:3px;transition:width .3s"></div>
       </div>
@@ -566,16 +548,15 @@
   </div>
 </div>
 
-<!-- MODAL: programar para equipe (admin) -->
+<!-- MODAL: programar individual (admin) -->
 <div class="modal-overlay" id="modalProgramar">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">Programar Serviço</div>
     <div class="modal-sub" id="modalProgramarSub">Selecione a equipe responsável pelo serviço.</div>
-        <label class="modal-label">Equipe responsável</label>
-    <select class="modal-select" id="selectEquipe">
-      <option value="" disabled selected>Selecione a equipe...</option>
-    </select>
+    <label class="modal-label">Equipe responsável</label>
+    <!-- EqPicker individual -->
+    <div id="eqPickerProg"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModalProgramar()">Cancelar</button>
       <button class="btn-save" id="btnProgramarConfirmar" onclick="confirmarProgramar()">Programar</button>
@@ -590,21 +571,20 @@
     <div class="modal-title">Concluir Serviço</div>
     <div class="modal-sub" id="modalConcluirSub">Preencha os dados para registrar a conclusão.</div>
 
-    <div class="modal-info-grid" id="modalConcluirInfoGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px"></div>
+    <div id="modalConcluirInfoGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px"></div>
 
     <div id="modalConcluirEquipeWrap" style="display:none;margin-bottom:14px">
       <label class="modal-label">Equipe executora</label>
-      <select class="modal-select" id="selectEquipeConc">
-        <option value="">Selecione a equipe...</option>
-      </select>
+      <!-- EqPicker conclusão -->
+      <div id="eqPickerConc"></div>
     </div>
 
     <label class="modal-label">Foto de conclusão (obrigatória)</label>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn-foto" id="btnCameraConc" onclick="abrirFotoConc('camera')" style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);cursor:pointer;font-size:13px;transition:all .2s">
+      <button id="btnCameraConc" onclick="abrirFotoConc('camera')" style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);cursor:pointer;font-size:13px;transition:all .2s">
         📷 Câmera
       </button>
-      <button class="btn-foto" id="btnGaleriaConc" onclick="abrirFotoConc('galeria')" style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);cursor:pointer;font-size:13px;transition:all .2s">
+      <button id="btnGaleriaConc" onclick="abrirFotoConc('galeria')" style="flex:1;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--eq-white);cursor:pointer;font-size:13px;transition:all .2s">
         🖼 Galeria
       </button>
     </div>
@@ -622,6 +602,12 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="Foto ampliada"/>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -652,6 +638,114 @@
   function cldThumb(url){return url?url.replace('/upload/','/upload/w_400,q_65,f_auto/'):url;}
   function fmtDate(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('pt-BR');}
 
+  // ── EqPicker: dropdown de equipe limpo e com busca ──────────────────────────
+  // Uso: const picker = createEqPicker('idDoContainer');
+  //      await picker.load(arrayDeEquipes);  // [{id, nome}]
+  //      picker.getValue()  → id selecionado ou null
+  //      picker.getNome()   → nome selecionado ou null
+  //      picker.reset()     → limpa seleção
+  function createEqPicker(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+
+    let selectedId = null, selectedNome = null, equipes = [];
+
+    container.innerHTML = `
+      <div class="eq-pick-btn" id="${containerId}-btn" role="button" tabindex="0">
+        <span class="eq-pick-label">Selecione a equipe...</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="eq-pick-drop" id="${containerId}-drop">
+        <input class="eq-pick-search" id="${containerId}-search" type="text"
+          placeholder="Buscar equipe..." autocomplete="off" autocapitalize="none" spellcheck="false"/>
+        <div class="eq-pick-list" id="${containerId}-list"></div>
+      </div>`;
+
+    const btn    = document.getElementById(`${containerId}-btn`);
+    const drop   = document.getElementById(`${containerId}-drop`);
+    const search = document.getElementById(`${containerId}-search`);
+    const list   = document.getElementById(`${containerId}-list`);
+
+    function renderList(q) {
+      const term = (q || '').toLowerCase().trim();
+      const filtered = term ? equipes.filter(e => e.nome.toLowerCase().includes(term)) : equipes;
+      if (!filtered.length) {
+        list.innerHTML = `<div class="eq-pick-empty">Nenhuma equipe encontrada</div>`;
+        return;
+      }
+      list.innerHTML = filtered.map(e =>
+        `<div class="eq-pick-opt${e.id === selectedId ? ' active' : ''}"
+          data-id="${e.id}" data-nome="${e.nome.replace(/"/g,'&quot;')}">${e.nome}</div>`
+      ).join('');
+      list.querySelectorAll('.eq-pick-opt').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedId   = el.dataset.id;
+          selectedNome = el.dataset.nome;
+          setLabel(selectedNome);
+          closeDropdown();
+        });
+      });
+    }
+
+    function setLabel(text) {
+      btn.querySelector('.eq-pick-label').textContent = text || 'Selecione a equipe...';
+      btn.classList.toggle('filled', !!text);
+    }
+
+    function openDropdown() {
+      drop.classList.add('open');
+      btn.classList.add('open');
+      renderList('');
+      search.value = '';
+      setTimeout(() => search.focus(), 60);
+    }
+
+    function closeDropdown() {
+      drop.classList.remove('open');
+      btn.classList.remove('open');
+    }
+
+    btn.addEventListener('click', () => {
+      drop.classList.contains('open') ? closeDropdown() : openDropdown();
+    });
+    btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.classList.contains('open') ? closeDropdown() : openDropdown(); } });
+    search.addEventListener('input', () => renderList(search.value));
+    search.addEventListener('keydown', e => { if (e.key === 'Escape') closeDropdown(); });
+
+    // fecha ao clicar fora
+    document.addEventListener('click', e => {
+      if (!container.contains(e.target)) closeDropdown();
+    }, true);
+
+    return {
+      load(list) {
+        equipes = list;
+        selectedId = null; selectedNome = null;
+        setLabel(null);
+        renderList('');
+      },
+      setSelected(id) {
+        const eq = equipes.find(e => e.id === id);
+        if (eq) { selectedId = eq.id; selectedNome = eq.nome; setLabel(eq.nome); renderList(''); }
+      },
+      getValue()  { return selectedId; },
+      getNome()   { return selectedNome; },
+      reset() {
+        selectedId = null; selectedNome = null;
+        setLabel(null); closeDropdown(); search.value = '';
+      }
+    };
+  }
+
+  // instâncias dos pickers (criadas após o DOM estar pronto)
+  let pickerProg = null, pickerLote = null, pickerConc = null;
+  document.addEventListener('DOMContentLoaded', () => {
+    pickerProg = createEqPicker('eqPickerProg');
+    pickerLote = createEqPicker('eqPickerLote');
+    pickerConc = createEqPicker('eqPickerConc');
+  });
+
+  // ── estado global ──
   let currentUser=null, currentPerfil=null, todasAnomalias=[];
   let filtroTipo='todos', filtroStatus='todos', programarId=null;
 
@@ -666,19 +760,15 @@
     sessionStorage.setItem('userPerfil',u.perfil);
     document.getElementById('avatarEl').textContent=u.nome.charAt(0).toUpperCase();
     if(currentPerfil==='admin'){
-      // admin vê tudo
       ['nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el)el.classList.remove('hidden');
+        const el=document.getElementById(id);if(el)el.classList.remove('hidden');
       });
       document.getElementById('pageSub').textContent='Todas as anomalias registradas';
       const btnExp=document.getElementById('btnExportarPendentes');
       if(btnExp)btnExp.style.display='flex';
     } else {
-      // fiscal — só mapa, anomalias, pendências
       ['nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el)el.style.display='none';
+        const el=document.getElementById(id);if(el)el.style.display='none';
       });
       document.getElementById('pageSub').textContent='Anomalias que você registrou';
     }
@@ -690,15 +780,14 @@
 
   async function carregarAnomalias(){
     const filters=currentPerfil==='admin'?{}:{fiscal_id:currentUser.uid};
-    const [allAnom, _deco, _conj] = await Promise.all([
+    const[allAnom,_deco,_conj]=await Promise.all([
       fetchAll('anomalias',{filters,order:{col:'criado_em',asc:false}}),
       fetchAll('decometro'),
       fetchAll('conjuntos_dec'),
     ]);
-    // MBX fica apenas na aba MBX
-    todasAnomalias = allAnom.filter(a=>a.tipo!=='mux');
-    window._decoCache = _deco;
-    window._conjCache = _conj;
+    todasAnomalias=allAnom.filter(a=>a.tipo!=='mux');
+    window._decoCache=_deco;
+    window._conjCache=_conj;
     atualizarSumario();
     renderLista();
   }
@@ -711,14 +800,11 @@
     document.getElementById('sumPoda').textContent=todasAnomalias.filter(a=>a.tipo==='poda').length;
     document.getElementById('sumEspacador').textContent=todasAnomalias.filter(a=>a.tipo==='espacador').length;
     document.getElementById('sumRamal').textContent=todasAnomalias.filter(a=>a.tipo==='ramal').length;
-
   }
 
   window.renderLista=function(){
     const busca=(document.getElementById('searchInput').value||'').toLowerCase().trim();
     let itens=[...todasAnomalias];
-
-    // filtros
     if(filtroTipo!=='todos')   itens=itens.filter(a=>a.tipo===filtroTipo);
     if(filtroStatus!=='todos') itens=itens.filter(a=>a.status===filtroStatus);
     if(busca) itens=itens.filter(a=>
@@ -727,7 +813,6 @@
       (a.postes||'').toLowerCase().includes(busca)||
       (a.fiscal_nome||'').toLowerCase().includes(busca)
     );
-
     document.getElementById('countPill').textContent=itens.length;
     const tipoLabelMap={poda:'✂ Podas',espacador:'⊕ Espaçadores',ramal:'🏠 Ramais',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Postes',outros:'📋 Outros'};
     document.getElementById('sectionTitle').textContent=filtroTipo!=='todos'?(tipoLabelMap[filtroTipo]||filtroTipo):'Todos os registros';
@@ -739,7 +824,6 @@
       return;
     }
 
-    // barra de seleção
     const temSelecionaveis=currentPerfil==='admin'&&itens.some(a=>a.status==='pendente'&&a.tipo!=='mux');
     document.getElementById('barraSelecao').style.display=temSelecionaveis?'flex':'none';
     if(temSelecionaveis){
@@ -761,30 +845,24 @@
       const podeS=isAdmin&&a.status==='pendente'&&a.tipo!=='mux';
       const posS=(a.postes||'').replace(/'/g,"\\'");
 
-      // foto
       let foto=a.foto_url
         ?'<img class="card-foto lb-trigger" src="'+cldThumb(a.foto_url)+'" data-full="'+a.foto_url+'" alt="Foto" loading="lazy"/>'
         :'<div class="card-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
 
-      // foto conclusão
       let fotoConc=a.foto_concluido_url
         ?'<div class="foto-conclusao-wrap"><div class="foto-conclusao-label">✓ Foto de conclusão</div><img class="foto-conclusao lb-trigger" src="'+cldThumb(a.foto_concluido_url)+'" data-full="'+a.foto_concluido_url+'" alt="Foto conclusão" loading="lazy"/></div>'
         :'';
 
-      // badges de conjunto e matriz
-      let cjBadge='', mzBadge='';
+      let cjBadge='',mzBadge='';
       try{cjBadge=anomConjuntoBadge(a.circuito_nome||a.circuito_id);}catch(e){}
       try{mzBadge=anomMatrizBadge(a.circuito_nome||a.circuito_id);}catch(e){}
 
-      // checkbox
       let chk=podeS
         ?'<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation"><input type="checkbox" class="anom-check" data-id="'+idS+'" onchange="atualizarSelecao()" style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block"></label>'
         :'';
 
-      // equipe
       let eqHtml=a.equipe_id?'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>'+(a.equipe_nome||'—')+'</span></div>':'';
 
-      // botões
       let btns='<button class="btn-sm btn-outline-sm" onclick="verNoMapa(\''+cirS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>Ver no mapa</button>';
       if(isAdmin&&a.status==='pendente'&&a.tipo!=='mux')
         btns+='<button class="btn-sm btn-primary-sm" onclick="openModalProgramar(\''+idS+'\',\''+a.tipo+'\',\''+posS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>';
@@ -793,7 +871,6 @@
       if((isAdmin||(isFiscal&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido')
         btns+='<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia(\''+idS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>';
 
-      // obs
       let obs=(a.observacao||a.fora_obs)?'<div style="margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:12px;color:#8a9bbf;line-height:1.4"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;color:#6b7fa0">Observação</span>'+(a.observacao||a.fora_obs)+'</div>':'';
 
       return '<div class="anomalia-card" style="position:relative">'
@@ -822,8 +899,8 @@
 
     lista.innerHTML=cards.join('');
   };
+
   function resetarSelecao(){
-    // desmarca tudo e zera barra antes de re-renderizar
     document.querySelectorAll('.anom-check').forEach(c=>c.checked=false);
     const ct=document.getElementById('checkTodas');
     if(ct){ct.checked=false;ct.indeterminate=false;}
@@ -843,36 +920,37 @@
     }catch{showToast('Erro ao excluir.',true);}
   };
 
+  // ── Modal programar individual ──────────────────────────────────────────────
   window.openModalProgramar=async function(anomaliaId,tipo,postes){
     programarId=anomaliaId;
     const tipoLbl={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[tipo]||tipo;
     document.getElementById('modalProgramarSub').textContent=`Tipo: ${tipoLbl} | Postes: ${postes||'—'}`;
-    const sel=document.getElementById('selectEquipe');
-    sel.innerHTML='<option value="">Carregando...</option>';
+    pickerProg.reset();
     document.getElementById('modalProgramar').classList.add('open');
     const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
-    sel.innerHTML=`<option value="" disabled selected>Selecione a equipe...</option>`
-      +(equipes.length
-        ?equipes.map(u=>`<option value="${u.id}">${u.nome}</option>`).join('')
-        :'<option value="" disabled>Nenhuma equipe cadastrada</option>');
+    pickerProg.load(equipes.map(u=>({id:u.id,nome:u.nome})));
   };
-  window.closeModalProgramar=function(){document.getElementById('modalProgramar').classList.remove('open');};
+  window.closeModalProgramar=function(){
+    document.getElementById('modalProgramar').classList.remove('open');
+    pickerProg.reset();
+  };
   window.confirmarProgramar=async function(){
-    const equipeId=document.getElementById('selectEquipe').value;
+    const equipeId=pickerProg.getValue();
+    const equipeNome=pickerProg.getNome();
     if(!equipeId)return showToast('Selecione uma equipe.',true);
     const btn=document.getElementById('btnProgramarConfirmar');
     btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
     try{
-      await sb.from('anomalias').update({status:'programado',equipe_id:equipeId,programado_em:new Date().toISOString()}).eq('id',programarId);
+      await sb.from('anomalias').update({status:'programado',equipe_id:equipeId,equipe_nome:equipeNome,programado_em:new Date().toISOString()}).eq('id',programarId);
       closeModalProgramar();showToast('Serviço programado!');await carregarAnomalias();
     }catch{showToast('Erro ao programar.',true);}
     finally{btn.disabled=false;btn.textContent='Programar';}
   };
 
-  // ── modal concluir ──
-  let concluirId=null, fotoConcluirFile=null;
+  // ── Modal concluir ──────────────────────────────────────────────────────────
+  let concluirId=null,fotoConcluirFile=null;
   window.openModalConcluir=async function(anomaliaId){
-    concluirId=anomaliaId; fotoConcluirFile=null;
+    concluirId=anomaliaId;fotoConcluirFile=null;
     document.getElementById('fotoPreviewConc').style.display='none';
     document.getElementById('fotoPreviewConc').src='';
     document.getElementById('obsConc').value='';
@@ -880,7 +958,6 @@
     document.getElementById('btnGaleriaConc').classList.remove('selected');
     const{data:a}=await sb.from('anomalias').select('*').eq('id',anomaliaId).single();
     const tipoLabel={poda:'✂ Poda',espacador:'⊕ Espaçador',ramal:'🏠 Ramal',mux:'🔄 MBX',fora:'⚠️ Fora Padrão',poste:'🪵 Sub. Poste',outros:'📋 Outros'}[a.tipo]||a.tipo;
-    document.getElementById('modalConcluirSub').textContent='Preencha os dados para registrar a conclusão.';
     document.getElementById('modalConcluirInfoGrid').innerHTML=`
       <div class="modal-info-item full"><div class="info-label">Endereço</div><div class="info-val">${a.endereco||'—'}</div></div>
       <div class="modal-info-item"><div class="info-label">Tipo</div><div class="info-val">${tipoLabel}</div></div>
@@ -890,15 +967,22 @@
     const equipeWrap=document.getElementById('modalConcluirEquipeWrap');
     if(currentPerfil==='admin'){
       equipeWrap.style.display='block';
-      const sel=document.getElementById('selectEquipeConc');
-      sel.innerHTML='<option value="">Carregando...</option>';
+      pickerConc.reset();
+      document.getElementById('modalConcluir').classList.add('open');
       const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
-      sel.innerHTML='<option value="">Selecione a equipe...</option>';
-      equipes.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.nome;if(u.id===a.equipe_id)o.selected=true;sel.appendChild(o);});
-    } else { equipeWrap.style.display='none'; }
-    document.getElementById('modalConcluir').classList.add('open');
+      pickerConc.load(equipes.map(u=>({id:u.id,nome:u.nome})));
+      // pré-seleciona equipe já programada, se houver
+      if(a.equipe_id) pickerConc.setSelected(a.equipe_id);
+    } else {
+      equipeWrap.style.display='none';
+      document.getElementById('modalConcluir').classList.add('open');
+    }
   };
-  window.closeModalConcluir=function(){document.getElementById('modalConcluir').classList.remove('open');concluirId=null;fotoConcluirFile=null;};
+  window.closeModalConcluir=function(){
+    document.getElementById('modalConcluir').classList.remove('open');
+    concluirId=null;fotoConcluirFile=null;
+    pickerConc.reset();
+  };
   window.abrirFotoConc=function(origem){
     const input=document.createElement('input');input.type='file';input.accept='image/*';
     if(origem==='camera')input.capture='environment';
@@ -914,11 +998,12 @@
     if(!fotoConcluirFile)return showToast('Foto de conclusão é obrigatória.',true);
     let equipeId=null,equipeNome=null;
     if(currentPerfil==='admin'){
-      equipeId=document.getElementById('selectEquipeConc').value;
+      equipeId=pickerConc.getValue();
       if(!equipeId)return showToast('Selecione a equipe executora.',true);
-      const{data:eu}=await sb.from('usuarios').select('nome').eq('id',equipeId).single();
-      equipeNome=eu?.nome||'—';
-    } else { equipeId=currentUser.uid; equipeNome=currentUser.nome||'—'; }
+      equipeNome=pickerConc.getNome();
+    } else {
+      equipeId=currentUser.uid;equipeNome=currentUser.nome||'—';
+    }
     const btn=document.getElementById('btnConcluirConfirmar');
     btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Salvando...';
     try{
@@ -987,23 +1072,20 @@
     document.getElementById('loteSubtitulo').textContent=`${ids.length} anomalia${ids.length!==1?'s':''} selecionada${ids.length!==1?'s':''}`;
     document.getElementById('loteProgressWrap').style.display='none';
     document.getElementById('btnConfirmarLote').disabled=false;
-    const sel=document.getElementById('selectEquipeLote');
-    sel.innerHTML='<option value="">Carregando...</option>';
+    pickerLote.reset();
     modal.classList.add('open');
     const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
-    sel.innerHTML=`<option value="" disabled selected>Selecione a equipe...</option>`
-      +(equipes.length
-        ?equipes.map(u=>`<option value="${u.id}" data-nome="${u.nome}">${u.nome}</option>`).join('')
-        :'<option value="" disabled>Nenhuma equipe cadastrada</option>');
-    window.resetEquipeCache && window.resetEquipeCache('selectEquipeLote');
+    pickerLote.load(equipes.map(u=>({id:u.id,nome:u.nome})));
   };
-  window.fecharProgramarLote=function(){document.getElementById('modalProgramarLote').classList.remove('open');};
+  window.fecharProgramarLote=function(){
+    document.getElementById('modalProgramarLote').classList.remove('open');
+    pickerLote.reset();
+  };
   window.confirmarProgramarLote=async function(){
     const modal=document.getElementById('modalProgramarLote');
     const ids=modal._ids||[];
-    const sel=document.getElementById('selectEquipeLote');
-    const equipeId=sel.value;
-    const equipeNome=sel.options[sel.selectedIndex]?.dataset?.nome||sel.options[sel.selectedIndex]?.text||'';
+    const equipeId=pickerLote.getValue();
+    const equipeNome=pickerLote.getNome();
     if(!equipeId)return showToast('Selecione uma equipe.',true);
     document.getElementById('btnConfirmarLote').disabled=true;
     const wrap=document.getElementById('loteProgressWrap');
@@ -1026,6 +1108,7 @@
     setTimeout(()=>{fecharProgramarLote();carregarAnomalias();},1200);
   };
 
+  // ── Exportar Excel ──────────────────────────────────────────────────────────
   window.exportarPendentes=async function(){
     if(!todasAnomalias.length)return showToast('Nenhuma anomalia para exportar.',true);
     if(!window.XLSX){
@@ -1034,7 +1117,6 @@
     const tipoLabel={poda:'Poda',espacador:'Espaçador',ramal:'Ramal',mux:'MBX',fora:'Fora do Padrão',poste:'Sub. Poste',outros:'Outros'};
     const statusLabel={pendente:'Pendente',programado:'Programado',concluido:'Concluído'};
     const rows=todasAnomalias.map(a=>{
-      // conjunto e matriz
       const deco=(window._decoCache||[]).find(d=>d.equipamento===(a.circuito_nome||a.circuito_id));
       const conjNome=deco?.conjunto||'—';
       const conjInfo=conjNome!=='—'?((window._conjCache||[]).find(c=>c.nome?.toUpperCase()===conjNome.toUpperCase())||null):null;
@@ -1069,7 +1151,7 @@
     showToast(`✓ ${rows.length} anomalias exportadas para Excel.`);
   };
 
-  // ── Matriz + Conjunto badges para anomalias ──────────────────────────────
+  // ── Matriz + Conjunto badges ─────────────────────────────────────────────────
   function _nivelCli(n){return n>=85?1:n>=50?2:3;}
   function _desarmesSemPTP(ocs){return(ocs||[]).filter(o=>!String(o.causa||'').toUpperCase().includes('PTP'));}
   function _nivelDes(ocs){const n=_desarmesSemPTP(ocs).length;return n>=2?1:n===1?2:3;}
@@ -1079,7 +1161,7 @@
 
   function anomMatrizBadge(circuitoNome){
     const ocs3m=_ocs3m(circuitoNome);
-    const nc=_nivelCli(0); // sem clientes disponível na anomalia — nível mínimo
+    const nc=_nivelCli(0);
     const nd=_nivelDes(ocs3m||[]);
     const{bg,bd,cl}=_matrizCor(nc,nd);
     const semDeco=ocs3m===null;
@@ -1099,149 +1181,24 @@
     return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}" title="Conjunto: ${conj} | Meta DEC: ${meta} | ${parseFloat(pct_dec||0).toFixed(2)}% | Ref: ${mesN}/${ano_ref||''}">${ico} ${conj} · ${parseFloat(pct_dec||0).toFixed(2)}%</span>`;
   }
 
-  // ── lightbox ──
-  function openLightbox(url) {
-    const fullUrl = (url||'')
-      .replace('/upload/w_400,q_65,f_auto/', '/upload/')
-      .replace('/upload/w_1200,q_75,f_auto/', '/upload/');
-    document.getElementById('lightboxImg').src = fullUrl;
-    document.getElementById('lightbox').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+  // ── Lightbox ─────────────────────────────────────────────────────────────────
+  function openLightbox(url){
+    const fullUrl=(url||'').replace('/upload/w_400,q_65,f_auto/','/upload/').replace('/upload/w_1200,q_75,f_auto/','/upload/');
+    document.getElementById('lightboxImg').src=fullUrl;
+    document.getElementById('lightbox').style.display='flex';
+    document.body.style.overflow='hidden';
   }
-  window.openLightbox = openLightbox;
-
-  window.closeLightbox = function() {
-    document.getElementById('lightbox').style.display = 'none';
-    document.getElementById('lightboxImg').src = '';
-    document.body.style.overflow = '';
+  window.openLightbox=openLightbox;
+  window.closeLightbox=function(){
+    document.getElementById('lightbox').style.display='none';
+    document.getElementById('lightboxImg').src='';
+    document.body.style.overflow='';
   };
-
-  // event delegation — funciona com innerHTML dinâmico
-  document.addEventListener('click', function(e) {
-    const el = e.target.closest('.lb-trigger');
-    if (el) { e.stopPropagation(); openLightbox(el.dataset.full || el.src); }
+  document.addEventListener('click',function(e){
+    const el=e.target.closest('.lb-trigger');
+    if(el){e.stopPropagation();openLightbox(el.dataset.full||el.src);}
   });
-  document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); });
-
-  // ── Select com busca integrada ────────────────────────────────
-  function criarSearchableSelect(selectId) {
-    var sel = document.getElementById(selectId);
-    if (!sel || sel.dataset.searchable === '1') return;
-    sel.dataset.searchable = '1';
-    sel.style.display = 'none';
-
-    var wrap = document.createElement('div');
-    wrap.className = 'eq-searchable-wrap';
-    sel.parentNode.insertBefore(wrap, sel);
-    wrap.appendChild(sel);
-
-    var input = document.createElement('div');
-    input.className = 'eq-searchable-input';
-    input.setAttribute('tabindex', '0');
-    input.innerHTML = '<span class="eq-input-text" style="color:rgba(138,155,191,.5)">Selecione a equipe...</span>' +
-      '<svg class="eq-searchable-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
-
-    var dropdown = document.createElement('div');
-    dropdown.className = 'eq-searchable-dropdown';
-    var searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.placeholder = 'Buscar equipe...';
-    searchInput.autocomplete = 'off';
-    searchInput.setAttribute('autocapitalize', 'none');
-    searchInput.setAttribute('spellcheck', 'false');
-    var list = document.createElement('div');
-    list.className = 'eq-searchable-list';
-    dropdown.appendChild(searchInput);
-    dropdown.appendChild(list);
-
-    wrap.appendChild(input);
-    wrap.appendChild(dropdown);
-
-    var selectedValue = null;
-    var selectedText = null;
-
-    function renderOpcoes(busca) {
-      busca = (busca || '').toLowerCase().trim();
-      var opts = Array.from(sel.options);
-      list.innerHTML = '';
-      var found = 0;
-      opts.forEach(function(o) {
-        if (o.disabled) return;
-        var txt = o.text || '';
-        if (busca && !txt.toLowerCase().includes(busca)) return;
-        var div = document.createElement('div');
-        div.className = 'eq-searchable-option' + (o.value === selectedValue ? ' selected' : '');
-        div.textContent = txt;
-        div.dataset.value = o.value;
-        div.addEventListener('click', function() {
-          selectedValue = o.value;
-          selectedText = txt;
-          sel.value = o.value;
-          sel.dispatchEvent(new Event('change'));
-          input.querySelector('.eq-input-text').textContent = txt;
-          input.querySelector('.eq-input-text').style.color = '';
-          dropdown.classList.remove('open');
-          searchInput.value = '';
-        });
-        list.appendChild(div);
-        found++;
-      });
-      if (!found) {
-        var nr = document.createElement('div');
-        nr.className = 'eq-searchable-no-results';
-        nr.textContent = 'Nenhuma equipe encontrada';
-        list.appendChild(nr);
-      }
-    }
-
-    input.addEventListener('click', function() {
-      var isOpen = dropdown.classList.contains('open');
-      // fecha todos os outros
-      document.querySelectorAll('.eq-searchable-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
-      if (!isOpen) {
-        dropdown.classList.add('open');
-        renderOpcoes('');
-        searchInput.value = '';
-        setTimeout(function() { searchInput.focus(); }, 50);
-      }
-    });
-
-    searchInput.addEventListener('input', function() { renderOpcoes(this.value); });
-    searchInput.addEventListener('keydown', function(e) { if (e.key === 'Escape') dropdown.classList.remove('open'); });
-
-    document.addEventListener('click', function(e) {
-      if (!wrap.contains(e.target)) dropdown.classList.remove('open');
-    });
-
-    // observa mudanças no select (quando populado por JS)
-    var observer = new MutationObserver(function() {
-      // reseta se select foi recarregado
-      selectedValue = null;
-      selectedText = null;
-      input.querySelector('.eq-input-text').textContent = 'Selecione a equipe...';
-      input.querySelector('.eq-input-text').style.color = 'rgba(138,155,191,.5)';
-    });
-    observer.observe(sel, { childList: true });
-  }
-
-  // inicializa selects de equipe quando o modal abre
-  var _searchableInited = false;
-  function initSearchableSelects() {
-    if (_searchableInited) return;
-    ['selectEquipe','selectEquipeLote','selectEquipeConc'].forEach(function(id) {
-      if (document.getElementById(id)) criarSearchableSelect(id);
-    });
-    _searchableInited = true;
-  }
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(initSearchableSelects, 500);
-  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
 </script>
-
-<!-- LIGHTBOX -->
-<div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightboxImg" src="" alt="Foto ampliada"/>
-</div>
 </body>
 </html>
