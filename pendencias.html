@@ -157,23 +157,9 @@
 </div>
 
 <script>
-(function(){
-  var p=sessionStorage.getItem('userPerfil')||'';
-  var css=p==='admin'?'':p==='equipe'?'#ni-anom,#ni-dash,#ni-circ,#ni-mbx{display:none}':'#ni-dash,#ni-circ,#ni-mbx{display:none}';
-  if(css)document.write('<style>'+css+'
-    
-
-    
-
-    
-    /* ── Tema Claro v2 — usa variáveis --th-* ────────────────── */
-    
-    
-    
-    
-
-    </style>');
-})();
+  // Guard de pré-render: esconde itens condicionais até a auth confirmar o perfil.
+  // setupUI() REMOVE este <style> e define a visibilidade real (display inline vence ID).
+  document.write('<style id="navInitStyle">#ni-anom,#ni-dash,#ni-circ,#ni-mbx{display:none}</style>');
 </script>
 
 <nav class="botnav">
@@ -362,17 +348,26 @@
   function setupUI(){
     const sub=document.getElementById('pageSub');
     const fw=document.getElementById('filtrosWrap');
+    // remove o guard de pré-render (seletor de ID com display:none vence)
+    const guard=document.getElementById('navInitStyle');
+    if(guard)guard.remove();
+
+    const na=document.getElementById('ni-anom');
     const nd=document.getElementById('ni-dash');
     const nc=document.getElementById('ni-circ');
     const nm=document.getElementById('ni-mbx');
-    // primeiro oculta tudo que não é base
-    [nd,nc,nm].forEach(el=>{if(el)el.style.display='none';});
+
+    // visibilidade por perfil: admin vê tudo; fiscal vê anomalias; equipe não vê anomalias
+    const verAnom = cPerf==='admin' || cPerf==='fiscal';
+    const verAdmin = cPerf==='admin';
+    if(na)na.style.display=verAnom?'':'none';
+    if(nd)nd.style.display=verAdmin?'':'none';
+    if(nc)nc.style.display=verAdmin?'':'none';
+    if(nm)nm.style.display=verAdmin?'':'none';
+
     if(cPerf==='admin'){
       sub.textContent='Todas as inspecoes delegadas';
       fw.classList.remove('hidden');
-      if(nd)nd.style.display='';
-      if(nc)nc.style.display='';
-      if(nm)nm.style.display='';
     } else if(cPerf==='equipe'){
       sub.textContent='Seus servicos programados';
     } else {
