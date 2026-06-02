@@ -553,22 +553,20 @@
 
 <!-- BOTTOM NAV -->
 <script>
-  (function(){
-    // Esconde itens condicionais até a auth confirmar o perfil.
-    // aplicarNav() remove este <style> e define a visibilidade real depois.
-    document.write('<style id="navInitStyle">#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}</style>');
-  })();
+  // Guard de pré-render: esconde itens condicionais até a auth confirmar o perfil.
+  // aplicarNav() (no script principal) REMOVE este <style> e define a visibilidade real.
+  document.write('<style id="navInitStyle">#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}</style>');
 </script>
 <nav class="bottom-nav">
-  <button class="nav-item" onclick="window.location.href='mapa.html'">
+  <button class="nav-item" id="nav-mapa" onclick="window.location.href='mapa.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
     <span class="nav-label">Mapa</span>
   </button>
-  <button class="nav-item active" onclick="window.location.href='anomalias.html'">
+  <button class="nav-item active" id="nav-anomalias" onclick="window.location.href='anomalias.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <span class="nav-label">Anomalias</span>
   </button>
-  <button class="nav-item" onclick="window.location.href='pendencias.html'">
+  <button class="nav-item" id="nav-pendencias" onclick="window.location.href='pendencias.html'">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     <span class="nav-label">Pendências</span>
     <span class="badge" id="badgePendencias" style="display:none"></span>
@@ -857,7 +855,7 @@
     currentPerfil=u.perfil;
     sessionStorage.setItem('userPerfil',u.perfil);
     document.getElementById('avatarEl').textContent=u.nome.charAt(0).toUpperCase();
-    aplicarNav(currentPerfil);
+    aplicarNav(currentPerfil,'anomalias');
     if(currentPerfil==='admin'){
       document.getElementById('pageSub').textContent='Todas as anomalias registradas';
       const btnExp=document.getElementById('btnExportarPendentes');
@@ -876,15 +874,21 @@
   // ── Navegação: remove o guard de pré-render e define visibilidade explícita ──
   // (o <style id="navInitStyle"> usa seletor de ID com display:none, que vence
   //  qualquer classList; por isso precisa ser REMOVIDO, não apenas sobrescrito)
-  function aplicarNav(perfil){
+  function aplicarNav(perfil, active){
     const guard=document.getElementById('navInitStyle');
     if(guard)guard.remove();
-    const set=(id,vis)=>{const el=document.getElementById(id);if(el)el.style.display=vis?'':'none';};
-    // admin vê tudo; fiscal não vê dashboard/mbx/circuitos
-    const ehAdmin=perfil==='admin';
-    set('nav-dashboard',ehAdmin);
-    set('nav-mbx',ehAdmin);
-    set('nav-circuitos',ehAdmin);
+    const vis={
+      admin:  ['nav-mapa','nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'],
+      fiscal: ['nav-mapa','nav-anomalias','nav-pendencias'],
+      equipe: ['nav-mapa','nav-pendencias']
+    }[perfil]||['nav-mapa','nav-pendencias'];
+    ['nav-mapa','nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      el.classList.remove('hidden');
+      el.style.display=vis.includes(id)?'':'none';
+      if(active)el.classList.toggle('active',id==='nav-'+active);
+    });
   }
 
   async function carregarAnomalias(){
