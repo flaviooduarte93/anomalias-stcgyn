@@ -393,6 +393,52 @@
 
     .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
     @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── Botões da barra de ações ── */
+    .bar-action {
+      display:flex; align-items:center; gap:6px;
+      padding:7px 14px; border-radius:8px;
+      background:rgba(var(--c),.12); border:1px solid rgba(var(--c),.35);
+      color:rgb(var(--c)); font-family:'Barlow Condensed',sans-serif;
+      font-size:13px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+      cursor:pointer; transition:all .2s;
+    }
+    .bar-action:hover:not(:disabled) { background:rgba(var(--c),.2); }
+    .bar-action:disabled { opacity:.4; cursor:not-allowed; }
+
+    /* ── Pareamento serviço ↔ foto (concluir em lote) ── */
+    .pair-row {
+      display:flex; align-items:center; gap:10px;
+      padding:8px; border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; background:rgba(255,255,255,.03); margin-bottom:8px;
+    }
+    .pair-num {
+      flex-shrink:0; width:24px; height:24px; border-radius:50%;
+      background:rgba(0,170,255,.15); color:var(--eq-cyan);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px;
+    }
+    .pair-info { flex:1; min-width:0; }
+    .pair-info .pi-circ { font-size:13px; font-weight:600; color:var(--eq-white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pair-info .pi-end { font-size:11px; color:var(--eq-gray); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pair-thumb {
+      flex-shrink:0; width:52px; height:52px; border-radius:8px; object-fit:cover;
+      background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+    }
+    .pair-thumb-empty {
+      flex-shrink:0; width:52px; height:52px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,77,109,.08); border:1px dashed rgba(255,77,109,.35);
+      color:var(--eq-error); font-size:18px;
+    }
+    .pair-reorder { display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+    .pair-reorder button {
+      width:22px; height:18px; border-radius:4px; border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05); color:var(--eq-gray); cursor:pointer;
+      display:flex; align-items:center; justify-content:center; padding:0; line-height:0;
+    }
+    .pair-reorder button:hover { color:var(--eq-cyan); border-color:rgba(0,170,255,.4); }
+    .pair-reorder button:disabled { opacity:.3; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -416,12 +462,18 @@
 <!-- CONTEÚDO -->
 <div class="content">
   <div class="page-title">Anomalias</div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap">
     <div class="page-sub" id="pageSub" style="margin-bottom:0">Carregando...</div>
-    <button id="btnExportarPendentes" onclick="exportarPendentes()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);border-radius:8px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;transition:background .2s">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Excel
-    </button>
+    <div style="display:flex;gap:8px">
+      <button id="btnModoSelecao" onclick="toggleModoSelecao()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);border-radius:8px;color:var(--eq-cyan);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;transition:all .2s">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span id="btnModoSelecaoLbl">Selecionar</span>
+      </button>
+      <button id="btnExportarPendentes" onclick="exportarPendentes()" style="display:none;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);border-radius:8px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;transition:background .2s">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel
+      </button>
+    </div>
   </div>
 
   <!-- busca -->
@@ -432,17 +484,29 @@
     <input class="search-input" id="searchInput" type="text" placeholder="Buscar por endereço, circuito ou postes..." oninput="renderLista()"/>
   </div>
 
-  <!-- Barra de seleção múltipla -->
-  <div id="barraSelecao" style="display:none;align-items:center;gap:10px;padding:8px 12px;background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.25);border-radius:10px;margin-bottom:12px;flex-wrap:wrap">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--eq-white);user-select:none">
-      <input type="checkbox" id="checkTodas" onchange="toggleSelecionarTodas(this)" style="width:16px;height:16px;accent-color:#1565C0;cursor:pointer">
-      Selecionar todas
-    </label>
-    <span id="contadorSelecionadas" style="font-size:12px;color:var(--eq-gray)">0 selecionadas</span>
-    <button id="btnProgramarLote" onclick="abrirProgramarLote()" disabled style="padding:6px 14px;background:rgba(21,101,192,.15);border:1px solid rgba(21,101,192,.3);border-radius:7px;color:#90caf9;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;cursor:not-allowed;opacity:.5;transition:all .2s">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      Programar selecionadas
-    </button>
+  <!-- Barra de seleção múltipla (modo seleção) -->
+  <div id="barraSelecao" style="display:none;flex-direction:column;gap:10px;padding:10px 12px;background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.25);border-radius:10px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--eq-white);user-select:none">
+        <input type="checkbox" id="checkTodas" onchange="toggleSelecionarTodas(this)" style="width:16px;height:16px;accent-color:#1565C0;cursor:pointer">
+        Selecionar todas
+      </label>
+      <span id="contadorSelecionadas" style="font-size:12px;color:var(--eq-gray)">0 selecionadas</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="btnExportarFotos" onclick="exportarFotosSelecionadas()" disabled class="bar-action" style="--c:0,229,160">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar fotos
+      </button>
+      <button id="btnConcluirLote" onclick="abrirConcluirLote()" disabled class="bar-action" style="--c:0,229,160">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Concluir c/ fotos
+      </button>
+      <button id="btnProgramarLote" onclick="abrirProgramarLote()" disabled class="bar-action" style="--c:21,101,192">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Programar
+      </button>
+    </div>
   </div>
 
   <!-- filtros tipo -->
@@ -490,12 +554,9 @@
 <!-- BOTTOM NAV -->
 <script>
   (function(){
-    var p = sessionStorage.getItem('userPerfil') || '';
-    document.write('<style id="navInitStyle">'
-      + (p === 'admin' ? '' :
-         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
-         '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-      + '</style>');
+    // Esconde itens condicionais até a auth confirmar o perfil.
+    // aplicarNav() remove este <style> e define a visibilidade real depois.
+    document.write('<style id="navInitStyle">#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}</style>');
   })();
 </script>
 <nav class="bottom-nav">
@@ -596,6 +657,41 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModalConcluir()">Cancelar</button>
       <button class="btn-save" id="btnConcluirConfirmar" onclick="confirmarConcluir()">✓ Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: concluir em LOTE com fotos posicionais (admin) -->
+<div class="modal-overlay" id="modalConcluirLote" onclick="if(event.target===this)fecharConcluirLote()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✓ Concluir em lote</div>
+    <div class="modal-sub" id="concLoteSub">Importe as fotos na ordem dos serviços selecionados.</div>
+
+    <label class="modal-label">Equipe executora (aplicada a todos)</label>
+    <div id="eqPickerConcLote"></div>
+
+    <div style="margin-top:14px">
+      <button id="btnPickFotosLote" onclick="pickFotosLote()" style="width:100%;padding:11px;background:rgba(0,170,255,.1);border:1px dashed rgba(0,170,255,.4);border-radius:10px;color:var(--eq-cyan);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span id="btnPickFotosLoteLbl">Selecionar fotos</span>
+      </button>
+    </div>
+
+    <div id="concLoteAviso" style="display:none;margin-top:10px;padding:8px 10px;background:rgba(255,179,0,.1);border:1px solid rgba(255,179,0,.3);border-radius:8px;font-size:12px;color:var(--eq-warning);line-height:1.4"></div>
+
+    <div id="concLotePairs" style="margin-top:14px"></div>
+
+    <div id="concLoteProgressWrap" style="display:none;margin-top:12px">
+      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+        <div id="concLoteProgressBar" style="height:100%;width:0%;background:#00e5a0;border-radius:3px;transition:width .3s"></div>
+      </div>
+      <div id="concLoteProgressLabel" style="font-size:11px;color:var(--eq-gray);margin-top:4px;text-align:center"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharConcluirLote()">Cancelar</button>
+      <button class="btn-save" id="btnConfirmarConcLote" onclick="confirmarConcluirLote()" disabled>Concluir</button>
     </div>
   </div>
 </div>
@@ -738,16 +834,18 @@
   }
 
   // instâncias dos pickers (criadas após o DOM estar pronto)
-  let pickerProg = null, pickerLote = null, pickerConc = null;
+  let pickerProg = null, pickerLote = null, pickerConc = null, pickerConcLote = null;
   document.addEventListener('DOMContentLoaded', () => {
-    pickerProg = createEqPicker('eqPickerProg');
-    pickerLote = createEqPicker('eqPickerLote');
-    pickerConc = createEqPicker('eqPickerConc');
+    pickerProg     = createEqPicker('eqPickerProg');
+    pickerLote     = createEqPicker('eqPickerLote');
+    pickerConc     = createEqPicker('eqPickerConc');
+    pickerConcLote = createEqPicker('eqPickerConcLote');
   });
 
   // ── estado global ──
   let currentUser=null, currentPerfil=null, todasAnomalias=[];
   let filtroTipo='todos', filtroStatus='todos', programarId=null;
+  let modoSelecao=false; // controla exibição dos checkboxes em todos os cards
 
   (async()=>{
     const{data:{session}}=await sb.auth.getSession();
@@ -759,17 +857,14 @@
     currentPerfil=u.perfil;
     sessionStorage.setItem('userPerfil',u.perfil);
     document.getElementById('avatarEl').textContent=u.nome.charAt(0).toUpperCase();
+    aplicarNav(currentPerfil);
     if(currentPerfil==='admin'){
-      ['nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
-        const el=document.getElementById(id);if(el)el.classList.remove('hidden');
-      });
       document.getElementById('pageSub').textContent='Todas as anomalias registradas';
       const btnExp=document.getElementById('btnExportarPendentes');
       if(btnExp)btnExp.style.display='flex';
+      const btnSel=document.getElementById('btnModoSelecao');
+      if(btnSel)btnSel.style.display='inline-flex';
     } else {
-      ['nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
-        const el=document.getElementById(id);if(el)el.style.display='none';
-      });
       document.getElementById('pageSub').textContent='Anomalias que você registrou';
     }
     await carregarAnomalias();
@@ -777,6 +872,20 @@
   })();
 
   window.logout=async()=>{await sb.auth.signOut();sessionStorage.clear();window.location.href='index.html';};
+
+  // ── Navegação: remove o guard de pré-render e define visibilidade explícita ──
+  // (o <style id="navInitStyle"> usa seletor de ID com display:none, que vence
+  //  qualquer classList; por isso precisa ser REMOVIDO, não apenas sobrescrito)
+  function aplicarNav(perfil){
+    const guard=document.getElementById('navInitStyle');
+    if(guard)guard.remove();
+    const set=(id,vis)=>{const el=document.getElementById(id);if(el)el.style.display=vis?'':'none';};
+    // admin vê tudo; fiscal não vê dashboard/mbx/circuitos
+    const ehAdmin=perfil==='admin';
+    set('nav-dashboard',ehAdmin);
+    set('nav-mbx',ehAdmin);
+    set('nav-circuitos',ehAdmin);
+  }
 
   async function carregarAnomalias(){
     const filters=currentPerfil==='admin'?{}:{fiscal_id:currentUser.uid};
@@ -824,9 +933,10 @@
       return;
     }
 
-    const temSelecionaveis=currentPerfil==='admin'&&itens.some(a=>a.status==='pendente'&&a.tipo!=='mux');
-    document.getElementById('barraSelecao').style.display=temSelecionaveis?'flex':'none';
-    if(temSelecionaveis){
+    // A barra de ações aparece apenas no modo seleção (admin)
+    const mostrarBarra = currentPerfil==='admin' && modoSelecao;
+    document.getElementById('barraSelecao').style.display = mostrarBarra ? 'flex' : 'none';
+    if(mostrarBarra){
       const ct=document.getElementById('checkTodas');
       if(ct){ct.checked=false;ct.indeterminate=false;}
     }
@@ -842,7 +952,8 @@
       const tipS=tipoLabel[a.tipo]||a.tipo||'';
       const stS=statusLabel[a.status]||a.status||'';
       const dataStr=fmtDate(a.criado_em);
-      const podeS=isAdmin&&a.status==='pendente'&&a.tipo!=='mux';
+      // No modo seleção, qualquer anomalia é selecionável (export, conclusão, etc.)
+      const podeS=isAdmin&&modoSelecao;
       const posS=(a.postes||'').replace(/'/g,"\\'");
 
       let foto=a.foto_url
@@ -857,8 +968,9 @@
       try{cjBadge=anomConjuntoBadge(a.circuito_nome||a.circuito_id);}catch(e){}
       try{mzBadge=anomMatrizBadge(a.circuito_nome||a.circuito_id);}catch(e){}
 
+      const temFoto=!!(a.foto_url||a.foto_concluido_url);
       let chk=podeS
-        ?'<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation"><input type="checkbox" class="anom-check" data-id="'+idS+'" onchange="atualizarSelecao()" style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block"></label>'
+        ?'<label style="position:absolute;bottom:8px;left:8px;z-index:3;cursor:pointer;background:rgba(8,17,38,.75);border-radius:5px;padding:3px;line-height:0;touch-action:manipulation"><input type="checkbox" class="anom-check" data-id="'+idS+'" data-status="'+(a.status||'')+'" data-tipo="'+(a.tipo||'')+'" data-temfoto="'+(temFoto?'1':'0')+'" onchange="atualizarSelecao()" style="width:20px;height:20px;accent-color:#1565C0;cursor:pointer;display:block"></label>'
         :'';
 
       let eqHtml=a.equipe_id?'<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Equipe: <span>'+(a.equipe_nome||'—')+'</span></div>':'';
@@ -1039,17 +1151,45 @@
     setTimeout(()=>t.classList.remove('show'),3000);
   };
 
-  // ── Seleção múltipla ────────────────────────────────────────────────────────
-  function atualizarBarraSelecao(checks){
-    const sel=(checks||[...document.querySelectorAll('.anom-check:checked')]).map(c=>c.dataset.id);
-    const contador=document.getElementById('contadorSelecionadas');
-    const btn=document.getElementById('btnProgramarLote');
-    if(contador)contador.textContent=`${sel.length} selecionada${sel.length!==1?'s':''}`;
+  // ── Modo seleção ────────────────────────────────────────────────────────────
+  window.toggleModoSelecao=function(){
+    modoSelecao=!modoSelecao;
+    const btn=document.getElementById('btnModoSelecao');
+    const lbl=document.getElementById('btnModoSelecaoLbl');
     if(btn){
-      btn.disabled=sel.length===0;
-      btn.style.opacity=sel.length>0?'1':'0.5';
-      btn.style.cursor=sel.length>0?'pointer':'not-allowed';
+      btn.style.background=modoSelecao?'rgba(0,170,255,.22)':'rgba(0,170,255,.1)';
+      btn.style.borderColor=modoSelecao?'rgba(0,170,255,.6)':'rgba(0,170,255,.3)';
     }
+    if(lbl)lbl.textContent=modoSelecao?'Cancelar':'Selecionar';
+    renderLista();
+  };
+
+  // ── Seleção múltipla ────────────────────────────────────────────────────────
+  function selecionadasDOM(){
+    // retorna os checkboxes marcados em ORDEM VISUAL (cima → baixo)
+    return [...document.querySelectorAll('.anom-check:checked')];
+  }
+
+  function atualizarBarraSelecao(checks){
+    const marcados=checks||selecionadasDOM();
+    const sel=marcados.map(c=>c.dataset.id);
+    const contador=document.getElementById('contadorSelecionadas');
+    if(contador)contador.textContent=`${sel.length} selecionada${sel.length!==1?'s':''}`;
+
+    // elegibilidade por ação
+    const comFoto       = marcados.filter(c=>c.dataset.temfoto==='1').length;
+    const naoConcluidas = marcados.filter(c=>c.dataset.status!=='concluido').length;
+    const programaveis  = marcados.filter(c=>c.dataset.status==='pendente'&&c.dataset.tipo!=='mux').length;
+
+    const setBtn=(id,enabled)=>{
+      const b=document.getElementById(id);
+      if(!b)return;
+      b.disabled=!enabled;
+    };
+    setBtn('btnExportarFotos', comFoto>0);
+    setBtn('btnConcluirLote',  naoConcluidas>0);
+    setBtn('btnProgramarLote', programaveis>0);
+
     const checkAll=document.getElementById('checkTodas');
     if(checkAll){
       const total=document.querySelectorAll('.anom-check').length;
@@ -1061,6 +1201,204 @@
   window.toggleSelecionarTodas=function(cb){
     document.querySelectorAll('.anom-check').forEach(c=>c.checked=cb.checked);
     atualizarBarraSelecao();
+  };
+
+  // ── Exportar fotos selecionadas (ZIP) ───────────────────────────────────────
+  async function carregarScript(src){
+    return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  }
+  function urlOriginal(url){
+    return (url||'')
+      .replace('/upload/w_400,q_65,f_auto/','/upload/')
+      .replace('/upload/w_1200,q_75,f_auto/','/upload/');
+  }
+  window.exportarFotosSelecionadas=async function(){
+    const ids=selecionadasDOM().map(c=>c.dataset.id);
+    if(!ids.length)return showToast('Nenhuma anomalia selecionada.',true);
+    const sel=ids.map(id=>todasAnomalias.find(a=>String(a.id)===id)).filter(Boolean);
+    const comFoto=sel.filter(a=>a.foto_url||a.foto_concluido_url);
+    if(!comFoto.length)return showToast('Nenhuma das selecionadas possui foto.',true);
+
+    const btn=document.getElementById('btnExportarFotos');
+    const txtOriginal=btn.innerHTML;
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Baixando...';
+
+    try{
+      if(!window.JSZip) await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+      const zip=new JSZip();
+      const usados={};
+      let ok=0,falhas=0;
+      for(const a of comFoto){
+        let base=`${(a.circuito_nome||a.circuito_id||'sem-circuito')}_${a.tipo||''}`.replace(/[^\w\-]+/g,'_');
+        usados[base]=(usados[base]||0)+1;
+        if(usados[base]>1)base+=`_${usados[base]}`;
+        for(const[suf,url]of[['',a.foto_url],['_concluido',a.foto_concluido_url]]){
+          if(!url)continue;
+          try{
+            const resp=await fetch(urlOriginal(url));
+            if(!resp.ok)throw new Error('HTTP '+resp.status);
+            zip.file(`${base}${suf}.jpg`,await resp.blob());
+            ok++;
+          }catch(e){console.warn('Falha foto',url,e);falhas++;}
+        }
+      }
+      if(ok===0)throw new Error('Nenhuma foto pôde ser baixada (verifique CORS/conexão).');
+      const blob=await zip.generateAsync({type:'blob'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`fotos_anomalias_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.zip`;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      showToast(`✓ ${ok} foto${ok!==1?'s':''} exportada${ok!==1?'s':''}${falhas?` (${falhas} falhou)`:''}.`);
+    }catch(e){
+      console.error(e);
+      showToast('Erro ao exportar fotos. '+(e.message||''),true);
+    }finally{
+      btn.disabled=false;btn.innerHTML=txtOriginal;
+    }
+  };
+
+  // ── Concluir em lote com fotos posicionais ──────────────────────────────────
+  let concLoteAnomalias=[]; // serviços selecionados, em ordem visual
+  let concLoteFotos=[];     // arquivos importados, reordenáveis
+
+  window.abrirConcluirLote=async function(){
+    const ids=selecionadasDOM().map(c=>c.dataset.id);
+    const sel=ids.map(id=>todasAnomalias.find(a=>String(a.id)===id)).filter(Boolean);
+    concLoteAnomalias=sel.filter(a=>a.status!=='concluido');
+    if(!concLoteAnomalias.length)return showToast('Selecione ao menos um serviço não concluído.',true);
+    concLoteFotos=[];
+
+    document.getElementById('concLoteSub').textContent=
+      `${concLoteAnomalias.length} serviço${concLoteAnomalias.length!==1?'s':''} — importe as fotos na mesma ordem (1ª foto → 1º serviço).`;
+    document.getElementById('btnPickFotosLoteLbl').textContent='Selecionar fotos';
+    document.getElementById('concLoteProgressWrap').style.display='none';
+    document.getElementById('btnConfirmarConcLote').disabled=true;
+    pickerConcLote.reset();
+    renderConcLotePairs();
+    document.getElementById('modalConcluirLote').classList.add('open');
+
+    const equipes=await fetchAll('usuarios',{filters:{perfil:'equipe'},order:{col:'nome'}});
+    pickerConcLote.load(equipes.map(u=>({id:u.id,nome:u.nome})));
+  };
+
+  window.fecharConcluirLote=function(){
+    document.getElementById('modalConcluirLote').classList.remove('open');
+    concLoteAnomalias=[];concLoteFotos=[];
+    pickerConcLote.reset();
+  };
+
+  window.pickFotosLote=function(){
+    const input=document.createElement('input');
+    input.type='file';input.accept='image/*';input.multiple=true;
+    input.onchange=e=>{
+      const files=[...e.target.files];
+      if(!files.length)return;
+      // ordena por nome para previsibilidade; usuário pode reordenar depois
+      files.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR',{numeric:true}));
+      concLoteFotos=files;
+      document.getElementById('btnPickFotosLoteLbl').textContent=`${files.length} foto${files.length!==1?'s':''} — trocar`;
+      renderConcLotePairs();
+    };
+    input.click();
+  };
+
+  function renderConcLotePairs(){
+    const cont=document.getElementById('concLotePairs');
+    const aviso=document.getElementById('concLoteAviso');
+    const nServ=concLoteAnomalias.length;
+    const nFoto=concLoteFotos.length;
+
+    // aviso de descompasso
+    if(nFoto===0){
+      aviso.style.display='none';
+    } else if(nFoto<nServ){
+      aviso.style.display='block';
+      aviso.textContent=`⚠ ${nFoto} foto(s) para ${nServ} serviço(s). Apenas os ${nFoto} primeiros serão concluídos.`;
+    } else if(nFoto>nServ){
+      aviso.style.display='block';
+      aviso.textContent=`⚠ ${nFoto} foto(s) para ${nServ} serviço(s). As ${nFoto-nServ} foto(s) extras serão ignoradas.`;
+    } else {
+      aviso.style.display='none';
+    }
+
+    // pareamento posicional
+    const pares=Math.max(nServ, nFoto);
+    let html='';
+    for(let i=0;i<nServ;i++){
+      const a=concLoteAnomalias[i];
+      const foto=concLoteFotos[i];
+      const thumb=foto
+        ?`<img class="pair-thumb" src="${URL.createObjectURL(foto)}" alt="foto ${i+1}"/>`
+        :`<div class="pair-thumb-empty" title="Sem foto para este serviço">✕</div>`;
+      const reorder=`<div class="pair-reorder">
+        <button onclick="moverFotoLote(${i},-1)" ${i===0||!nFoto?'disabled':''} title="Subir foto"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg></button>
+        <button onclick="moverFotoLote(${i},1)" ${i>=nFoto-1||!nFoto?'disabled':''} title="Descer foto"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>`;
+      html+=`<div class="pair-row">
+        <div class="pair-num">${i+1}</div>
+        <div class="pair-info">
+          <div class="pi-circ">${a.circuito_nome||a.circuito_id||'—'}</div>
+          <div class="pi-end">${a.endereco||'—'}</div>
+        </div>
+        ${nFoto?reorder:''}
+        ${thumb}
+      </div>`;
+    }
+    cont.innerHTML=html;
+
+    // habilita confirmar se há pelo menos 1 par válido
+    document.getElementById('btnConfirmarConcLote').disabled=!(nFoto>0&&nServ>0);
+  }
+
+  window.moverFotoLote=function(idx,dir){
+    const j=idx+dir;
+    if(j<0||j>=concLoteFotos.length)return;
+    const tmp=concLoteFotos[idx];
+    concLoteFotos[idx]=concLoteFotos[j];
+    concLoteFotos[j]=tmp;
+    renderConcLotePairs();
+  };
+
+  window.confirmarConcluirLote=async function(){
+    const equipeId=pickerConcLote.getValue();
+    const equipeNome=pickerConcLote.getNome();
+    if(!equipeId)return showToast('Selecione a equipe executora.',true);
+    const n=Math.min(concLoteAnomalias.length,concLoteFotos.length);
+    if(n===0)return showToast('Importe ao menos uma foto.',true);
+
+    const btn=document.getElementById('btnConfirmarConcLote');
+    btn.disabled=true;
+    const wrap=document.getElementById('concLoteProgressWrap');
+    const bar=document.getElementById('concLoteProgressBar');
+    const lbl=document.getElementById('concLoteProgressLabel');
+    wrap.style.display='block';
+
+    let ok=0,erros=0;
+    for(let i=0;i<n;i++){
+      bar.style.width=`${Math.round((i/n)*100)}%`;
+      lbl.textContent=`Enviando ${i+1}/${n}...`;
+      try{
+        const fd=new FormData();
+        fd.append('file',concLoteFotos[i]);
+        fd.append('upload_preset','anomalias-stcgyn');
+        const res=await fetch('https://api.cloudinary.com/v1_1/dlkj90lk8/image/upload',{method:'POST',body:fd});
+        const json=await res.json();
+        const fotoUrl=json.secure_url?json.secure_url.replace('/upload/','/upload/w_1200,q_75,f_auto/'):null;
+        if(!fotoUrl)throw new Error('upload falhou');
+        const{error}=await sb.from('anomalias').update({
+          status:'concluido',foto_concluido_url:fotoUrl,
+          equipe_id:equipeId,equipe_nome:equipeNome,
+          concluido_em:new Date().toISOString(),concluido_por:currentUser.uid
+        }).eq('id',concLoteAnomalias[i].id);
+        if(error)throw error;
+        ok++;
+      }catch(e){console.error('Falha conclusão lote',e);erros++;}
+    }
+    bar.style.width='100%';
+    lbl.textContent=`Concluído: ${ok} serviço(s)${erros?`, ${erros} erro(s)`:''}`;
+    showToast(`✓ ${ok} serviço${ok!==1?'s':''} concluído${ok!==1?'s':''}${erros?` (${erros} falhou)`:''}.`);
+    setTimeout(()=>{fecharConcluirLote();carregarAnomalias();},1300);
   };
 
   // ── Programar em lote ───────────────────────────────────────────────────────
