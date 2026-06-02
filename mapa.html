@@ -621,15 +621,9 @@
 
 <!-- ── FIX 1: document.write agora só escreve o estilo de nav (sem CSS extra dentro) ── -->
 <script>
-  (function(){
-    var p = sessionStorage.getItem('userPerfil') || '';
-    document.write('<style id="navInitStyle">'
-      + (p === 'admin' ? '' :
-         p === 'fiscal' ? '#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
-         p === 'equipe' ? '#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}' :
-         '#nav-anomalias,#nav-pendencias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}')
-      + '</style>');
-  })();
+  // Guard de pré-render: esconde itens condicionais até a auth confirmar o perfil.
+  // setupNav() REMOVE este <style> e define a visibilidade real (display inline vence ID).
+  document.write('<style id="navInitStyle">#nav-anomalias,#nav-dashboard,#nav-circuitos,#nav-mbx{display:none}</style>');
 </script>
 
 <!-- BOTTOM NAV -->
@@ -999,23 +993,32 @@
 
   function setupNav(perfil) {
     sessionStorage.setItem('userPerfil', perfil);
-    ['nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.classList.add('hidden');
+    // remove o guard de pré-render (seletor de ID com display:none vence classList)
+    const guard = document.getElementById('navInitStyle');
+    if (guard) guard.remove();
+
+    const vis = {
+      admin:  ['nav-mapa','nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'],
+      fiscal: ['nav-mapa','nav-anomalias','nav-pendencias'],
+      equipe: ['nav-mapa','nav-pendencias']
+    }[perfil] || ['nav-mapa','nav-pendencias'];
+
+    ['nav-mapa','nav-anomalias','nav-pendencias','nav-dashboard','nav-mbx','nav-circuitos'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('hidden');
+      el.style.display = vis.includes(id) ? '' : 'none';
+      el.classList.toggle('active', id === 'nav-mapa'); // mapa é a página atual
     });
+
+    // extras específicos do mapa
     if (perfil === 'fiscal' || perfil === 'admin') {
-      document.getElementById('nav-anomalias').classList.remove('hidden');
-      document.getElementById('nav-pendencias').classList.remove('hidden');
       const btn = document.getElementById('btnMostrarPendentes');
       if (btn) btn.style.display = 'flex';
     }
-    if (perfil === 'admin') {
-      document.getElementById('nav-dashboard').classList.remove('hidden');
-      document.getElementById('nav-mbx').classList.remove('hidden');
-      document.getElementById('nav-circuitos').classList.remove('hidden');
-    }
     if (perfil === 'fiscal') {
-      document.getElementById('fabAnomalias').classList.remove('hidden');
+      const fab = document.getElementById('fabAnomalias');
+      if (fab) fab.classList.remove('hidden');
     }
   }
 
