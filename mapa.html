@@ -605,17 +605,30 @@
   </svg>
 </button>
 
-<!-- Botão: mostrar pendentes no mapa (admin/fiscal) -->
-<button id="btnMostrarPendentes" onclick="togglePendentesNoMapa(this)"
+<!-- Botão: mostrar serviços pendentes (exceto ramais) no mapa (admin/fiscal) -->
+<button id="btnMostrarPendentes" onclick="togglePendentesNoMapa(this,'servicos')"
   style="position:fixed;top:calc(var(--top-h) + 8px);left:10px;z-index:1001;
          width:34px;height:34px;border-radius:4px;border:2px solid rgba(255,179,0,0.5);
          background:rgba(10,22,40,0.92);color:#ffb300;cursor:pointer;
          display:none;align-items:center;justify-content:center;
          box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
-  title="Mostrar serviços pendentes">
+  title="Mostrar serviços pendentes (sem ramais)">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
     <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+</button>
+
+<!-- Botão: mostrar somente ramais pendentes no mapa (admin/fiscal) -->
+<button id="btnMostrarRamais" onclick="togglePendentesNoMapa(this,'ramais')"
+  style="position:fixed;top:calc(var(--top-h) + 50px);left:10px;z-index:1001;
+         width:34px;height:34px;border-radius:4px;border:2px solid rgba(0,229,160,0.5);
+         background:rgba(10,22,40,0.92);color:#00e5a0;cursor:pointer;
+         display:none;align-items:center;justify-content:center;
+         box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
+  title="Mostrar somente ramais pendentes">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
   </svg>
 </button>
 
@@ -1015,6 +1028,8 @@
     if (perfil === 'fiscal' || perfil === 'admin') {
       const btn = document.getElementById('btnMostrarPendentes');
       if (btn) btn.style.display = 'flex';
+      const btnR = document.getElementById('btnMostrarRamais');
+      if (btnR) btnR.style.display = 'flex';
     }
     if (perfil === 'fiscal') {
       const fab = document.getElementById('fabAnomalias');
@@ -1971,30 +1986,63 @@
 
   let _pendentesAtivos = false;
   let _pendentesMarkers = [];
+  let _pendentesModo = null; // 'servicos' | 'ramais'
 
-  window.togglePendentesNoMapa = async function(btn) {
-    _pendentesAtivos = !_pendentesAtivos;
-    btn.style.borderColor   = _pendentesAtivos ? '#ffb300' : 'rgba(255,179,0,0.4)';
-    btn.style.background    = _pendentesAtivos ? 'rgba(255,179,0,0.15)' : 'rgba(10,22,40,0.92)';
-    btn.title = _pendentesAtivos ? 'Ocultar pendentes' : 'Mostrar pendentes';
+  // estilo dos dois botões por estado
+  function _estiloBtnPend(modo, ativo) {
+    const cfg = {
+      servicos: { on: '#ffb300', off: 'rgba(255,179,0,0.5)', bgOn: 'rgba(255,179,0,0.15)' },
+      ramais:   { on: '#00e5a0', off: 'rgba(0,229,160,0.5)', bgOn: 'rgba(0,229,160,0.15)' }
+    }[modo];
+    const id = modo === 'ramais' ? 'btnMostrarRamais' : 'btnMostrarPendentes';
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.style.borderColor = ativo ? cfg.on : cfg.off;
+    b.style.background  = ativo ? cfg.bgOn : 'rgba(10,22,40,0.92)';
+    b.title = modo === 'ramais'
+      ? (ativo ? 'Ocultar ramais pendentes' : 'Mostrar somente ramais pendentes')
+      : (ativo ? 'Ocultar serviços pendentes' : 'Mostrar serviços pendentes (sem ramais)');
+  }
 
+  window.togglePendentesNoMapa = async function(btn, modo) {
+    modo = modo || 'servicos';
+
+    // se clicar no mesmo botão já ativo → desliga
+    const desligando = _pendentesAtivos && _pendentesModo === modo;
+
+    // limpa markers e zera os dois botões (exclusão mútua)
     _pendentesMarkers.forEach(m => map.removeLayer(m));
     _pendentesMarkers = [];
+    _estiloBtnPend('servicos', false);
+    _estiloBtnPend('ramais', false);
 
-    if (!_pendentesAtivos) return;
+    if (desligando) {
+      _pendentesAtivos = false;
+      _pendentesModo = null;
+      return;
+    }
 
-    showToast('Carregando pendentes...');
+    _pendentesAtivos = true;
+    _pendentesModo = modo;
+    _estiloBtnPend(modo, true);
+
+    showToast(modo === 'ramais' ? 'Carregando ramais...' : 'Carregando serviços pendentes...');
     try {
       const filters = currentPerfil === 'equipe'
         ? { equipe_id: currentUser.uid, status: 'programado' }
         : { status: 'pendente' };
-      const pendentes = await fetchAll('anomalias', { filters });
+      let pendentes = await fetchAll('anomalias', { filters });
+
+      // filtro por modo: ramais isolados; serviços = tudo menos ramal
+      pendentes = modo === 'ramais'
+        ? pendentes.filter(a => a.tipo === 'ramal')
+        : pendentes.filter(a => a.tipo !== 'ramal');
 
       if (!pendentes.length) {
-        showToast('Nenhum serviço pendente.');
+        showToast(modo === 'ramais' ? 'Nenhum ramal pendente.' : 'Nenhum serviço pendente.');
         _pendentesAtivos = false;
-        btn.style.borderColor='rgba(255,179,0,0.4)';
-        btn.style.background='rgba(10,22,40,0.92)';
+        _pendentesModo = null;
+        _estiloBtnPend(modo, false);
         return;
       }
 
@@ -2020,16 +2068,23 @@
           <div class="popup-title">⏳ ${tipo}</div>
           <div class="popup-row">Circuito: <span>${circuito}</span></div>
           <div class="popup-row">Entre postes: <span>${a.postes||'—'}</span></div>
+          ${a.ramal_medidor?`<div class="popup-row">Medidor: <span>${a.ramal_medidor}</span></div>`:''}
+          ${a.ramal_uc?`<div class="popup-row">UC: <span>${a.ramal_uc}</span></div>`:''}
           ${a.texto_os?`<div class="popup-row" style="font-size:11px;color:#8a9bbf">${a.texto_os}</div>`:''}
           ${a.observacao?`<div class="popup-row" style="font-size:11px;color:#8a9bbf">Obs: ${a.observacao}</div>`:''}
         `, { maxWidth: 260 });
         _pendentesMarkers.push(m);
       });
 
-      showToast(`✓ ${_pendentesMarkers.length} pendente${_pendentesMarkers.length!==1?'s':''} no mapa`);
+      const lbl = modo === 'ramais' ? 'ramal' : 'serviço';
+      const n = _pendentesMarkers.length;
+      showToast(`✓ ${n} ${lbl}${n!==1?'s':''} pendente${n!==1?'s':''} no mapa`);
     } catch(e) {
       console.error(e);
       showToast('Erro ao carregar pendentes.', true);
+      _pendentesAtivos = false;
+      _pendentesModo = null;
+      _estiloBtnPend(modo, false);
     }
   };
 
