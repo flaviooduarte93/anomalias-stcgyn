@@ -244,6 +244,7 @@
     .btn-primary-sm { background: linear-gradient(135deg, var(--eq-blue-mid), var(--eq-purple-mid)); color: #fff; }
     .btn-outline-sm { background: transparent; border: 1px solid rgba(0,170,255,0.3); color: var(--eq-cyan); }
     .btn-danger-sm  { background: transparent; border: 1px solid rgba(255,77,109,0.3); color: var(--eq-error); }
+    .btn-warning-sm { background: transparent; border: 1px solid rgba(255,179,0,0.35); color: var(--eq-warning); }
     .btn-sm:hover { opacity: .85; }
 
     /* ── BOTTOM NAV ── */
@@ -505,6 +506,10 @@
       <button id="btnProgramarLote" onclick="abrirProgramarLote()" disabled class="bar-action" style="--c:21,101,192">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         Programar
+      </button>
+      <button id="btnCancelarProgLote" onclick="cancelarProgramacaoLote()" disabled class="bar-action" style="--c:255,179,0">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"/><path d="M3 3v5h5"/></svg>
+        Cancelar prog.
       </button>
     </div>
   </div>
@@ -984,6 +989,8 @@
         btns+='<button class="btn-sm btn-primary-sm" onclick="openModalProgramar(\''+idS+'\',\''+a.tipo+'\',\''+posS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Programar</button>';
       if(isAdmin&&a.status!=='concluido')
         btns+='<button class="btn-sm btn-success-sm" onclick="openModalConcluir(\''+idS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Concluir</button>';
+      if(isAdmin&&a.status==='programado')
+        btns+='<button class="btn-sm btn-warning-sm" onclick="cancelarProgramacao(\''+idS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"/><path d="M3 3v5h5"/></svg>Cancelar prog.</button>';
       if((isAdmin||(isFiscal&&a.fiscal_id===currentUser.uid))&&a.status!=='concluido')
         btns+='<button class="btn-sm btn-danger-sm" onclick="excluirAnomalia(\''+idS+'\')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>';
 
@@ -1034,6 +1041,30 @@
       atualizarSumario();renderLista();
       showToast('Anomalia excluída.');
     }catch{showToast('Erro ao excluir.',true);}
+  };
+
+  // ── Cancelar programação: reverte de 'programado' para 'pendente' ────────────
+  window.cancelarProgramacao=async function(id){
+    const a=todasAnomalias.find(x=>String(x.id)===String(id));
+    if(!a)return;
+    const eqNome=a.equipe_nome||'a equipe atual';
+    if(!confirm(`Cancelar a programação desta anomalia?\nEla voltará para "Pendente" e sairá da fila de ${eqNome}.`))return;
+    try{
+      const{error}=await sb.from('anomalias').update({
+        status:'pendente',
+        equipe_id:null,
+        equipe_nome:null,
+        programado_em:null
+      }).eq('id',id);
+      if(error)throw error;
+      // atualiza cache local sem refetch completo
+      a.status='pendente';
+      a.equipe_id=null;
+      a.equipe_nome=null;
+      a.programado_em=null;
+      atualizarSumario();renderLista();
+      showToast('Programação cancelada — anomalia voltou para pendente.');
+    }catch(e){console.error(e);showToast('Erro ao cancelar programação.',true);}
   };
 
   // ── Modal programar individual ──────────────────────────────────────────────
@@ -1184,15 +1215,17 @@
     const comFoto       = marcados.filter(c=>c.dataset.temfoto==='1').length;
     const naoConcluidas = marcados.filter(c=>c.dataset.status!=='concluido').length;
     const programaveis  = marcados.filter(c=>c.dataset.status==='pendente'&&c.dataset.tipo!=='mux').length;
+    const programadas   = marcados.filter(c=>c.dataset.status==='programado').length;
 
     const setBtn=(id,enabled)=>{
       const b=document.getElementById(id);
       if(!b)return;
       b.disabled=!enabled;
     };
-    setBtn('btnExportarFotos', comFoto>0);
-    setBtn('btnConcluirLote',  naoConcluidas>0);
-    setBtn('btnProgramarLote', programaveis>0);
+    setBtn('btnExportarFotos',    comFoto>0);
+    setBtn('btnConcluirLote',     naoConcluidas>0);
+    setBtn('btnProgramarLote',    programaveis>0);
+    setBtn('btnCancelarProgLote', programadas>0);
 
     const checkAll=document.getElementById('checkTodas');
     if(checkAll){
@@ -1448,6 +1481,24 @@
     lbl.textContent=`Concluído: ${ok} programadas${erros?`, ${erros} erro(s)`:''}`;
     showToast(`✓ ${ok} anomalia${ok!==1?'s':''} programada${ok!==1?'s':''} para ${equipeNome}`);
     setTimeout(()=>{fecharProgramarLote();carregarAnomalias();},1200);
+  };
+
+  // ── Cancelar programação em lote ────────────────────────────────────────────
+  window.cancelarProgramacaoLote=async function(){
+    const ids=selecionadasDOM()
+      .filter(c=>c.dataset.status==='programado')
+      .map(c=>c.dataset.id);
+    if(!ids.length)return showToast('Selecione anomalias programadas.',true);
+    if(!confirm(`Cancelar a programação de ${ids.length} anomalia${ids.length!==1?'s':''}?\nElas voltarão para "Pendente".`))return;
+    let ok=0,erros=0;
+    for(const id of ids){
+      const{error}=await sb.from('anomalias').update({
+        status:'pendente',equipe_id:null,equipe_nome:null,programado_em:null
+      }).eq('id',id);
+      if(error)erros++;else ok++;
+    }
+    showToast(`✓ ${ok} programação${ok!==1?'ões':''} cancelada${ok!==1?'s':''}${erros?` (${erros} erro)`:''}.`);
+    await carregarAnomalias();
   };
 
   // ── Exportar Excel ──────────────────────────────────────────────────────────
