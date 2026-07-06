@@ -656,6 +656,15 @@
       </div>
     </div>
     <div class="modal-sub" style="margin-bottom:8px">Clique em um equipamento para ver detalhes · Clique nos desarmes para expandir</div>
+    <!-- busca por transformador -->
+    <div style="position:relative;margin-bottom:10px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--eq-gray);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="buscaMatrizGeral" type="text" autocomplete="off" placeholder="Buscar transformador (ex: GN11001851) ou conjunto..."
+        oninput="buscarMatrizGeral(this.value)"
+        style="width:100%;padding:9px 34px 9px 36px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--eq-white);font-family:'Barlow',sans-serif;font-size:13px;outline:none;box-sizing:border-box"
+        onfocus="this.style.borderColor='var(--eq-cyan)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"/>
+      <button id="buscaMatrizGeralClear" onclick="limparBuscaMatrizGeral()" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:var(--eq-white);cursor:pointer;font-size:12px;line-height:1;align-items:center;justify-content:center">×</button>
+    </div>
     <!-- filtros dinâmicos de matriz dentro do modal -->
     <div id="filtrosMatrizGeral" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
     <div id="mMatrizGeralBody"></div>
@@ -1637,11 +1646,17 @@
     }
 
     // reset filtros
+    _matrizGeralFiltro='todas';
+    _matrizGeralBusca='';
+    const inpBusca=document.getElementById('buscaMatrizGeral');
+    if(inpBusca)inpBusca.value='';
+    const clearBusca=document.getElementById('buscaMatrizGeralClear');
+    if(clearBusca)clearBusca.style.display='none';
     document.querySelectorAll('#filtrosMatrizGeral button').forEach(b=>b.style.outline='none');
     const btnTodas=document.querySelector('#filtrosMatrizGeral button:first-child');
     if(btnTodas)btnTodas.style.outline='2px solid rgba(255,255,255,.2)';
 
-    renderTabelaMatrizGeral(_matrizGeralRows);
+    aplicarMatrizGeral();
     document.getElementById('modalMatrizGeral').classList.add('open');
   };
 
@@ -1725,8 +1740,11 @@
     }).join('');
 
     const count=rows.length;
+    const msgVazio=_matrizGeralBusca
+      ? `Nenhum equipamento encontrado para "${_matrizGeralBusca}".`
+      : 'Nenhum equipamento nessa categoria.';
     document.getElementById('mMatrizGeralBody').innerHTML=`
-      ${count===0?`<div style="color:var(--eq-gray);text-align:center;padding:24px;font-size:13px">Nenhum equipamento nessa categoria.</div>`:`
+      ${count===0?`<div style="color:var(--eq-gray);text-align:center;padding:24px;font-size:13px">${msgVazio}</div>`:`
       <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
         <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto">
           <thead style="background:rgba(255,255,255,.04)"><tr>
@@ -1754,21 +1772,51 @@
 
   let _matrizGeralRows=[];
   let _matrizGeralOrdem={col:'matriz',asc:true}; // coluna e direção de ordenação
+  let _matrizGeralFiltro='todas'; // faixa da matriz ativa (ex: '1 - 1')
+  let _matrizGeralBusca='';       // texto de busca por equipamento/conjunto
+
+  // aplica busca + filtro de faixa juntos e re-renderiza
+  function aplicarMatrizGeral(){
+    const termo=_matrizGeralBusca.toLowerCase().trim();
+    let rows=_matrizGeralFiltro==='todas'
+      ? _matrizGeralRows
+      : _matrizGeralRows.filter(r=>matrizLabel(r.nc,r.nd)===_matrizGeralFiltro);
+    if(termo){
+      rows=rows.filter(r=>
+        (r.nome||'').toLowerCase().includes(termo)||
+        (r.conjunto||'').toLowerCase().includes(termo)
+      );
+    }
+    renderTabelaMatrizGeral(rows);
+  }
+
+  window.buscarMatrizGeral=function(valor){
+    _matrizGeralBusca=valor||'';
+    const clear=document.getElementById('buscaMatrizGeralClear');
+    if(clear)clear.style.display=_matrizGeralBusca?'flex':'none';
+    aplicarMatrizGeral();
+  };
+
+  window.limparBuscaMatrizGeral=function(){
+    _matrizGeralBusca='';
+    const inp=document.getElementById('buscaMatrizGeral');
+    if(inp)inp.value='';
+    const clear=document.getElementById('buscaMatrizGeralClear');
+    if(clear)clear.style.display='none';
+    aplicarMatrizGeral();
+  };
 
   window.ordenarMatrizGeral=function(col){
     if(_matrizGeralOrdem.col===col) _matrizGeralOrdem.asc=!_matrizGeralOrdem.asc;
     else {_matrizGeralOrdem.col=col; _matrizGeralOrdem.asc=(col==='diasRestantes'||col==='equipamento');}
-    const filtroAtivo=document.querySelector('#filtrosMatrizGeral button[style*="2px solid"]');
-    const valorFiltro=filtroAtivo?filtroAtivo.onclick?.toString().match(/'([^']+)'/)?.[1]||'todas':'todas';
-    const rows=valorFiltro==='todas'?_matrizGeralRows:_matrizGeralRows.filter(r=>matrizLabel(r.nc,r.nd)===valorFiltro);
-    renderTabelaMatrizGeral(rows);
+    aplicarMatrizGeral();
   };
 
   window.filtrarMatrizGeral=function(valor,btn){
     document.querySelectorAll('#filtrosMatrizGeral button').forEach(b=>b.style.outline='none');
     btn.style.outline='2px solid rgba(255,255,255,.2)';
-    const rows=valor==='todas'?_matrizGeralRows:_matrizGeralRows.filter(r=>matrizLabel(r.nc,r.nd)===valor);
-    renderTabelaMatrizGeral(rows);
+    _matrizGeralFiltro=valor;
+    aplicarMatrizGeral();
   };
 
   window.exportarMatriz=function(){
