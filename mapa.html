@@ -937,6 +937,11 @@
   let fotoFile = null;
   let programarAnomaliaId = null;
 
+  // camada de serviços/ramais pendentes (declarada no topo: usada por loadCircuitById)
+  let _pendentesAtivos = false;
+  let _pendentesMarkers = [];
+  let _pendentesModo = null; // 'servicos' | 'ramais'
+
   let map;
   function initMap() {
     map = L.map('map', { zoomControl: false }).setView([-16.68, -49.25], 13);
@@ -1117,10 +1122,12 @@
       currentCircuitoId = null;
       map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
       anomaliaMarkers = [];
+      _pendentesMarkers = []; // eachLayer já removeu do mapa; zera referências órfãs
       document.getElementById('trafoCard').classList.add('hidden');
       document.getElementById('trafoDecoWrap').style.display = 'none';
       document.getElementById('trafoDecoBadge').style.display = 'none';
       reposicionarFAB();
+      recarregarPendentesSeAtivo(); // volta ao escopo global se estiver ligado
     }
   };
 
@@ -1141,8 +1148,10 @@
     currentCircuitoId = null;
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
+    _pendentesMarkers = []; // eachLayer já removeu do mapa; zera referências órfãs
     document.getElementById('trafoCard').classList.add('hidden');
     reposicionarFAB();
+    recarregarPendentesSeAtivo(); // volta ao escopo global se estiver ligado
     input.focus();
   };
 
@@ -1173,6 +1182,7 @@
     currentCircuitoId = id;
     map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
     anomaliaMarkers = [];
+    _pendentesMarkers = []; // eachLayer já removeu do mapa; zera referências órfãs
     document.getElementById('trafoCard').classList.add('hidden');
     reposicionarFAB();
     showToast('Carregando circuito…');
@@ -1277,6 +1287,9 @@
         }
       } catch(e) { console.warn('Deco load:', e); }
     }
+
+    // se a camada de pendentes estiver ligada, reaplica no escopo do novo circuito
+    await recarregarPendentesSeAtivo();
   }
 
   function renderCircuitoData(postesData, conexoesData, trafoInfo, circuitoId, circuitoNome) {
@@ -1984,10 +1997,6 @@
     overlay.querySelector('#btnConcGaleria').onclick = () => pickFoto('galeria');
   };
 
-  let _pendentesAtivos = false;
-  let _pendentesMarkers = [];
-  let _pendentesModo = null; // 'servicos' | 'ramais'
-
   // estilo dos dois botões por estado
   function _estiloBtnPend(modo, ativo) {
     const cfg = {
@@ -2025,12 +2034,33 @@
     _pendentesAtivos = true;
     _pendentesModo = modo;
     _estiloBtnPend(modo, true);
+    await _carregarPendentes(modo, true);
+  };
 
-    showToast(modo === 'ramais' ? 'Carregando ramais...' : 'Carregando serviços pendentes...');
+  // Recarrega a camada de pendentes se ela estiver ativa.
+  // Chamado ao selecionar/limpar um circuito, para o escopo acompanhar a tela.
+  async function recarregarPendentesSeAtivo() {
+    if (!_pendentesAtivos || !_pendentesModo) return;
+    _pendentesMarkers.forEach(m => map.removeLayer(m));
+    _pendentesMarkers = [];
+    await _carregarPendentes(_pendentesModo, false);
+  }
+
+  // Busca e plota os pendentes. Se houver circuito selecionado, restringe a ele.
+  async function _carregarPendentes(modo, comToast) {
+    const escopoCircuito = !!currentCircuitoId;
+    if (comToast) {
+      showToast(modo === 'ramais'
+        ? (escopoCircuito ? 'Carregando ramais do circuito...' : 'Carregando ramais...')
+        : (escopoCircuito ? 'Carregando pendentes do circuito...' : 'Carregando serviços pendentes...'));
+    }
     try {
       const filters = currentPerfil === 'equipe'
         ? { equipe_id: currentUser.uid, status: 'programado' }
         : { status: 'pendente' };
+      // escopo: se um transformador estiver selecionado, mostra só o dele
+      if (escopoCircuito) filters.circuito_id = currentCircuitoId;
+
       let pendentes = await fetchAll('anomalias', { filters });
 
       // filtro por modo: ramais isolados; serviços = tudo menos ramal
@@ -2039,7 +2069,8 @@
         : pendentes.filter(a => a.tipo !== 'ramal');
 
       if (!pendentes.length) {
-        showToast(modo === 'ramais' ? 'Nenhum ramal pendente.' : 'Nenhum serviço pendente.');
+        const ondeMsg = escopoCircuito ? ' neste circuito' : '';
+        showToast(modo === 'ramais' ? `Nenhum ramal pendente${ondeMsg}.` : `Nenhum serviço pendente${ondeMsg}.`);
         _pendentesAtivos = false;
         _pendentesModo = null;
         _estiloBtnPend(modo, false);
@@ -2078,7 +2109,8 @@
 
       const lbl = modo === 'ramais' ? 'ramal' : 'serviço';
       const n = _pendentesMarkers.length;
-      showToast(`✓ ${n} ${lbl}${n!==1?'s':''} pendente${n!==1?'s':''} no mapa`);
+      const ondeOk = escopoCircuito ? ' neste circuito' : ' no mapa';
+      showToast(`✓ ${n} ${lbl}${n!==1?'s':''} pendente${n!==1?'s':''}${ondeOk}`);
     } catch(e) {
       console.error(e);
       showToast('Erro ao carregar pendentes.', true);
