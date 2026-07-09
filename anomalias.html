@@ -898,14 +898,16 @@
 
   async function carregarAnomalias(){
     const filters=currentPerfil==='admin'?{}:{fiscal_id:currentUser.uid};
-    const[allAnom,_deco,_conj]=await Promise.all([
+    const[allAnom,_deco,_conj,_circ]=await Promise.all([
       fetchAll('anomalias',{filters,order:{col:'criado_em',asc:false}}),
       fetchAll('decometro'),
       fetchAll('conjuntos_dec'),
+      fetchAll('circuitos',{select:'id,nome,clientes'}),
     ]);
     todasAnomalias=allAnom.filter(a=>a.tipo!=='mux');
     window._decoCache=_deco;
     window._conjCache=_conj;
+    window._circCache=_circ;
     atualizarSumario();
     renderLista();
   }
@@ -1516,7 +1518,7 @@
       const conjStatus=conjInfo?({ok:'Na Meta',transgressao:'Transgressão',critico:'Crítico'}[conjInfo.status]||'—'):'—';
       const pctDec=conjInfo?`${parseFloat(conjInfo.pct_dec||0).toFixed(2)}%`:'—';
       const ocs3m=_ocs3m(a.circuito_nome||a.circuito_id)||[];
-      const nc=_nivelCli(0);
+      const nc=_nivelCli(_clientesDe(a.circuito_nome||a.circuito_id));
       const nd=_nivelDes(ocs3m);
       const matriz=`${nc} - ${nd}`;
       return{
@@ -1548,13 +1550,24 @@
   function _nivelCli(n){return n>=85?1:n>=50?2:3;}
   function _desarmesSemPTP(ocs){return(ocs||[]).filter(o=>!String(o.causa||'').toUpperCase().includes('PTP'));}
   function _nivelDes(ocs){const n=_desarmesSemPTP(ocs).length;return n>=2?1:n===1?2:3;}
+
+  // Fonte de clientes idêntica à da aba Circuitos:
+  // 1º) tabela `circuitos` (valor real do circuito)
+  // 2º) fallback: `clts_media` do decômetro (média do xlsx)
+  function _clientesDe(nome){
+    if(!nome)return 0;
+    const circ=(window._circCache||[]).find(c=>c.nome===nome);
+    if(circ && circ.clientes!=null && circ.clientes!=='') return parseInt(circ.clientes)||0;
+    const deco=(window._decoCache||[]).find(d=>d.equipamento===nome);
+    return parseInt(deco?.clts_media||0)||0;
+  }
   function _matrizCor(nc,nd){const s=nc+nd;return s<=2?{bg:'rgba(255,77,109,.1)',bd:'rgba(255,77,109,.35)',cl:'var(--eq-error)'}:s<=4?{bg:'rgba(255,179,0,.1)',bd:'rgba(255,179,0,.3)',cl:'var(--eq-warning)'}:{bg:'rgba(0,229,160,.08)',bd:'rgba(0,229,160,.25)',cl:'var(--eq-success)'};}
   function _parseDA(str){if(!str)return null;const s=String(str).trim();if(s.includes('T')||s.includes('-'))return new Date(s);const[d,t]=s.split(' ');const[dd,mm,yy]=(d||'').split('/');return yy?new Date(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}T${t||'00:00:00'}`):null;}
   function _ocs3m(nome){const all=(window._decoCache||[]).find(d=>d.equipamento===nome);if(!all)return null;const hoje=new Date();const fim=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate(),23,59,59);const ini=new Date(hoje.getFullYear(),hoje.getMonth()-3,1,0,0,0);return(all.ocorrencias||[]).filter(o=>{const dt=_parseDA(o.inicio)||_parseDA(o.fim);return dt&&dt>=ini&&dt<=fim;});}
 
   function anomMatrizBadge(circuitoNome){
     const ocs3m=_ocs3m(circuitoNome);
-    const nc=_nivelCli(0);
+    const nc=_nivelCli(_clientesDe(circuitoNome));
     const nd=_nivelDes(ocs3m||[]);
     const{bg,bd,cl}=_matrizCor(nc,nd);
     const semDeco=ocs3m===null;
