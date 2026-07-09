@@ -666,7 +666,15 @@
       <button id="buscaMatrizGeralClear" onclick="limparBuscaMatrizGeral()" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:var(--eq-white);cursor:pointer;font-size:12px;line-height:1;align-items:center;justify-content:center">×</button>
     </div>
     <!-- filtros dinâmicos de matriz dentro do modal -->
-    <div id="filtrosMatrizGeral" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div id="filtrosMatrizGeral" style="display:flex;gap:6px;flex-wrap:wrap;flex:1"></div>
+      <button id="btnFiltroPendencia" onclick="toggleFiltroPendencia()" title="Mostrar somente equipamentos inspecionados com serviços pendentes"
+        style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;
+               border:1px solid rgba(255,179,0,.35);background:rgba(255,179,0,.06);color:var(--eq-warning);transition:all .2s">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Só com pendência <span id="cntFiltroPendencia" style="opacity:.6;font-weight:400"></span>
+      </button>
+    </div>
     <div id="mMatrizGeralBody"></div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn-cancel" onclick="fecharMatrizGeral()" style="flex:1">Fechar</button>
@@ -1613,7 +1621,11 @@
       const ultDataOcs=todasOcs.reduce((mx,o)=>{const dt=parseDataBR(o.inicio)||parseDataBR(o.fim);return dt&&dt>mx?dt:mx;},null);
       const saidaJanela=ultDataOcs?new Date(ultDataOcs.getTime()+91*86400000):null;
       const diasRestantes=saidaJanela?Math.ceil((saidaJanela-Date.now())/86400000):null;
-      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte,conjunto,conjInfo,diasRestantes,saidaJanela};
+      // serviços pendentes e histórico de inspeção (indexados por circuito_id)
+      const circId=circ?circ.id:null;
+      const temInspecao=circId?!!inspecoesCache[circId]:false;
+      const pendencias=circId?(anomaliasCache[circId]||0):0;
+      return{nome,clientes,nc,nd,color,lbl,ocsSemPTP,fonte,conjunto,conjInfo,diasRestantes,saidaJanela,circId,temInspecao,pendencias};
     }).sort((a,b)=>{
       const ka=matrizLabel(a.nc,a.nd), kb=matrizLabel(b.nc,b.nd);
       return ordemFixaR.indexOf(ka)-ordemFixaR.indexOf(kb);
@@ -1648,10 +1660,18 @@
     // reset filtros
     _matrizGeralFiltro='todas';
     _matrizGeralBusca='';
+    _matrizGeralSoPendencia=false;
     const inpBusca=document.getElementById('buscaMatrizGeral');
     if(inpBusca)inpBusca.value='';
     const clearBusca=document.getElementById('buscaMatrizGeralClear');
     if(clearBusca)clearBusca.style.display='none';
+    const btnPend=document.getElementById('btnFiltroPendencia');
+    if(btnPend){
+      btnPend.style.background='rgba(255,179,0,.06)';
+      btnPend.style.borderColor='rgba(255,179,0,.35)';
+      btnPend.style.outline='none';
+    }
+    atualizarContadorPendencia();
     document.querySelectorAll('#filtrosMatrizGeral button').forEach(b=>b.style.outline='none');
     const btnTodas=document.querySelector('#filtrosMatrizGeral button:first-child');
     if(btnTodas)btnTodas.style.outline='2px solid rgba(255,255,255,.2)';
@@ -1677,12 +1697,18 @@
         va=a.diasRestantes===null?Infinity:a.diasRestantes;
         vb=b.diasRestantes===null?Infinity:b.diasRestantes;
       }
+      else if(ord.col==='pendencias'){
+        // não inspecionados (sem dado) vão para o final
+        va=a.temInspecao?a.pendencias:-1;
+        vb=b.temInspecao?b.pendencias:-1;
+      }
       else{va=a.nc+a.nd;vb=b.nc+b.nd;}
       return ord.asc?(va>vb?1:va<vb?-1:0):(va<vb?1:va>vb?-1:0);
     });
 
-    const thStyle='padding:8px 10px;color:var(--eq-gray);cursor:pointer;white-space:nowrap;user-select:none';
+    const thStyle='padding:6px 7px;color:var(--eq-gray);cursor:pointer;white-space:nowrap;user-select:none';
     const thIcon=col=>_matrizGeralOrdem.col===col?(_matrizGeralOrdem.asc?' ↑':' ↓'):'';
+    const td='padding:4px 7px'; // célula compacta
 
     const tbody=sorted.map(r=>{
       // badge de conjunto
@@ -1713,27 +1739,38 @@
         }
       }
 
+      // badge de pendências (só faz sentido para quem já foi inspecionado)
+      let pendBadge;
+      if(!r.temInspecao){
+        pendBadge=`<span style="color:rgba(138,155,191,.45);font-size:11px" title="Ainda sem inspeção">—</span>`;
+      } else if(r.pendencias>0){
+        pendBadge=`<span style="display:inline-block;min-width:20px;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(255,179,0,.12);border:1px solid rgba(255,179,0,.35);color:var(--eq-warning)" title="${r.pendencias} serviço(s) pendente(s)">${r.pendencias}</span>`;
+      } else {
+        pendBadge=`<span style="color:var(--eq-success);font-size:11px;font-weight:700" title="Inspecionado, sem pendências">✓ 0</span>`;
+      }
+
       return`
       <tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;white-space:nowrap" onclick="abrirMatrizEquipDeco('${r.nome}',${r.clientes})">
-        <td style="padding:6px 10px;font-weight:600">${r.nome}</td>
-        <td style="padding:6px 10px">${conjBadge}</td>
-        <td style="padding:6px 10px;text-align:right">${r.clientes}<span style="font-size:10px;color:var(--eq-gray);margin-left:4px">(${r.fonte})</span></td>
-        <td style="padding:6px 10px;text-align:center;color:var(--eq-gray)">${r.nc}</td>
-        <td style="padding:6px 10px;text-align:center">
+        <td style="${td};font-weight:600">${r.nome}</td>
+        <td style="${td}">${conjBadge}</td>
+        <td style="${td};text-align:right">${r.clientes}<span style="font-size:10px;color:var(--eq-gray);margin-left:3px">(${r.fonte})</span></td>
+        <td style="${td};text-align:center;color:var(--eq-gray)">${r.nc}</td>
+        <td style="${td};text-align:center">
           <span style="cursor:pointer;color:var(--eq-cyan);text-decoration:underline" onclick="event.stopPropagation();toggleDesarmesDeco('deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}')">
             ${r.ocsSemPTP.length}
           </span>
         </td>
-        <td style="padding:6px 10px;text-align:center;color:var(--eq-gray)">${r.nd}</td>
-        <td style="padding:6px 10px;text-align:center;font-weight:700;color:${r.color}">${matrizLabel(r.nc,r.nd)}</td>
-        <td style="padding:6px 10px;text-align:center"><span style="padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
-        <td style="padding:6px 10px;text-align:center;font-size:12px">${janelaBadge}</td>
+        <td style="${td};text-align:center;color:var(--eq-gray)">${r.nd}</td>
+        <td style="${td};text-align:center;font-weight:700;color:${r.color}">${matrizLabel(r.nc,r.nd)}</td>
+        <td style="${td};text-align:center"><span style="padding:1px 7px;border-radius:5px;font-size:11px;font-weight:700;color:${r.color};background:${r.color.replace(')',',0.1)').replace('var(','rgba(').replace('--eq-error','255,77,109').replace('--eq-warning','255,179,0').replace('--eq-success','0,229,160')}">${r.lbl}</span></td>
+        <td style="${td};text-align:center">${pendBadge}</td>
+        <td style="${td};text-align:center;font-size:12px">${janelaBadge}</td>
       </tr>
       <tr id="deco-${r.nome.replace(/[^a-z0-9]/gi,'_')}" style="display:none;background:rgba(0,0,0,.2)">
-        <td colspan="9" style="padding:8px 14px">
+        <td colspan="10" style="padding:6px 12px">
           ${r.ocsSemPTP.length?`<table style="width:100%;font-size:11px;border-collapse:collapse">
-            <tr style="color:var(--eq-gray)"><th style="text-align:left;padding:3px 6px">Nº</th><th style="text-align:left;padding:3px 6px">Data Início</th><th style="text-align:left;padding:3px 6px">Data Fim</th><th style="text-align:left;padding:3px 6px">Causa</th><th style="text-align:right;padding:3px 6px">CHI</th></tr>
-            ${r.ocsSemPTP.map(o=>`<tr><td style="padding:3px 6px">${o.numero||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.inicio||'—'}</td><td style="padding:3px 6px;color:var(--eq-gray)">${o.fim||'—'}</td><td style="padding:3px 6px;color:var(--eq-cyan)">${o.causa||'—'}</td><td style="padding:3px 6px;text-align:right;font-weight:700">${parseFloat(o.chi||0).toFixed(2)}</td></tr>`).join('')}
+            <tr style="color:var(--eq-gray)"><th style="text-align:left;padding:2px 5px">Nº</th><th style="text-align:left;padding:2px 5px">Data Início</th><th style="text-align:left;padding:2px 5px">Data Fim</th><th style="text-align:left;padding:2px 5px">Causa</th><th style="text-align:right;padding:2px 5px">CHI</th></tr>
+            ${r.ocsSemPTP.map(o=>`<tr><td style="padding:2px 5px">${o.numero||'—'}</td><td style="padding:2px 5px;color:var(--eq-gray)">${o.inicio||'—'}</td><td style="padding:2px 5px;color:var(--eq-gray)">${o.fim||'—'}</td><td style="padding:2px 5px;color:var(--eq-cyan)">${o.causa||'—'}</td><td style="padding:2px 5px;text-align:right;font-weight:700">${parseFloat(o.chi||0).toFixed(2)}</td></tr>`).join('')}
           </table>` : '<span style="color:var(--eq-success);font-size:11px">✓ Sem desarmes</span>'}
         </td>
       </tr>`;
@@ -1742,21 +1779,30 @@
     const count=rows.length;
     const msgVazio=_matrizGeralBusca
       ? `Nenhum equipamento encontrado para "${_matrizGeralBusca}".`
-      : 'Nenhum equipamento nessa categoria.';
+      : (_matrizGeralSoPendencia ? 'Nenhum equipamento inspecionado com pendências nessa faixa.' : 'Nenhum equipamento nessa categoria.');
+    // totais do recorte atual
+    const totalPend=rows.reduce((s,r)=>s+(r.temInspecao?r.pendencias:0),0);
+    const totalInsp=rows.filter(r=>r.temInspecao).length;
     document.getElementById('mMatrizGeralBody').innerHTML=`
       ${count===0?`<div style="color:var(--eq-gray);text-align:center;padding:24px;font-size:13px">${msgVazio}</div>`:`
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px;font-size:11px;color:var(--eq-gray)">
+        <span>Exibindo <strong style="color:var(--eq-white)">${count}</strong> equipamento${count!==1?'s':''}</span>
+        <span>Inspecionados: <strong style="color:var(--eq-cyan)">${totalInsp}</strong></span>
+        <span>Serviços pendentes: <strong style="color:var(--eq-warning)">${totalPend}</strong></span>
+      </div>
       <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px;table-layout:auto">
           <thead style="background:rgba(255,255,255,.04)"><tr>
-            <th onclick="ordenarMatrizGeral('equipamento')" style="${thStyle};text-align:left;white-space:nowrap">Equipamento${thIcon('equipamento')}</th>
-            <th style="padding:8px 10px;text-align:left;color:var(--eq-gray);white-space:nowrap">Conjunto</th>
-            <th onclick="ordenarMatrizGeral('clientes')" style="${thStyle};text-align:right;white-space:nowrap">Clientes${thIcon('clientes')}</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray);white-space:nowrap">N.Cli</th>
-            <th onclick="ordenarMatrizGeral('desarmes')" style="${thStyle};text-align:center;white-space:nowrap">Desarmes${thIcon('desarmes')}</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray);white-space:nowrap">N.Des</th>
-            <th onclick="ordenarMatrizGeral('matriz')" style="${thStyle};text-align:center;white-space:nowrap">Matriz${thIcon('matriz')}</th>
-            <th style="padding:8px 10px;text-align:center;color:var(--eq-gray);white-space:nowrap">Criticidade</th>
-            <th onclick="ordenarMatrizGeral('diasRestantes')" style="${thStyle};text-align:center;white-space:nowrap" title="Dias para sair da janela de 90 dias (91º dia)">Janela 90d${thIcon('diasRestantes')}</th>
+            <th onclick="ordenarMatrizGeral('equipamento')" style="${thStyle};text-align:left">Equipamento${thIcon('equipamento')}</th>
+            <th style="padding:6px 7px;text-align:left;color:var(--eq-gray);white-space:nowrap">Conjunto</th>
+            <th onclick="ordenarMatrizGeral('clientes')" style="${thStyle};text-align:right">Clientes${thIcon('clientes')}</th>
+            <th style="padding:6px 7px;text-align:center;color:var(--eq-gray);white-space:nowrap">N.Cli</th>
+            <th onclick="ordenarMatrizGeral('desarmes')" style="${thStyle};text-align:center">Desarmes${thIcon('desarmes')}</th>
+            <th style="padding:6px 7px;text-align:center;color:var(--eq-gray);white-space:nowrap">N.Des</th>
+            <th onclick="ordenarMatrizGeral('matriz')" style="${thStyle};text-align:center">Matriz${thIcon('matriz')}</th>
+            <th style="padding:6px 7px;text-align:center;color:var(--eq-gray);white-space:nowrap">Criticidade</th>
+            <th onclick="ordenarMatrizGeral('pendencias')" style="${thStyle};text-align:center" title="Serviços pendentes (apenas equipamentos já inspecionados)">Pend.${thIcon('pendencias')}</th>
+            <th onclick="ordenarMatrizGeral('diasRestantes')" style="${thStyle};text-align:center" title="Dias para sair da janela de 90 dias (91º dia)">Janela 90d${thIcon('diasRestantes')}</th>
           </tr></thead>
           <tbody>${tbody}</tbody>
         </table>
@@ -1774,13 +1820,18 @@
   let _matrizGeralOrdem={col:'matriz',asc:true}; // coluna e direção de ordenação
   let _matrizGeralFiltro='todas'; // faixa da matriz ativa (ex: '1 - 1')
   let _matrizGeralBusca='';       // texto de busca por equipamento/conjunto
+  let _matrizGeralSoPendencia=false; // filtro independente: só inspecionados c/ pendência
 
-  // aplica busca + filtro de faixa juntos e re-renderiza
+  // aplica busca + filtro de faixa + filtro de pendência juntos e re-renderiza
   function aplicarMatrizGeral(){
     const termo=_matrizGeralBusca.toLowerCase().trim();
     let rows=_matrizGeralFiltro==='todas'
       ? _matrizGeralRows
       : _matrizGeralRows.filter(r=>matrizLabel(r.nc,r.nd)===_matrizGeralFiltro);
+    // filtro de pendência é INDEPENDENTE do filtro de matriz — combina com ele
+    if(_matrizGeralSoPendencia){
+      rows=rows.filter(r=>r.temInspecao&&r.pendencias>0);
+    }
     if(termo){
       rows=rows.filter(r=>
         (r.nome||'').toLowerCase().includes(termo)||
@@ -1788,6 +1839,24 @@
       );
     }
     renderTabelaMatrizGeral(rows);
+  }
+
+  window.toggleFiltroPendencia=function(){
+    _matrizGeralSoPendencia=!_matrizGeralSoPendencia;
+    const b=document.getElementById('btnFiltroPendencia');
+    if(b){
+      b.style.background=_matrizGeralSoPendencia?'rgba(255,179,0,.18)':'rgba(255,179,0,.06)';
+      b.style.borderColor=_matrizGeralSoPendencia?'var(--eq-warning)':'rgba(255,179,0,.35)';
+      b.style.outline=_matrizGeralSoPendencia?'2px solid rgba(255,179,0,.25)':'none';
+    }
+    aplicarMatrizGeral();
+  };
+
+  // atualiza o contador exibido no botão (total de inspecionados com pendência)
+  function atualizarContadorPendencia(){
+    const n=_matrizGeralRows.filter(r=>r.temInspecao&&r.pendencias>0).length;
+    const el=document.getElementById('cntFiltroPendencia');
+    if(el)el.textContent=`(${n})`;
   }
 
   window.buscarMatrizGeral=function(valor){
@@ -1811,7 +1880,6 @@
     else {_matrizGeralOrdem.col=col; _matrizGeralOrdem.asc=(col==='diasRestantes'||col==='equipamento');}
     aplicarMatrizGeral();
   };
-
   window.filtrarMatrizGeral=function(valor,btn){
     document.querySelectorAll('#filtrosMatrizGeral button').forEach(b=>b.style.outline='none');
     btn.style.outline='2px solid rgba(255,255,255,.2)';
@@ -1835,7 +1903,10 @@
       const ultDataOcsExp=todasOcsExp.reduce((mx,o)=>{const dt=parseDataBR(o.inicio)||parseDataBR(o.fim);return dt&&dt>mx?dt:mx;},null);
       const saidaJanelaExp=ultDataOcsExp?new Date(ultDataOcsExp.getTime()+91*86400000):null;
       const diasRestExp=saidaJanelaExp?Math.ceil((saidaJanelaExp-Date.now())/86400000):null;
-      return{'Equipamento':nome,'Conjunto':decoConjunto[nome]||'—','Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl,'Janela 90d (dias)':diasRestExp===null?'—':diasRestExp,'Saída da Janela':saidaJanelaExp?saidaJanelaExp.toLocaleDateString('pt-BR'):'—'};
+      const circIdExp=circ?circ.id:null;
+      const temInspExp=circIdExp?!!inspecoesCache[circIdExp]:false;
+      const pendExp=circIdExp?(anomaliasCache[circIdExp]||0):0;
+      return{'Equipamento':nome,'Conjunto':decoConjunto[nome]||'—','Clientes':clientes,'Fonte Clientes':circ?'Circuito':'Média xlsx','Desarmes (sem PTP)':ocsSemPTP.length,'Nível Clientes':nc,'Nível Desarmes':nd,'Matriz':matrizLabel(nc,nd),'Criticidade':lbl,'Inspecionado':temInspExp?'Sim':'Não','Serviços Pendentes':temInspExp?pendExp:'—','Janela 90d (dias)':diasRestExp===null?'—':diasRestExp,'Saída da Janela':saidaJanelaExp?saidaJanelaExp.toLocaleDateString('pt-BR'):'—'};
     });
     const ws=window.XLSX.utils.json_to_sheet(rows);
     const wb=window.XLSX.utils.book_new();
