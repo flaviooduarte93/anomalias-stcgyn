@@ -405,6 +405,10 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { border-color: rgba(255,77,109,0.3); color: var(--eq-error); }
 
+    /* marker de anomalia concluída — acinzentado para diferenciar do pendente */
+    .anom-concluida { filter: grayscale(1) brightness(.75); opacity: .55; }
+    .anom-concluida:hover { opacity: .9; }
+
     /* ── FIX 1: Switch de tema — CSS movido para cá (fora do document.write) ── */
     .modal-switch { position:relative; display:inline-block; cursor:pointer; flex-shrink:0; }
     .modal-switch input { display:none; }
@@ -1379,6 +1383,16 @@
       _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId } });
     }
 
+    // Se um dos botões (serviços / ramais) estiver ativo, ele FILTRA esta camada
+    // em vez de sobrepor uma segunda camada de markers.
+    if (_pendentesAtivos && _pendentesModo) {
+      const statusAlvo = currentPerfil === 'equipe' ? 'programado' : 'pendente';
+      _anomaliasData = _anomaliasData.filter(a =>
+        a.status === statusAlvo &&
+        (_pendentesModo === 'ramais' ? a.tipo === 'ramal' : a.tipo !== 'ramal')
+      );
+    }
+
     const coordCount = {};
     _anomaliasData.forEach(d => {
       if (!d.lat || !d.lng) return;
@@ -1388,6 +1402,7 @@
 
     const coordIdx = {};
     _anomaliasData.forEach(d => plotarAnomalia(d.id, d, coordCount, coordIdx));
+    return _anomaliasData.length;
   }
 
   function spreadOffset(key, total, coordIdx) {
@@ -1403,16 +1418,29 @@
     };
   }
 
+  // Retorna o ícone do tipo; se a anomalia estiver concluída, devolve uma
+  // variante acinzentada (reaproveita o mesmo HTML, só troca a className).
+  function iconDe(tipo, status) {
+    const base = tipo === 'poda'   ? iconPoda
+      : tipo === 'mux'    ? iconMux
+      : tipo === 'ramal'  ? iconRamal
+      : tipo === 'fora'   ? iconFora
+      : tipo === 'poste'  ? iconSubPoste
+      : tipo === 'outros' ? iconFora
+      : iconEspacador;
+    if (status !== 'concluido') return base;
+    return L.divIcon({
+      className:  'anom-concluida',
+      iconSize:   base.options.iconSize,
+      iconAnchor: base.options.iconAnchor,
+      html:       base.options.html
+    });
+  }
+
   function plotarAnomalia(id, data, coordCount, coordIdx) {
     if (!data.lat || !data.lng) return;
 
-    const icon = data.tipo === 'poda'   ? iconPoda
-      : data.tipo === 'mux'    ? iconMux
-      : data.tipo === 'ramal'  ? iconRamal
-      : data.tipo === 'fora'   ? iconFora
-      : data.tipo === 'poste'  ? iconSubPoste
-      : data.tipo === 'outros' ? iconFora
-      : iconEspacador;
+    const icon = iconDe(data.tipo, data.status);
 
     let lat = data.lat, lng = data.lng;
     if (coordCount && coordIdx) {
@@ -1434,7 +1462,7 @@
       <div class="popup-row">Entre postes: <span>${data.postes || '—'}</span></div>
       ${data.quantidade ? `<div class="popup-row">Quantidade: <span>${data.quantidade}</span></div>` : ''}
       ${data.observacao ? `<div class="popup-row">Obs: <span>${data.observacao}</span></div>` : ''}
-      <div class="popup-row">Status: <span>${data.status || 'pendente'}</span></div>
+      <div class="popup-row">Status: <span style="color:${data.status==='concluido'?'#8a9bbf':data.status==='programado'?'#00aaff':'#ffb300'};font-weight:700">${data.status || 'pendente'}</span></div>
       <div class="popup-row">Por: <span>${data.fiscal_nome || '—'}</span></div>`;
 
     if (data.texto_os && currentPerfil === 'admin') {
@@ -2016,10 +2044,10 @@
   window.togglePendentesNoMapa = async function(btn, modo) {
     modo = modo || 'servicos';
 
-    // se clicar no mesmo botão já ativo → desliga
+    // se clicar no mesmo botão já ativo → desliga (volta a mostrar tudo)
     const desligando = _pendentesAtivos && _pendentesModo === modo;
 
-    // limpa markers e zera os dois botões (exclusão mútua)
+    // limpa a camada global e zera os dois botões (exclusão mútua)
     _pendentesMarkers.forEach(m => map.removeLayer(m));
     _pendentesMarkers = [];
     _estiloBtnPend('servicos', false);
@@ -2028,21 +2056,37 @@
     if (desligando) {
       _pendentesAtivos = false;
       _pendentesModo = null;
+    } else {
+      _pendentesAtivos = true;
+      _pendentesModo = modo;
+      _estiloBtnPend(modo, true);
+    }
+
+    // COM circuito selecionado: o botão filtra a camada do próprio circuito
+    if (currentCircuitoId) {
+      const n = await loadAnomaliasNoMapa(currentCircuitoId);
+      if (!_pendentesAtivos) {
+        showToast('Filtro removido — exibindo todas as anomalias do circuito.');
+      } else {
+        const lbl = modo === 'ramais' ? 'ramal' : 'serviço';
+        showToast(n
+          ? `✓ ${n} ${lbl}${n!==1?'s':''} pendente${n!==1?'s':''} neste circuito`
+          : `Nenhum ${lbl} pendente neste circuito.`);
+      }
       return;
     }
 
-    _pendentesAtivos = true;
-    _pendentesModo = modo;
-    _estiloBtnPend(modo, true);
-    await _carregarPendentes(modo, true);
+    // SEM circuito: camada global de pendentes sobre todo o mapa
+    if (_pendentesAtivos) await _carregarPendentes(modo, true);
   };
 
   // Recarrega a camada de pendentes se ela estiver ativa.
-  // Chamado ao selecionar/limpar um circuito, para o escopo acompanhar a tela.
+  // Com circuito selecionado, quem aplica o filtro é loadAnomaliasNoMapa.
   async function recarregarPendentesSeAtivo() {
     if (!_pendentesAtivos || !_pendentesModo) return;
     _pendentesMarkers.forEach(m => map.removeLayer(m));
     _pendentesMarkers = [];
+    if (currentCircuitoId) return; // camada do circuito já respeita o filtro
     await _carregarPendentes(_pendentesModo, false);
   }
 
