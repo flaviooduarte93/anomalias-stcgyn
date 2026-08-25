@@ -428,7 +428,14 @@
         <div id="baseDecometroInfo" style="font-size:12px;color:var(--eq-white)"><span style="color:var(--eq-gray)">Carregando...</span></div>
       </div>
       <div style="flex:1;min-width:140px;background:rgba(181,123,238,.06);border:1px solid rgba(181,123,238,.15);border-radius:8px;padding:8px 12px">
-        <div style="font-size:10px;color:#b57bee;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">📍 Conjuntos DEC</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px">
+          <div style="font-size:10px;color:#b57bee;text-transform:uppercase;letter-spacing:.5px;font-weight:700">📍 Conjuntos DEC</div>
+          <button onclick="abrirColarConjuntos()" title="Colar tabela SALDO DO ANO POR CONJUNTO"
+            style="display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:6px;border:1px solid rgba(181,123,238,.4);background:rgba(181,123,238,.12);color:#b57bee;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Colar
+          </button>
+        </div>
         <div id="baseConjuntosInfo" style="font-size:12px;color:var(--eq-white)"><span style="color:var(--eq-gray)">Carregando...</span></div>
       </div>
     </div>
@@ -637,6 +644,31 @@
     <div id="mMatrizBody" style="margin-top:12px"></div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn-cancel" onclick="fecharModalMatriz()" style="flex:1">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Colar tabela SALDO DO ANO POR CONJUNTO -->
+<div class="modal-overlay" id="modalColarConjuntos" onclick="if(event.target===this)fecharColarConjuntos()">
+  <div class="modal" style="max-width:640px;width:96vw;max-height:90vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📍 Colar Conjuntos (SALDO DO ANO)</div>
+    <div class="modal-sub" style="margin-bottom:10px">
+      Cole a tabela inteira copiada do Excel (com o cabeçalho). O sistema usa a coluna
+      <strong style="color:#b57bee">%META ANO PROJ</strong> para classificar cada conjunto:
+      <span style="color:var(--eq-success)">0–99,99% na meta</span> ·
+      <span style="color:var(--eq-warning)">100–140% transgressão</span> ·
+      <span style="color:var(--eq-error)">&gt;140% crítico</span>.
+    </div>
+    <textarea id="txtColarConjuntos" rows="9"
+      placeholder="Cole aqui (Ctrl+V) a partir da linha 'CONJUNTO  REALIZADO MÊS  ...' incluindo o cabeçalho."
+      style="width:100%;padding:10px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:var(--eq-white);font-family:'Barlow',monospace;font-size:12px;outline:none;resize:vertical;box-sizing:border-box;white-space:pre;overflow-x:auto"
+      oninput="previewColarConjuntos()"
+      onfocus="this.style.borderColor='#b57bee'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
+    <div id="previewConjuntos" style="margin-top:10px;font-size:12px"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn-cancel" onclick="fecharColarConjuntos()">Cancelar</button>
+      <button class="btn-save" id="btnSalvarColarConjuntos" onclick="salvarColarConjuntos()" disabled>Importar</button>
     </div>
   </div>
 </div>
@@ -1815,6 +1847,160 @@
   };
 
   window.fecharMatrizGeral=function(){document.getElementById('modalMatrizGeral').classList.remove('open');};
+
+  // ── Importação de conjuntos por COLAGEM (tabela SALDO DO ANO POR CONJUNTO) ────
+  // Classificação por %META ANO PROJ: 0–99,99% NA META · 100–140% TRANSGRESSÃO · >140% CRÍTICO
+  function _statusMetaProj(pct){
+    if(pct>140) return 'critico';
+    if(pct>=100) return 'transgressao';
+    return 'ok';
+  }
+  // "51,24%" / "79,34%" / "1.234,56" → number (formato BR)
+  function _numBR(v){
+    if(v==null) return NaN;
+    let s=String(v).replace('%','').trim();
+    if(!s) return NaN;
+    s=s.replace(/\./g,'').replace(',','.'); // remove milhar, vírgula→ponto
+    return parseFloat(s);
+  }
+
+  // Parseia o texto colado (TSV do Excel) e devolve linhas normalizadas + avisos
+  function _parseConjuntosColados(txt){
+    const linhas=String(txt||'').split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+    if(!linhas.length) return {rows:[], erro:'Nada colado.'};
+    // localiza o cabeçalho (linha que contém CONJUNTO e %META ANO PROJ)
+    let hIdx=linhas.findIndex(l=>{
+      const u=l.toUpperCase();
+      return u.includes('CONJUNTO') && u.includes('META') && u.includes('PROJ');
+    });
+    // se não achou cabeçalho explícito, tenta a 1ª linha que começa por "CONJUNTO"
+    if(hIdx<0) hIdx=linhas.findIndex(l=>l.toUpperCase().startsWith('CONJUNTO'));
+    if(hIdx<0) return {rows:[], erro:'Cabeçalho não encontrado. Cole incluindo a linha que começa com "CONJUNTO".'};
+
+    const header=linhas[hIdx].split('\t').map(c=>c.trim().toUpperCase());
+    const iConj=header.findIndex(c=>c.includes('CONJUNTO'));
+    const iProj=header.findIndex(c=>c.includes('META')&&c.includes('ANO')&&c.includes('PROJ'));
+    if(iConj<0||iProj<0){
+      return {rows:[], erro:'Não encontrei as colunas "CONJUNTO" e "%META ANO PROJ" no cabeçalho colado. Verifique se copiou a tabela inteira do Excel (separada por tabulação).'};
+    }
+    // colunas opcionais (guardadas para referência, não obrigatórias)
+    const iMetaAno=header.findIndex(c=>c==='%META ANO'||(c.includes('META')&&c.includes('ANO')&&!c.includes('PROJ')&&!c.includes('ACC')&&!c.includes('MÊS')&&!c.includes('MES')));
+    const iDecAnu=header.findIndex(c=>c.includes('DEC')&&c.includes('ANUAL'));
+    const iSaldo=header.findIndex(c=>c.includes('SALDO'));
+
+    const rows=[]; const ignoradas=[];
+    for(let k=hIdx+1;k<linhas.length;k++){
+      const cols=linhas[k].split('\t');
+      const nome=String(cols[iConj]||'').trim().toUpperCase();
+      if(!nome){ continue; }
+      const pctProj=_numBR(cols[iProj]);
+      if(!isFinite(pctProj)){ ignoradas.push(nome||`linha ${k+1}`); continue; }
+      rows.push({
+        nome,
+        pct_proj:Math.round(pctProj*100)/100,
+        status:_statusMetaProj(pctProj),
+        meta_ano:iMetaAno>=0?_numBR(cols[iMetaAno]):null,
+        dec_anualiz:iDecAnu>=0?_numBR(cols[iDecAnu]):null,
+        saldo:iSaldo>=0?_numBR(cols[iSaldo]):null,
+      });
+    }
+    return {rows, ignoradas};
+  }
+
+  let _conjColadosParsed=[];
+
+  window.abrirColarConjuntos=function(){
+    document.getElementById('txtColarConjuntos').value='';
+    document.getElementById('previewConjuntos').innerHTML='';
+    document.getElementById('btnSalvarColarConjuntos').disabled=true;
+    _conjColadosParsed=[];
+    document.getElementById('modalColarConjuntos').classList.add('open');
+    setTimeout(()=>document.getElementById('txtColarConjuntos').focus(),150);
+  };
+  window.fecharColarConjuntos=function(){
+    document.getElementById('modalColarConjuntos').classList.remove('open');
+  };
+
+  window.previewColarConjuntos=function(){
+    const txt=document.getElementById('txtColarConjuntos').value;
+    const box=document.getElementById('previewConjuntos');
+    const btn=document.getElementById('btnSalvarColarConjuntos');
+    if(!txt.trim()){ box.innerHTML=''; btn.disabled=true; _conjColadosParsed=[]; return; }
+    const {rows,erro,ignoradas}=_parseConjuntosColados(txt);
+    if(erro){
+      box.innerHTML=`<div style="color:var(--eq-error);padding:8px 10px;background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.25);border-radius:8px">⚠ ${erro}</div>`;
+      btn.disabled=true; _conjColadosParsed=[]; return;
+    }
+    _conjColadosParsed=rows;
+    const cont={critico:0,transgressao:0,ok:0};
+    rows.forEach(r=>cont[r.status]++);
+    const chip=(txt,cor)=>`<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:${cor.bg};border:1px solid ${cor.bd};color:${cor.cl}">${txt}</span>`;
+    const cCrit={bg:'rgba(255,77,109,.1)',bd:'rgba(255,77,109,.35)',cl:'var(--eq-error)'};
+    const cTrans={bg:'rgba(255,179,0,.1)',bd:'rgba(255,179,0,.3)',cl:'var(--eq-warning)'};
+    const cOk={bg:'rgba(0,229,160,.07)',bd:'rgba(0,229,160,.25)',cl:'var(--eq-success)'};
+    const linhasPrev=rows.slice(0,60).map(r=>{
+      const cor=r.status==='critico'?cCrit:r.status==='transgressao'?cTrans:cOk;
+      const ico=r.status==='critico'?'🔴':r.status==='transgressao'?'🟡':'🟢';
+      return`<tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+        <td style="padding:3px 6px;font-weight:600">${r.nome}</td>
+        <td style="padding:3px 6px;text-align:right;font-weight:700;color:${cor.cl}">${r.pct_proj.toFixed(2)}%</td>
+        <td style="padding:3px 6px;text-align:center">${ico} <span style="color:${cor.cl};font-weight:700">${r.status==='ok'?'NA META':r.status==='transgressao'?'TRANSGRESSÃO':'CRÍTICO'}</span></td>
+      </tr>`;
+    }).join('');
+    box.innerHTML=`
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <strong style="color:var(--eq-white)">${rows.length} conjunto${rows.length!==1?'s':''}</strong>
+        ${chip(cont.ok+' na meta',cOk)} ${chip(cont.transgressao+' transgressão',cTrans)} ${chip(cont.critico+' crítico',cCrit)}
+        ${ignoradas&&ignoradas.length?`<span style="color:var(--eq-gray)">· ${ignoradas.length} ignorada(s) sem %</span>`:''}
+      </div>
+      <div style="max-height:230px;overflow-y:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead style="background:rgba(255,255,255,.04);position:sticky;top:0">
+            <tr><th style="padding:4px 6px;text-align:left;color:var(--eq-gray)">Conjunto</th>
+            <th style="padding:4px 6px;text-align:right;color:var(--eq-gray)">%Meta Ano Proj</th>
+            <th style="padding:4px 6px;text-align:center;color:var(--eq-gray)">Condição</th></tr>
+          </thead>
+          <tbody>${linhasPrev}</tbody>
+        </table>
+      </div>`;
+    btn.disabled=rows.length===0;
+  };
+
+  window.salvarColarConjuntos=async function(){
+    if(!_conjColadosParsed.length) return;
+    const btn=document.getElementById('btnSalvarColarConjuntos');
+    btn.disabled=true; const txtOrig=btn.textContent; btn.textContent='Importando…';
+    const agora=new Date().toISOString();
+    const anoAtual=new Date().getFullYear();
+    let salvos=0, erros=0;
+    for(const r of _conjColadosParsed){
+      // pct_dec guarda o %META ANO PROJ (é o valor exibido no badge da matriz).
+      // Mantém-se apenas os campos já usados pelo importador de planilha, para
+      // não depender de colunas que podem não existir no schema do Supabase.
+      const payload={
+        nome:r.nome,
+        pct_dec:r.pct_proj,
+        status:r.status,
+        ano_ref:anoAtual,
+        atualizado_em:agora
+      };
+      try{
+        const{data:ex}=await sb.from('conjuntos_dec').select('id').eq('nome',r.nome);
+        if(ex&&ex.length>0){
+          const{error}=await sb.from('conjuntos_dec').update(payload).eq('id',ex[0].id);
+          if(error)throw error;
+        } else {
+          const{error}=await sb.from('conjuntos_dec').insert({...payload,criado_em:agora});
+          if(error)throw error;
+        }
+        salvos++;
+      }catch(e){ console.error('conjunto',r.nome,e); erros++; }
+    }
+    btn.textContent=txtOrig;
+    fecharColarConjuntos();
+    showToast(`✓ Conjuntos importados: ${salvos}${erros?` · ${erros} erro(s)`:''}`);
+    await carregarCircuitos();
+  };
 
   let _matrizGeralRows=[];
   let _matrizGeralOrdem={col:'matriz',asc:true}; // coluna e direção de ordenação
