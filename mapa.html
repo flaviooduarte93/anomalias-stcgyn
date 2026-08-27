@@ -649,6 +649,19 @@
   </svg>
 </button>
 
+<!-- Botão: mostrar somente MBX (multiplexação) pendentes no mapa (admin/fiscal) -->
+<button id="btnMostrarMux" onclick="togglePendentesNoMapa(this,'mux')"
+  style="position:fixed;top:calc(var(--top-h) + 134px);left:10px;z-index:1001;
+         width:34px;height:34px;border-radius:4px;border:2px solid rgba(181,123,238,0.6);
+         background:rgba(10,22,40,0.92);color:#b57bee;cursor:pointer;
+         display:none;align-items:center;justify-content:center;
+         box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
+  title="Mostrar somente MBX (multiplexação) pendentes">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+  </svg>
+</button>
+
 <!-- ── FIX 1: document.write agora só escreve o estilo de nav (sem CSS extra dentro) ── -->
 <script>
   // Guard de pré-render: esconde itens condicionais até a auth confirmar o perfil.
@@ -1054,6 +1067,8 @@
       if (btnR) btnR.style.display = 'flex';
       const btnP = document.getElementById('btnMostrarPostes');
       if (btnP) btnP.style.display = 'flex';
+      const btnM = document.getElementById('btnMostrarMux');
+      if (btnM) btnM.style.display = 'flex';
     }
     if (perfil === 'fiscal') {
       const fab = document.getElementById('fabAnomalias');
@@ -2042,19 +2057,22 @@
 
   // configuração central de cada modo de filtro do mapa
   const _MODO_CFG = {
-    servicos: { id:'btnMostrarPendentes', on:'#ffb300', off:'rgba(255,179,0,0.5)',  bgOn:'rgba(255,179,0,0.15)',  sing:'serviço', plur:'serviços', titOn:'Ocultar serviços pendentes', titOff:'Mostrar serviços pendentes (sem ramais/postes)' },
+    servicos: { id:'btnMostrarPendentes', on:'#ffb300', off:'rgba(255,179,0,0.5)',  bgOn:'rgba(255,179,0,0.15)',  sing:'serviço', plur:'serviços', titOn:'Ocultar serviços pendentes', titOff:'Mostrar serviços pendentes (sem ramais/postes/MBX)' },
     ramais:   { id:'btnMostrarRamais',    on:'#00e5a0', off:'rgba(0,229,160,0.5)',  bgOn:'rgba(0,229,160,0.15)',  sing:'ramal',   plur:'ramais',   titOn:'Ocultar ramais pendentes',   titOff:'Mostrar somente ramais pendentes' },
-    postes:   { id:'btnMostrarPostes',    on:'#c8864a', off:'rgba(200,134,74,0.6)', bgOn:'rgba(200,134,74,0.18)', sing:'poste',   plur:'postes',   titOn:'Ocultar postes pendentes',   titOff:'Mostrar somente substituições de poste pendentes' }
+    postes:   { id:'btnMostrarPostes',    on:'#c8864a', off:'rgba(200,134,74,0.6)', bgOn:'rgba(200,134,74,0.18)', sing:'poste',   plur:'postes',   titOn:'Ocultar postes pendentes',   titOff:'Mostrar somente substituições de poste pendentes' },
+    mux:      { id:'btnMostrarMux',       on:'#b57bee', off:'rgba(181,123,238,0.6)',bgOn:'rgba(181,123,238,0.18)',sing:'MBX',     plur:'MBX',      titOn:'Ocultar MBX pendentes',      titOff:'Mostrar somente MBX (multiplexação) pendentes' }
   };
 
   // Regra ÚNICA de filtro por modo (usada na camada global e na do circuito):
   //   ramais   → só tipo 'ramal'
   //   postes   → só tipo 'poste'
-  //   serviços → tudo, EXCETO ramal e poste (que têm botões dedicados)
+  //   mux      → só tipo 'mux' (MBX / multiplexação)
+  //   serviços → tudo, EXCETO ramal, poste e mux (que têm botões dedicados)
   function _filtrarPorModo(lista, modo) {
     if (modo === 'ramais') return lista.filter(a => a.tipo === 'ramal');
     if (modo === 'postes') return lista.filter(a => a.tipo === 'poste');
-    return lista.filter(a => a.tipo !== 'ramal' && a.tipo !== 'poste');
+    if (modo === 'mux')    return lista.filter(a => a.tipo === 'mux');
+    return lista.filter(a => a.tipo !== 'ramal' && a.tipo !== 'poste' && a.tipo !== 'mux');
   }
 
   // estilo dos botões por estado
@@ -2080,6 +2098,7 @@
     _estiloBtnPend('servicos', false);
     _estiloBtnPend('ramais', false);
     _estiloBtnPend('postes', false);
+    _estiloBtnPend('mux', false);
 
     if (desligando) {
       _pendentesAtivos = false;
