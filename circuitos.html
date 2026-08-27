@@ -378,6 +378,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Ver Matriz
       </button>
+      <button onclick="abrirQuadrante()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(124,63,192,.1);border:1px solid rgba(124,63,192,.3);border-radius:8px;color:#b57bee;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+        Quadrante
+      </button>
       <button onclick="exportarMatriz()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:8px;color:var(--eq-success);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar Matriz
@@ -645,6 +649,19 @@
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn-cancel" onclick="fecharModalMatriz()" style="flex:1">Fechar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Quadrante da Matriz de Impacto -->
+<div class="modal-overlay" id="modalQuadrante" onclick="if(event.target===this)fecharQuadrante()">
+  <div class="modal" style="max-width:720px;width:96vw;max-height:92vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+      <div class="modal-title" style="margin:0">▦ Quadrante — Matriz de Impacto</div>
+      <button onclick="fecharQuadrante()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;width:32px;height:32px;color:var(--eq-gray);cursor:pointer;font-size:18px;line-height:1">×</button>
+    </div>
+    <div class="modal-sub" style="margin-bottom:14px">Distribuição dos circuitos por célula da matriz. Eixo vertical: nível de clientes · horizontal: nível de desarmes. Clique numa célula para ver os equipamentos.</div>
+    <div id="quadranteBody"></div>
   </div>
 </div>
 
@@ -1847,6 +1864,125 @@
   };
 
   window.fecharMatrizGeral=function(){document.getElementById('modalMatrizGeral').classList.remove('open');};
+
+  // ── QUADRANTE — distribuição de circuitos por célula da matriz ───────────────
+  // Recalcula as rows a partir do decometro (mesma lógica da Matriz de Impacto).
+  function _calcularRowsMatriz(){
+    const equips=Object.keys(decometroCache).filter(equipValido).sort();
+    return equips.map(nome=>{
+      const ocs3m=ocorrencias3m(nome)||[];
+      const circ=todosCircuitosCache.find(c=>c.nome===nome);
+      const clientes=circ?parseInt(circ.clientes||0):(decoCltsMedia[nome]||0);
+      const nc=nivelClientes(clientes);
+      const nd=nivelDesarmes(ocs3m);
+      const {color,lbl}=matrizCor(nc,nd);
+      return{nome,nc,nd,color,lbl};
+    });
+  }
+
+  window.abrirQuadrante=function(){
+    const rows=_calcularRowsMatriz();
+    if(!rows.length){showToast('Nenhum dado do Decômetro disponível.',true);return;}
+
+    // agrupa por célula nc-nd
+    const cel={}; // 'nc-nd' → { count, nomes[] }
+    rows.forEach(r=>{
+      const k=r.nc+'-'+r.nd;
+      if(!cel[k])cel[k]={count:0,nomes:[]};
+      cel[k].count++;
+      cel[k].nomes.push(r.nome);
+    });
+    const total=rows.length;
+
+    // resumo por criticidade (usa matrizCor.lbl)
+    const resumo={'Crítico':0,'Mediano':0,'Baixo':0};
+    rows.forEach(r=>{resumo[r.lbl]=(resumo[r.lbl]||0)+1;});
+
+    // rótulos legíveis dos níveis
+    const lblCli={1:'1 · Alto (≥85)',2:'2 · Médio (50–84)',3:'3 · Baixo (<50)'};
+    const lblDes={1:'1 · Alto (≥2)',2:'2 · Médio (1)',3:'3 · Baixo (0)'};
+
+    document.getElementById('quadranteBody').innerHTML=_htmlQuadrante(cel,total,resumo,lblCli,lblDes);
+
+    window._quadranteCel=cel;
+    document.getElementById('modalQuadrante').classList.add('open');
+  };
+
+  // monta o HTML do quadrante de forma determinística
+  function _htmlQuadrante(cel,total,resumo,lblCli,lblDes){
+    const chip=(txt,n,cor)=>`<div style="flex:1;min-width:110px;background:${cor.bg};border:1px solid ${cor.border};border-radius:8px;padding:8px 12px;text-align:center">
+      <div style="font-size:22px;font-weight:800;color:${cor.color};font-family:'Barlow Condensed',sans-serif;line-height:1">${n}</div>
+      <div style="font-size:11px;color:${cor.color};font-weight:700;text-transform:uppercase;letter-spacing:.5px">${txt}</div>
+    </div>`;
+    const cCrit=matrizCor(1,1), cMed=matrizCor(2,2), cBaixo=matrizCor(3,3);
+
+    const celHtml=(nc,nd)=>{
+      const k=nc+'-'+nd;
+      const c=cel[k]||{count:0};
+      const {bg,border,color,lbl}=matrizCor(nc,nd);
+      const pct=total?Math.round(c.count/total*100):0;
+      const clic=c.count>0;
+      return`<div ${clic?`onclick="verEquipsQuadrante('${k}')"`:''}
+        style="background:${bg};border:1.5px solid ${border};border-radius:10px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:92px;transition:transform .12s;cursor:${clic?'pointer':'default'};${clic?'':'opacity:.45'}"
+        ${clic?'onmouseover="this.style.transform=\'scale(1.03)\'" onmouseout="this.style.transform=\'scale(1)\'"':''}>
+        <div style="font-size:30px;font-weight:800;color:${color};line-height:1;font-family:'Barlow Condensed',sans-serif">${c.count}</div>
+        <div style="font-size:11px;color:${color};font-weight:700">${matrizLabel(nc,nd)} · ${lbl}</div>
+        <div style="font-size:10px;color:var(--eq-gray)">${pct}%</div>
+      </div>`;
+    };
+
+    let grade='';
+    // cabeçalho de colunas (desarmes)
+    grade+='<div></div>';
+    grade+=`<div style="text-align:center;font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding-bottom:2px">${lblDes[1]}</div>`;
+    grade+=`<div style="text-align:center;font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding-bottom:2px">${lblDes[2]}</div>`;
+    grade+=`<div style="text-align:center;font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding-bottom:2px">${lblDes[3]}</div>`;
+    // 3 linhas (clientes 1..3)
+    for(let nc=1;nc<=3;nc++){
+      grade+=`<div style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.4px;font-weight:700;text-align:center;padding-right:4px;max-width:74px">${lblCli[nc]}</div>`;
+      grade+=celHtml(nc,1)+celHtml(nc,2)+celHtml(nc,3);
+    }
+
+    return`
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        ${chip('Crítico',resumo['Crítico']||0,cCrit)}
+        ${chip('Mediano',resumo['Mediano']||0,cMed)}
+        ${chip('Baixo',resumo['Baixo']||0,cBaixo)}
+        <div style="flex:1;min-width:110px;background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.25);border-radius:8px;padding:8px 12px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--eq-cyan);font-family:'Barlow Condensed',sans-serif;line-height:1">${total}</div>
+          <div style="font-size:11px;color:var(--eq-cyan);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Total</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--eq-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;text-align:center">Nível 1 = mais impacto · Nível 3 = menos impacto · quanto menor a soma, mais crítico</div>
+      <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:stretch">${grade}</div>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--eq-gray)">
+        <span style="color:var(--eq-error)">■</span> Crítico &nbsp;
+        <span style="color:var(--eq-warning)">■</span> Mediano &nbsp;
+        <span style="color:var(--eq-success)">■</span> Baixo
+        &nbsp;·&nbsp; linha = nível de clientes · coluna = nível de desarmes · clique numa célula para listar
+      </div>`;
+  }
+
+  window.verEquipsQuadrante=function(k){
+    const c=(window._quadranteCel||{})[k];
+    if(!c||!c.count)return;
+    const [nc,nd]=k.split('-').map(Number);
+    const {color,lbl}=matrizCor(nc,nd);
+    // abre a matriz geral já filtrada por essa faixa
+    fecharQuadrante();
+    abrirMatrizGeral();
+    setTimeout(()=>{
+      const alvo=matrizLabel(nc,nd);
+      const btns=document.querySelectorAll('#filtrosMatrizGeral button');
+      let achou=false;
+      btns.forEach(b=>{
+        if(b.textContent.trim().startsWith(alvo)){ b.click(); achou=true; }
+      });
+      if(!achou){ _matrizGeralFiltro=alvo; if(typeof aplicarMatrizGeral==='function')aplicarMatrizGeral(); }
+    },120);
+  };
+
+  window.fecharQuadrante=function(){document.getElementById('modalQuadrante').classList.remove('open');};
 
   // ── Importação de conjuntos por COLAGEM (tabela SALDO DO ANO POR CONJUNTO) ────
   // Classificação por %META ANO PROJ: 0–99,99% NA META · 100–140% TRANSGRESSÃO · >140% CRÍTICO
