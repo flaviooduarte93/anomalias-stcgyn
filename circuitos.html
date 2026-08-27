@@ -620,10 +620,10 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">📍 Definir Conjunto</div>
-    <div class="modal-sub" id="mConjuntoSub">Selecione o conjunto elétrico deste equipamento.</div>
+    <div class="modal-sub" id="mConjuntoSub">Selecione o conjunto geográfico deste equipamento.</div>
     <label class="modal-label">Equipamento</label>
     <div id="mConjuntoEquip" style="padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:14px;font-weight:700;color:var(--eq-cyan);margin-bottom:14px"></div>
-    <label class="modal-label">Conjunto elétrico</label>
+    <label class="modal-label">Conjunto geográfico</label>
     <select id="selectModalConjunto" class="modal-select" style="margin-bottom:6px">
       <option value="">Selecione o conjunto...</option>
     </select>
@@ -1297,16 +1297,16 @@
         const iSit=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('SITUA')||String(c||'').trim().toUpperCase().includes('ESTADO'));
         // Clts Af Max — para média de clientes na matriz de impacto
         const iCltsMax=h.findIndex(c=>String(c||'').trim().toUpperCase().includes('CLTS')&&String(c||'').trim().toUpperCase().includes('MAX'));
-        // Conjunto Elétrico — busca sem acento para garantir compatibilidade
+        // Conjunto Geográfico — busca sem acento para garantir compatibilidade
         const _normC=s=>String(s||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-        const iConj=h.findIndex(c=>_normC(c).includes('CONJUNTO')&&(_normC(c).includes('ELETR')||_normC(c).includes('ELET')));
+        const iConj=h.findIndex(c=>_normC(c).includes('CONJUNTO')&&_normC(c).includes('GEOGRAF'));
         // Ponto Elétrico — equipamento vem antes do " - " nessa coluna
         const iPonto=h.findIndex(c=>_normC(c).includes('PONTO')&&_normC(c).includes('ELETR'));
         if([iNum,iIni,iFim,iChi].some(x=>x<0)||iPonto<0){showToast('Colunas obrigatórias não encontradas (verifique "Ponto Elétrico").',true);return;}
         onProgress?.(45,'Agrupando equipamentos…');
         const ocorsPorEquip={};
         const cltsPorEquip={};  // soma e contagem para média de Clts Af Max
-        const conjPorEquip={};   // conjunto elétrico por equipamento
+        const conjPorEquip={};   // conjunto geográfico por equipamento
         for(const r of rows.slice(hIdx+1)){
           if(iSit>=0){const sit=String(r[iSit]||'').trim().toUpperCase();if(!sit.includes('FINALIZ'))continue;}
           // extrai equipamento da coluna Ponto Elétrico: parte antes do " - "
@@ -1324,7 +1324,7 @@
             if(clts>0){cltsPorEquip[equip].soma+=clts;cltsPorEquip[equip].cnt++;}
           }
           if(!ocorsPorEquip[equip])ocorsPorEquip[equip]={};
-          // captura conjunto elétrico de QUALQUER linha válida do equipamento (antes do filtro de num)
+          // captura conjunto geográfico de QUALQUER linha válida do equipamento (antes do filtro de num)
           if(iConj>=0&&r[iConj]){
             const conj=String(r[iConj]).trim();
             if(conj&&conj!=='---'&&!conjPorEquip[equip])conjPorEquip[equip]=conj;
