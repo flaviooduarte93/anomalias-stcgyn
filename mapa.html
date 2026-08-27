@@ -609,14 +609,14 @@
   </svg>
 </button>
 
-<!-- Botão: mostrar serviços pendentes (exceto ramais) no mapa (admin/fiscal) -->
+<!-- Botão: mostrar serviços pendentes (exceto ramais e postes) no mapa (admin/fiscal) -->
 <button id="btnMostrarPendentes" onclick="togglePendentesNoMapa(this,'servicos')"
   style="position:fixed;top:calc(var(--top-h) + 8px);left:10px;z-index:1001;
          width:34px;height:34px;border-radius:4px;border:2px solid rgba(255,179,0,0.5);
          background:rgba(10,22,40,0.92);color:#ffb300;cursor:pointer;
          display:none;align-items:center;justify-content:center;
          box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
-  title="Mostrar serviços pendentes (sem ramais)">
+  title="Mostrar serviços pendentes (sem ramais/postes)">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
     <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -633,6 +633,19 @@
   title="Mostrar somente ramais pendentes">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+</button>
+
+<!-- Botão: mostrar somente substituições de poste pendentes no mapa (admin/fiscal) -->
+<button id="btnMostrarPostes" onclick="togglePendentesNoMapa(this,'postes')"
+  style="position:fixed;top:calc(var(--top-h) + 92px);left:10px;z-index:1001;
+         width:34px;height:34px;border-radius:4px;border:2px solid rgba(200,134,74,0.6);
+         background:rgba(10,22,40,0.92);color:#c8864a;cursor:pointer;
+         display:none;align-items:center;justify-content:center;
+         box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
+  title="Mostrar somente substituições de poste pendentes">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="2" x2="12" y2="22"/><path d="M12 6h6"/><path d="M12 10h4"/>
   </svg>
 </button>
 
@@ -1039,6 +1052,8 @@
       if (btn) btn.style.display = 'flex';
       const btnR = document.getElementById('btnMostrarRamais');
       if (btnR) btnR.style.display = 'flex';
+      const btnP = document.getElementById('btnMostrarPostes');
+      if (btnP) btnP.style.display = 'flex';
     }
     if (perfil === 'fiscal') {
       const fab = document.getElementById('fabAnomalias');
@@ -1383,13 +1398,13 @@
       _anomaliasData = await fetchAll('anomalias', { filters: { circuito_id: circuitoId } });
     }
 
-    // Se um dos botões (serviços / ramais) estiver ativo, ele FILTRA esta camada
-    // em vez de sobrepor uma segunda camada de markers.
+    // Se um dos botões (serviços / ramais / postes) estiver ativo, ele FILTRA esta
+    // camada em vez de sobrepor uma segunda camada de markers.
     if (_pendentesAtivos && _pendentesModo) {
       const statusAlvo = currentPerfil === 'equipe' ? 'programado' : 'pendente';
-      _anomaliasData = _anomaliasData.filter(a =>
-        a.status === statusAlvo &&
-        (_pendentesModo === 'ramais' ? a.tipo === 'ramal' : a.tipo !== 'ramal')
+      _anomaliasData = _filtrarPorModo(
+        _anomaliasData.filter(a => a.status === statusAlvo),
+        _pendentesModo
       );
     }
 
@@ -2025,20 +2040,32 @@
     overlay.querySelector('#btnConcGaleria').onclick = () => pickFoto('galeria');
   };
 
-  // estilo dos dois botões por estado
+  // configuração central de cada modo de filtro do mapa
+  const _MODO_CFG = {
+    servicos: { id:'btnMostrarPendentes', on:'#ffb300', off:'rgba(255,179,0,0.5)',  bgOn:'rgba(255,179,0,0.15)',  sing:'serviço', plur:'serviços', titOn:'Ocultar serviços pendentes', titOff:'Mostrar serviços pendentes (sem ramais/postes)' },
+    ramais:   { id:'btnMostrarRamais',    on:'#00e5a0', off:'rgba(0,229,160,0.5)',  bgOn:'rgba(0,229,160,0.15)',  sing:'ramal',   plur:'ramais',   titOn:'Ocultar ramais pendentes',   titOff:'Mostrar somente ramais pendentes' },
+    postes:   { id:'btnMostrarPostes',    on:'#c8864a', off:'rgba(200,134,74,0.6)', bgOn:'rgba(200,134,74,0.18)', sing:'poste',   plur:'postes',   titOn:'Ocultar postes pendentes',   titOff:'Mostrar somente substituições de poste pendentes' }
+  };
+
+  // Regra ÚNICA de filtro por modo (usada na camada global e na do circuito):
+  //   ramais   → só tipo 'ramal'
+  //   postes   → só tipo 'poste'
+  //   serviços → tudo, EXCETO ramal e poste (que têm botões dedicados)
+  function _filtrarPorModo(lista, modo) {
+    if (modo === 'ramais') return lista.filter(a => a.tipo === 'ramal');
+    if (modo === 'postes') return lista.filter(a => a.tipo === 'poste');
+    return lista.filter(a => a.tipo !== 'ramal' && a.tipo !== 'poste');
+  }
+
+  // estilo dos botões por estado
   function _estiloBtnPend(modo, ativo) {
-    const cfg = {
-      servicos: { on: '#ffb300', off: 'rgba(255,179,0,0.5)', bgOn: 'rgba(255,179,0,0.15)' },
-      ramais:   { on: '#00e5a0', off: 'rgba(0,229,160,0.5)', bgOn: 'rgba(0,229,160,0.15)' }
-    }[modo];
-    const id = modo === 'ramais' ? 'btnMostrarRamais' : 'btnMostrarPendentes';
-    const b = document.getElementById(id);
+    const cfg = _MODO_CFG[modo];
+    if (!cfg) return;
+    const b = document.getElementById(cfg.id);
     if (!b) return;
     b.style.borderColor = ativo ? cfg.on : cfg.off;
     b.style.background  = ativo ? cfg.bgOn : 'rgba(10,22,40,0.92)';
-    b.title = modo === 'ramais'
-      ? (ativo ? 'Ocultar ramais pendentes' : 'Mostrar somente ramais pendentes')
-      : (ativo ? 'Ocultar serviços pendentes' : 'Mostrar serviços pendentes (sem ramais)');
+    b.title = ativo ? cfg.titOn : cfg.titOff;
   }
 
   window.togglePendentesNoMapa = async function(btn, modo) {
@@ -2047,11 +2074,12 @@
     // se clicar no mesmo botão já ativo → desliga (volta a mostrar tudo)
     const desligando = _pendentesAtivos && _pendentesModo === modo;
 
-    // limpa a camada global e zera os dois botões (exclusão mútua)
+    // limpa a camada global e zera os três botões (exclusão mútua)
     _pendentesMarkers.forEach(m => map.removeLayer(m));
     _pendentesMarkers = [];
     _estiloBtnPend('servicos', false);
     _estiloBtnPend('ramais', false);
+    _estiloBtnPend('postes', false);
 
     if (desligando) {
       _pendentesAtivos = false;
@@ -2068,10 +2096,11 @@
       if (!_pendentesAtivos) {
         showToast('Filtro removido — exibindo todas as anomalias do circuito.');
       } else {
-        const lbl = modo === 'ramais' ? 'ramal' : 'serviço';
+        const cfg = _MODO_CFG[modo];
+        const lbl = n !== 1 ? cfg.plur : cfg.sing;
         showToast(n
-          ? `✓ ${n} ${lbl}${n!==1?'s':''} pendente${n!==1?'s':''} neste circuito`
-          : `Nenhum ${lbl} pendente neste circuito.`);
+          ? `✓ ${n} ${lbl} pendente${n!==1?'s':''} neste circuito`
+          : `Nenhum ${cfg.sing} pendente neste circuito.`);
       }
       return;
     }
@@ -2093,10 +2122,9 @@
   // Busca e plota os pendentes. Se houver circuito selecionado, restringe a ele.
   async function _carregarPendentes(modo, comToast) {
     const escopoCircuito = !!currentCircuitoId;
+    const cfg = _MODO_CFG[modo] || _MODO_CFG.servicos;
     if (comToast) {
-      showToast(modo === 'ramais'
-        ? (escopoCircuito ? 'Carregando ramais do circuito...' : 'Carregando ramais...')
-        : (escopoCircuito ? 'Carregando pendentes do circuito...' : 'Carregando serviços pendentes...'));
+      showToast(`Carregando ${cfg.plur}${escopoCircuito ? ' do circuito' : ''}...`);
     }
     try {
       const filters = currentPerfil === 'equipe'
@@ -2107,14 +2135,15 @@
 
       let pendentes = await fetchAll('anomalias', { filters });
 
-      // filtro por modo: ramais isolados; serviços = tudo menos ramal
-      pendentes = modo === 'ramais'
-        ? pendentes.filter(a => a.tipo === 'ramal')
-        : pendentes.filter(a => a.tipo !== 'ramal');
+      // filtro por modo:
+      //   ramais   → só tipo 'ramal'
+      //   postes   → só tipo 'poste'
+      //   serviços → tudo, EXCETO ramal e poste (esses têm botões próprios)
+      pendentes = _filtrarPorModo(pendentes, modo);
 
       if (!pendentes.length) {
         const ondeMsg = escopoCircuito ? ' neste circuito' : '';
-        showToast(modo === 'ramais' ? `Nenhum ramal pendente${ondeMsg}.` : `Nenhum serviço pendente${ondeMsg}.`);
+        showToast(`Nenhum ${cfg.sing} pendente${ondeMsg}.`);
         _pendentesAtivos = false;
         _pendentesModo = null;
         _estiloBtnPend(modo, false);
@@ -2151,10 +2180,10 @@
         _pendentesMarkers.push(m);
       });
 
-      const lbl = modo === 'ramais' ? 'ramal' : 'serviço';
       const n = _pendentesMarkers.length;
+      const lbl = n !== 1 ? cfg.plur : cfg.sing;
       const ondeOk = escopoCircuito ? ' neste circuito' : ' no mapa';
-      showToast(`✓ ${n} ${lbl}${n!==1?'s':''} pendente${n!==1?'s':''}${ondeOk}`);
+      showToast(`✓ ${n} ${lbl} pendente${n!==1?'s':''}${ondeOk}`);
     } catch(e) {
       console.error(e);
       showToast('Erro ao carregar pendentes.', true);
