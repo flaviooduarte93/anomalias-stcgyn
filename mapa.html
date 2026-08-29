@@ -1109,9 +1109,7 @@ function evaluatePixel(s){
     if (_ndviAtivo) {
       _ndviLayer.addTo(map);
       _ndviLayer.bringToFront();
-      // ao ligar NDVI, faz sentido ver sobre o satélite
-      if (_baseAtual === 'osm') toggleBaseSatelite();
-      showToast('Vegetação densa realçada em vermelho sobre o satélite. O resto fica transparente.', false, 5000);
+      showToast('Vegetação densa realçada em vermelho. O resto fica transparente.', false, 5000);
     } else {
       map.removeLayer(_ndviLayer);
     }
