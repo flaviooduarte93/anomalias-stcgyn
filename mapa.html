@@ -682,9 +682,22 @@
          background:rgba(10,22,40,0.92);color:#2ecc71;cursor:pointer;opacity:.5;
          display:flex;align-items:center;justify-content:center;
          box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
-  title="Mostrar vegetação (falsa cor, satélite)">
+  title="Mostrar vegetação densa (satélite)">
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>
+  </svg>
+</button>
+
+<!-- Botão: modo Street View — clicar no mapa abre a visão de rua do Google em aba nova -->
+<button id="btnStreetView" onclick="toggleStreetView()"
+  style="position:fixed;top:calc(var(--top-h) + 158px);right:10px;z-index:1001;
+         width:34px;height:34px;border-radius:4px;border:2px solid rgba(255,210,63,0.5);
+         background:rgba(10,22,40,0.92);color:#ffd23f;cursor:pointer;
+         display:flex;align-items:center;justify-content:center;
+         box-shadow:0 1px 5px rgba(0,0,0,0.65);transition:all .2s;backdrop-filter:blur(8px)"
+  title="Ligar modo rua — clicar abre o Street View">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="4" r="2"/><path d="M10 8h4l2 6h-2v6h-4v-6H8z"/>
   </svg>
 </button>
 
@@ -1023,20 +1036,44 @@
     });
     _baseOSM.addTo(map);
 
-    // Overlay NDVI (Sentinel-2 via CDSE) — só criado se houver Instance ID
+    // Overlay "Vegetação densa" (Sentinel-2 via CDSE) — só criado se houver Instance ID.
+    // Usa um evalscript que calcula o NDVI e pinta SÓ a vegetação densa; o resto
+    // fica transparente (dataMask=0), deixando o mapa/satélite limpo por baixo.
     if (CDSE_INSTANCE_ID) {
       const hoje = new Date();
       const ini = new Date(hoje.getTime() - 60*86400000); // últimos 60 dias (menos nuvem)
       const fmt = d => d.toISOString().slice(0,10);
+
+      // Limiar de densidade: NDVI ≥ NDVI_DENSO vira vermelho; abaixo, transparente.
+      // 0.55 ≈ vegetação densa/arbórea. Suba para 0.6+ p/ ser mais restritivo.
+      const NDVI_DENSO = 0.55;
+      const evalscript = `//VERSION=3
+function setup(){
+  return { input:["B04","B08","dataMask"], output:{ bands:4 } };
+}
+function evaluatePixel(s){
+  let ndvi = (s.B08 - s.B04) / (s.B08 + s.B04 + 1e-6);
+  if (s.dataMask === 0 || ndvi < ${NDVI_DENSO}) {
+    return [0,0,0,0]; // transparente
+  }
+  // vegetação densa → gradiente laranja→vermelho conforme a intensidade
+  let t = Math.min(1, (ndvi - ${NDVI_DENSO}) / (0.9 - ${NDVI_DENSO}));
+  let r = 0.85 + 0.15*t;      // vermelho forte
+  let g = 0.45*(1 - t);       // some o verde/laranja conforme adensa
+  return [r, g, 0.05, 0.9];   // alpha 0.9
+}`;
+      const evalB64 = btoa(unescape(encodeURIComponent(evalscript)));
+
       _ndviLayer = L.tileLayer.wms(`https://sh.dataspace.copernicus.eu/ogc/wms/${CDSE_INSTANCE_ID}`, {
-        layers: CDSE_NDVI_LAYER,
+        layers: CDSE_NDVI_LAYER,     // camada base qualquer da config (o evalscript sobrepõe)
         format: 'image/png',
         transparent: true,
         version: '1.3.0',
-        maxcc: 20,                                  // até 20% de cobertura de nuvem
+        maxcc: 20,                                  // até 20% de nuvem
         time: `${fmt(ini)}/${fmt(hoje)}`,           // janela recente
-        attribution: 'Falsa cor © Copernicus Sentinel-2 / CDSE',
-        opacity: 0.85, maxZoom: 22, maxNativeZoom: 16
+        evalscript: evalB64,                        // ← realça só vegetação densa
+        attribution: 'Vegetação densa © Copernicus Sentinel-2 / CDSE',
+        opacity: 0.9, maxZoom: 22, maxNativeZoom: 16
       });
     }
 
@@ -1044,7 +1081,7 @@
     setTimeout(() => map.invalidateSize(), 200);
     window.addEventListener('resize', () => map.invalidateSize());
     // estado inicial dos botões de camada
-    setTimeout(() => { _estiloBtnBase(); _estiloBtnNDVI(); }, 50);
+    setTimeout(() => { _estiloBtnBase(); _estiloBtnNDVI(); _estiloBtnStreet(); }, 50);
   }
 
   // alterna base OSM ↔ satélite
@@ -1074,7 +1111,7 @@
       _ndviLayer.bringToFront();
       // ao ligar NDVI, faz sentido ver sobre o satélite
       if (_baseAtual === 'osm') toggleBaseSatelite();
-      showToast('Vegetação em vermelho (falsa cor, Sentinel-2). Vermelho forte = mais vegetação na rede.', false, 5000);
+      showToast('Vegetação densa realçada em vermelho sobre o satélite. O resto fica transparente.', false, 5000);
     } else {
       map.removeLayer(_ndviLayer);
     }
@@ -1095,7 +1132,43 @@
     b.style.borderColor = _ndviAtivo ? '#2ecc71' : 'rgba(46,204,113,0.5)';
     b.style.background  = _ndviAtivo ? 'rgba(46,204,113,0.18)' : 'rgba(10,22,40,0.92)';
     b.style.opacity = CDSE_INSTANCE_ID ? '1' : '0.5';
-    b.title = _ndviAtivo ? 'Ocultar vegetação (falsa cor)' : 'Mostrar vegetação (falsa cor, satélite)';
+    b.title = _ndviAtivo ? 'Ocultar vegetação densa' : 'Mostrar vegetação densa (satélite)';
+  }
+
+  // ── Modo Street View ("bonequinho") — clicar no mapa abre a visão de rua ──────
+  let _streetViewAtivo = false;
+
+  function _abrirStreetView(lat, lng) {
+    // Street View do Google em aba nova, apontado para o ponto clicado
+    const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+    window.open(url, '_blank', 'noopener');
+  }
+
+  function _onClickStreetView(e) {
+    if (!_streetViewAtivo) return;
+    _abrirStreetView(e.latlng.lat.toFixed(6), e.latlng.lng.toFixed(6));
+  }
+
+  window.toggleStreetView = function() {
+    _streetViewAtivo = !_streetViewAtivo;
+    if (_streetViewAtivo) {
+      map.on('click', _onClickStreetView);
+      if (map._container) map._container.style.cursor = 'crosshair';
+      showToast('Modo rua ligado — clique em um ponto do mapa para abrir a visão de rua.', false, 4500);
+    } else {
+      map.off('click', _onClickStreetView);
+      if (map._container) map._container.style.cursor = '';
+      showToast('Modo rua desligado.');
+    }
+    _estiloBtnStreet();
+  };
+
+  function _estiloBtnStreet() {
+    const b = document.getElementById('btnStreetView');
+    if (!b) return;
+    b.style.borderColor = _streetViewAtivo ? '#ffd23f' : 'rgba(255,210,63,0.5)';
+    b.style.background  = _streetViewAtivo ? 'rgba(255,210,63,0.18)' : 'rgba(10,22,40,0.92)';
+    b.title = _streetViewAtivo ? 'Desligar modo rua (Street View)' : 'Ligar modo rua — clicar abre o Street View';
   }
 
   if (document.readyState === 'complete') {
